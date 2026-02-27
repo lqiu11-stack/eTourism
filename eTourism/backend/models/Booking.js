@@ -1,0 +1,55 @@
+const pool = require('../config/db');
+
+const Booking = {
+  async findById(id) {
+    const { rows } = await pool.query(
+      'SELECT * FROM bookings WHERE id = $1',
+      [id]
+    );
+    return rows[0] || null;
+  },
+
+  async create({ visitor_id, experience_id, amount_paid, booking_type, meeting_link }) {
+    const { rows } = await pool.query(
+      `INSERT INTO bookings (visitor_id, experience_id, amount_paid, booking_type, meeting_link)
+       VALUES ($1, $2, $3, $4, $5)
+       RETURNING *`,
+      [visitor_id, experience_id, amount_paid, booking_type, meeting_link]
+    );
+    return rows[0];
+  },
+
+  async updateStatus(id, status) {
+    const { rows } = await pool.query(
+      'UPDATE bookings SET status = $2 WHERE id = $1 RETURNING *',
+      [id, status]
+    );
+    return rows[0] || null;
+  },
+
+  async findByVisitor(visitor_id) {
+    const { rows } = await pool.query(
+      `SELECT b.*, e.title, e.date_time, e.cover_image
+       FROM bookings b
+       JOIN experiences e ON b.experience_id = e.id
+       WHERE b.visitor_id = $1
+       ORDER BY b.created_at DESC`,
+      [visitor_id]
+    );
+    return rows;
+  },
+
+  async findByExperience(experience_id) {
+    const { rows } = await pool.query(
+      `SELECT b.*, u.first_name, u.last_name, u.email
+       FROM bookings b
+       JOIN users u ON b.visitor_id = u.id
+       WHERE b.experience_id = $1
+       ORDER BY b.created_at DESC`,
+      [experience_id]
+    );
+    return rows;
+  },
+};
+
+module.exports = Booking;
