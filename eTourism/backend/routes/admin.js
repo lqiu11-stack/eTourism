@@ -1,5 +1,5 @@
 const router = require('express').Router();
-const { requireAuth } = require('../middleware/auth');
+const { requireAuth, requireRole } = require('../middleware/auth');
 const {
   getExperiences,
   deleteExperience,
@@ -8,15 +8,15 @@ const {
 } = require('../controllers/adminController');
 
 // GET /api/admin/experiences
-router.get('/experiences', requireAuth, getExperiences);
+router.get('/experiences', requireAuth, requireRole('admin'), getExperiences);
 
 // DELETE /api/admin/experiences/:id
-router.delete('/experiences/:id', requireAuth, deleteExperience);
+router.delete('/experiences/:id', requireAuth, requireRole('admin'), deleteExperience);
 
 // GET /api/admin/bookings
-router.get('/bookings', requireAuth, getBookings);
+router.get('/bookings', requireAuth, requireRole('admin'), getBookings);
 
 // GET /api/admin/reviews
-router.get('/reviews', requireAuth, getReviews);
+router.get('/reviews', requireAuth, requireRole('admin'), getReviews);
 
 module.exports = router;
