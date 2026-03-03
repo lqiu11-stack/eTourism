@@ -4,6 +4,10 @@ import facebook from "./facebook.png";
 import google from "./google.png";
 import "./style.css";
 
+// naviagtion for the password reset
+import { useNavigate } from "react-router-dom";
+
+
 import { auth, googleProvider } from "../../firebase";
 import { signInWithPopup } from "firebase/auth";
 
@@ -12,6 +16,7 @@ export const LoginPage = () => {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const navigate = useNavigate();
 
   const handleGoogleLogin = async () => {
     try {
@@ -62,7 +67,14 @@ export const LoginPage = () => {
           onChange={(e) => setPassword(e.target.value)}
         />
         {error && <div className="error-text">{error}</div>}
-        <button className="login-btn" type="submit">Start your journey</button>
+
+        <button className="login-btn" type="submit">
+          Start your journey
+        </button>
+
+        <button type="button" className="forgot" onClick={() => console.log("Forgot password")}>
+          Forget your password?
+        </button>
 
         <div className="social-row">
           <button type="button" className="social-btn" onClick={handleGoogleLogin}>
