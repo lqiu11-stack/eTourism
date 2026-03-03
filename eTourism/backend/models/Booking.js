@@ -27,6 +27,17 @@ const Booking = {
     return rows[0] || null;
   },
 
+  async reschedule({ booking_id, visitor_id, new_experience_id, new_status }) {
+    const { rows } = await pool.query(
+     `UPDATE bookings
+     SET experience_id = $3, status = $4
+     WHERE id = $1 AND visitor_id = $2
+     RETURNING *`,
+    [booking_id, visitor_id, new_experience_id, new_status]
+   );
+    return rows[0] || null;
+  },
+
   async findByVisitor(visitor_id) {
     const { rows } = await pool.query(
       `SELECT b.*, e.title, e.date_time, e.cover_image
