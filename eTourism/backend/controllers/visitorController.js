@@ -36,8 +36,7 @@ const rescheduleBooking = async (req, res) => {
     if (!new_experience_id) {
       return res.status(400).json({ message: 'new_experience_id is required' });
     }
-
-    // requireAuth 通常会把登录用户放到 req.user
+ 
     const visitorId = req.user?.id;
     if (!visitorId) {
       return res.status(401).json({ message: 'Unauthorised' });
