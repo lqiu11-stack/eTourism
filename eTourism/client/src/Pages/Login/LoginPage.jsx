@@ -72,7 +72,7 @@ export const LoginPage = () => {
           Start your journey
         </button>
 
-        <button type="button" className="forgot" onClick={() => console.log("Forgot password")}>
+        <button type="button" className="forgot" onClick={() => navigate("/reset")}>
           Forget your password?
         </button>
 
