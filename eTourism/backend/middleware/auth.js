@@ -16,3 +16,36 @@ function requireAuth(req, res, next) {
 }
 
 module.exports = { requireAuth };
+
+/*3-4 edit ehost registionation and login by Emily 
+Middleware for validating eHost application form data */
+const validateApplication = (req, res, next) => {
+  const { 
+    name, birthday, nationality, email, 
+    hasExperience, preferredCountry, 
+    description, videoLink, isContractAgreed 
+  } = req.body;
+
+  
+  if (!name || !birthday || !nationality || !email) {
+    return res.status(400).json({ message: "Please fill in all required personal details." });
+  }
+
+  if (hasExperience === undefined || !preferredCountry) {
+    return res.status(400).json({ message: "Please fill in all required experience details." });
+  }
+
+  if (!description || !videoLink) {
+    return res.status(400).json({ message: "Please fill in all required details." });
+  }
+
+  
+  if (isContractAgreed !== true) {
+    return res.status(400).json({ message: "You must agree to the privacy policy to submit the application" });
+  }
+
+  
+  next();
+};
+
+module.exports = { validateApplication };

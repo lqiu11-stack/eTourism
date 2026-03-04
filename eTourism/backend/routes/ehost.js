@@ -28,3 +28,12 @@ router.delete('/experiences/:id', requireAuth, deleteExperience);
 router.get('/bookings', requireAuth, getBookings);
 
 module.exports = router;
+
+
+//3-4 update ehost registionation and login by Emily
+const express = require('express');
+const { submitApplication } = require('../controllers/ehostController');
+const { validateApplication } = require('../middleware/validateApplication');
+router.post('/apply', validateApplication, submitApplication);
+
+module.exports = router;

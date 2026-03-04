@@ -26,88 +26,88 @@ module.exports = { createExperience, getExperiences, getExperienceById, updateEx
 
 /*
 3-2
-account registeration and login
+account registeration and login by Emily
 */
 
-// Model definition
-const UserSchema = {
-    email: { type: String, unique: true, required: true }, 
-    password: { type: String, required: true },
-    age: { type: Number, min: 18 }, // Visitors must be 18 years of age or older.
-    loginAttempts: { type: Number, default: 0 },
-    lockoutUntil: { type: Date, default: null }
-};
+/*
+3-4
+account registeration and login edit by Emily
+*/
 
-// 1.Register module
-// Implement repeatability checks and age verification
-//controllers/authController.js - register 方法
-const register = async (req, res) => {
-    const { email, password, age } = req.body;
+const mongoose = require('mongoose');
 
-    try {
-        // 1. Repeatability check
-        const existingUser = await User.findOne({ email });
-        if (existingUser) {
-            return res.status(409).json({ message: "This email address has been registered" });
-        }
+const eHostApplicationSchema = new mongoose.Schema({
+  //page 4: Personal detail 
+  name: { type: String, required: true }, 
+  birthday: { type: Date, required: true }, 
+  nationality: { type: String, required: true }, 
+  email: { type: String, required: true, unique: true }, 
 
-        // 2. Age verification (18 years and older)
-        if (age < 18) {
-            return res.status(403).json({ message: "Visitors must be 18 years of age or older." });
-        }
+  // page 3: Your experience 
+  hasExperience: { type: Boolean, required: true }, 
+  yearsOfExperience: { type: Number, default: 0 }, 
+  pastJourneyInfo: { type: String }, 
+  preferredCountry: { type: String, required: true }, 
 
-        // 3. Perform data persistence
-        const newUser = new User({ email, password, age }); // It is recommended to use bcrypt to encrypt the password here.
-        await newUser.save();
+  // page 2: Tell us more
+  preferredSpotTypes: [{ type: String }], 
+  description: { type: String, required: true }, 
+  videoLink: { type: String, required: true }, 
 
-        return res.status(201).json({ message: "Registration successful" });
-    } catch (error) {
-        return res.status(500).json({ message: "Server error" });
+  // page 1: Contract & Status 
+  isContractAgreed: { type: Boolean, required: true }, 
+  
+  
+  status: { 
+    type: String, 
+    enum: ['pending', 'approved', 'rejected'], 
+    default: 'pending' 
+  },
+  appliedAt: { type: Date, default: Date.now } 
+});
+
+module.exports = mongoose.model('EHostApplication', eHostApplicationSchema);
+
+
+
+
+
+const EHostApplication = require('../models/eHostApplication');
+const submitApplication = async (req, res) => {
+  try {
+    
+    const applicationData = req.body;
+
+    
+    const existingApplication = await EHostApplication.findOne({ email: applicationData.email });
+    if (existingApplication) {
+      return res.status(409).json({ message: "This email has already submitted an application. Please wait for the review." });
     }
+
+    
+    const newApplication = new EHostApplication(applicationData);
+    await newApplication.save();
+
+   
+    sendConfirmationEmail(newApplication.email, newApplication.name);
+
+  
+    res.status(201).json({ 
+      success: true, 
+      message: "Application submitted successfully! A confirmation email will be sent to your inbox within 2-3 business days.",
+      applicationId: newApplication._id
+    });
+
+  } catch (error) {
+    console.error("Application submission failed:", error);
+    res.status(500).json({ message: "Internal server error, please try again later" });
+  }
 };
 
-//2. Login & Security Logic
-// Implements credential verification, status routing, and a 3-failure lockout mechanism for 3 minutes.
-// controllers/authController.js - login method
-const login = async (req, res) => {
-    const { email, password } = req.body;
 
-    try {
-        const user = await User.findOne({ email });
-        if (!user) return res.status(404).json({ message: "User does not exist" });
-
-        // 1. Check if the account is locked.
-        if (user.lockoutUntil && user.lockoutUntil > Date.now()) {
-            return res.status(423).json({ message: "Your user account has been locked" });
-        }
-
-        // 2. Credential verification
-        const isMatch = (password === user.password); // In practice, bcrypt.compare should be used.
-
-        if (isMatch) {
-            // Match successful: Reset the number of attempts and clear the lock.
-            user.loginAttempts = 0;
-            user.lockoutUntil = null;
-            await user.save();
-
-            // Issuing access credentials (Token/Session)
-            return res.status(200).json({ message: "Login successful", token: "GENERATED_TOKEN" });
-        } else {
-            // 3. Match failure: Record the number of times and determine if a match is locked.
-            user.loginAttempts += 1;
-
-            if (user.loginAttempts >= 3) {
-                user.lockoutUntil = Date.now() + 3 * 60 * 1000; // Lock for 3 minutes
-                await user.save();
-                return res.status(423).json({ message: "Your user account has been locked" });
-            }
-
-            await user.save();
-            return res.status(401).json({ message: "Password is incorrect" });
-        }
-    } catch (error) {
-        return res.status(500).json({ message: "Server error" });
-    }
+const sendConfirmationEmail = (email, name) => {
+  console.log(`[Email Service] is sending a confirmation email to ${email}...`);
+  console.log(`Dear ${name}, we have received your eHost application. Our colleague will review it within 2-3 business days and contact you.`);
 };
 
-module.exports = { register, login };
+module.exports = { submitApplication };
