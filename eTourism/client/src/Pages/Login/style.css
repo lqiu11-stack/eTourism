@@ -20,9 +20,15 @@ input, button, textarea, select {
   min-height: 100vh;
 
   background-image: url("./loginback.png");
-  background-size: cover; 
+  background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
+
+  display: flex;
+  justify-content: flex-end;   
+  align-items: flex-start;     
+  padding-top: 10vh;          
+  padding-right: 8vw;    
 }
 
 
