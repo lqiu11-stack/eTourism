@@ -1,5 +1,5 @@
 import "./style.css";
-import backIcon from "/Users/angela/Desktop/software team/project/eTourism/client/src/Pages/icon/back.png";
+import backIcon from "../icon/back.png";
 import { useNavigate } from "react-router-dom";
 
 export const PasswordReset = () => {
