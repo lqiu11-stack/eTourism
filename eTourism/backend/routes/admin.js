@@ -5,6 +5,7 @@ const {
   deleteExperience,
   getBookings,
   getReviews,
+  createUser,
   getUsers,
   getUserById,
   updateUserStatus,
@@ -24,7 +25,8 @@ router.get('/bookings', requireAuth, getBookings);
 // GET /api/admin/reviews
 router.get('/reviews', requireAuth, getReviews);
 
-// --- User Management ---
+// POST /api/admin/users
+router.post('/users', requireAuth, createUser);
 
 // GET /api/admin/users?role=&status=
 router.get('/users', requireAuth, getUsers);

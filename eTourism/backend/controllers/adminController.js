@@ -16,8 +16,31 @@ const getReviews = async (req, res) => {
   // TODO
 };
 
+// POST /api/admin/users
+// Body: { email, password, role, first_name, last_name, date_of_birth, country, language }
+const createUser = async (req, res) => {
+  try {
+    const { email, password, role, first_name, last_name, date_of_birth, country, language } = req.body;
+    if (!email || !password || !role || !first_name || !last_name) {
+      return res.status(400).json({ message: 'email, password, role, first_name, last_name are required' });
+    }
+    if (!['visitor', 'ehost', 'admin'].includes(role)) {
+      return res.status(400).json({ message: 'Role must be visitor, ehost, or admin' });
+    }
+    const existing = await User.findByEmail(email);
+    if (existing) {
+      return res.status(409).json({ message: 'Email already in use' });
+    }
+    const bcrypt = require('bcrypt');
+    const password_hash = await bcrypt.hash(password, 10);
+    const user = await User.create({ email, password_hash, role, first_name, last_name, date_of_birth, country, language });
+    res.status(201).json({ message: 'User created successfully', user });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: String(err) });
+  }
+};
+
 // GET /api/admin/users
-// Query params: ?role=visitor|ehost|admin  &status=active|suspended
 const getUsers = async (req, res) => {
   try {
     const { role, status } = req.query;
@@ -40,7 +63,6 @@ const getUserById = async (req, res) => {
 };
 
 // PATCH /api/admin/users/:id/status
-// Body: { status: 'active' | 'suspended' }
 const updateUserStatus = async (req, res) => {
   try {
     const { status } = req.body;
@@ -56,7 +78,6 @@ const updateUserStatus = async (req, res) => {
 };
 
 // PATCH /api/admin/users/:id/role
-// Body: { role: 'visitor' | 'ehost' | 'admin' }
 const updateUserRole = async (req, res) => {
   try {
     const { role } = req.body;
@@ -87,6 +108,7 @@ module.exports = {
   deleteExperience,
   getBookings,
   getReviews,
+  createUser,
   getUsers,
   getUserById,
   updateUserStatus,
