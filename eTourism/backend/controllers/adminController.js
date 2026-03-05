@@ -74,9 +74,8 @@ const updateUserRole = async (req, res) => {
 // DELETE /api/admin/users/:id
 const deleteUser = async (req, res) => {
   try {
-    const user = await User.findById(req.params.id);
-    if (!user) return res.status(404).json({ message: 'User not found' });
-    await User.update(req.params.id, { status: 'deleted' });
+    const deleted = await User.delete(req.params.id);
+    if (!deleted) return res.status(404).json({ message: 'User not found' });
     res.json({ message: 'User deleted successfully' });
   } catch (err) {
     res.status(500).json({ message: 'Server error', error: String(err) });

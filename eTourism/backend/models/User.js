@@ -47,6 +47,14 @@ const User = {
     const { rows } = await pool.query(query, values);
     return rows;
   },
+
+  async delete(id) {
+    const { rowCount } = await pool.query(
+      'DELETE FROM users WHERE id = $1',
+      [id]
+    );
+    return rowCount > 0;
+  },
 };
 
 module.exports = User;
