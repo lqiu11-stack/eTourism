@@ -9,22 +9,12 @@ const {
   getBookings,
 } = require('../controllers/ehostController');
 
-// POST /api/ehost/experiences
+
 router.post('/experiences', requireAuth, createExperience);
-
-// GET /api/ehost/experiences
 router.get('/experiences', requireAuth, getExperiences);
-
-// GET /api/ehost/experiences/:id
 router.get('/experiences/:id', requireAuth, getExperienceById);
-
-// PUT /api/ehost/experiences/:id
 router.put('/experiences/:id', requireAuth, updateExperience);
-
-// DELETE /api/ehost/experiences/:id
 router.delete('/experiences/:id', requireAuth, deleteExperience);
-
-// GET /api/ehost/bookings
 router.get('/bookings', requireAuth, getBookings);
 
 module.exports = router;
@@ -35,5 +25,21 @@ const express = require('express');
 const { submitApplication } = require('../controllers/ehostController');
 const { validateApplication } = require('../middleware/validateApplication');
 router.post('/apply', validateApplication, submitApplication);
+
+module.exports = router;
+
+const express = require('express');
+
+
+// 3-5  ehost management experiences edit by Emily
+const express = require('express');
+const ehostController = require('../controllers/ehostController');
+const authMiddleware = require('../middleware/auth');
+
+
+router.get('/experiences', authMiddleware, ehostController.getMyExperiences);
+router.get('/experiences/:id', authMiddleware, ehostController.getExperienceById);
+router.put('/experiences/:id', authMiddleware, ehostController.updateExperience);
+router.delete('/experiences/:id', authMiddleware, ehostController.deactivateExperience);
 
 module.exports = router;

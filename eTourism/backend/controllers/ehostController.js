@@ -111,3 +111,134 @@ const sendConfirmationEmail = (email, name) => {
 };
 
 module.exports = { submitApplication };
+
+
+/*
+3-5
+manage experience by Emily
+*/
+
+const pool = require('../config/db');
+
+//page1 get experience list of current ehost
+exports.getMyExperiences = async (req, res) => {
+    try {
+        const ehostId = req.user.id; 
+        const { rows } = await pool.query(
+            `SELECT id, cover_image, location_name, price, status, rejection_reason 
+             FROM experiences 
+             WHERE ehost_id = $1 AND status != 'deleted'
+             ORDER BY created_at DESC`,
+            [ehostId]
+        );
+
+        res.status(200).json({
+            success: true,
+            data: rows 
+        });
+    } catch (error) {
+        console.error("Failed to retrieve experience list:", error);
+        res.status(500).json({ success: false, message: 'Server internal error' });
+    }
+};
+
+//page2 get experience details by id
+exports.getExperienceById = async (req, res) => {
+    try {
+        const experienceId = req.params.id;
+        const ehostId = req.user.id;
+
+        const { rows } = await pool.query(
+            `SELECT * FROM experiences WHERE id = $1 AND ehost_id = $2`,
+            [experienceId, ehostId]
+        );
+
+        const experience = rows[0]; 
+
+        if (!experience) {
+            return res.status(404).json({ success: false, message: 'Failed to find the experience or you have no permission to view it' });
+        }
+
+        res.status(200).json({
+            success: true,
+            data: experience
+        });
+    } catch (error) {
+        console.error("Failed to retrieve experience details", error);
+        res.status(500).json({ success: false, message: 'Server internal error' });
+    }
+};
+
+//page3 update experience by id
+exports.updateExperience = async (req, res) => {
+    try {
+        const experienceId = req.params.id;
+        const ehostId = req.user.id;
+        
+      
+        const { location_name, description, category, price } = req.body;
+
+       
+        const { rows: checkRows } = await pool.query(
+            `SELECT id FROM experiences WHERE id = $1 AND ehost_id = $2`,
+            [experienceId, ehostId]
+        );
+
+        if (checkRows.length === 0) {
+            return res.status(404).json({ success: false, message: 'Failed to find the experience or you have no permission to update it' });
+        }
+
+       
+        const { rows: updateRows } = await pool.query(
+            `UPDATE experiences 
+             SET location_name = COALESCE($1, location_name),
+                 description = COALESCE($2, description),
+                 category = COALESCE($3, category),
+                 price = COALESCE($4, price),
+                 status = 'pending', 
+                 rejection_reason = NULL
+             WHERE id = $5 AND ehost_id = $6
+             RETURNING *`,
+            [location_name, description, category, price, experienceId, ehostId]
+        );
+
+        res.status(200).json({
+            success: true,
+            message: 'Experience updated, please wait for platform re-review',
+            data: updateRows[0]
+        });
+    } catch (error) {
+        console.error("Failed to update experience:", error);
+        res.status(500).json({ success: false, message: 'Server internal error' });
+    }
+};
+
+//page4 deactivate experience by id (soft delete)
+exports.deactivateExperience = async (req, res) => {
+    try {
+        const experienceId = req.params.id;
+        const ehostId = req.user.id;
+
+       
+        const { rows } = await pool.query(
+            `UPDATE experiences 
+             SET status = 'deleted' 
+             WHERE id = $1 AND ehost_id = $2
+             RETURNING id`,
+            [experienceId, ehostId]
+        );
+
+        
+        if (rows.length === 0) {
+            return res.status(404).json({ success: false, message: 'Failed to find the experience or you have no permission to deactivate it' });
+        }
+
+        res.status(200).json({
+            success: true,
+            message: 'Experience deactivated successfully'
+        });
+    } catch (error) {
+        console.error("Failed to deactivate experience:", error);
+        res.status(500).json({ success: false, message: 'Server internal error' });
+    }
+};
