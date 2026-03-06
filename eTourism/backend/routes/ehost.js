@@ -33,7 +33,6 @@ router.get('/bookings', requireAuth, getBookings);
 //3-4 update ehost registionation and login by Emily
 const express = require('express');
 const { submitApplication } = require('../controllers/ehostController');
-const { validateApplication } = require('../middleware/validateApplication');
 
 router.post('/apply', validateApplication, submitApplication);
 module.exports = router;
