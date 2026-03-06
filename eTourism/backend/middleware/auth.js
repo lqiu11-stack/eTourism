@@ -15,7 +15,7 @@ function requireAuth(req, res, next) {
   }
 }
 
-module.exports = { requireAuth };
+
 
 /*3-4 edit ehost registionation and login by Emily 
 Middleware for validating eHost application form data */
@@ -48,4 +48,4 @@ const validateApplication = (req, res, next) => {
   next();
 };
 
-module.exports = { validateApplication };
+module.exports = { requireAuth, validateApplication };
