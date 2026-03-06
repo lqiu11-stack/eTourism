@@ -15,7 +15,7 @@ function requireAuth(req, res, next) {
   }
 }
 
-module.exports = { requireAuth };
+module.exports = { requireAuth, validateApplication };
 
 /*3-4 edit ehost registionation and login by Emily 
 Middleware for validating eHost application form data */
