@@ -1,15 +1,15 @@
 import { useState } from "react";
-import apple from "./apple.png";
-import facebook from "./facebook.png";
-import google from "./google.png";
+import apple from "../icon/apple.png";
+import facebook from "../icon/facebook.png";
+import google from "../icon/google.png";
 import "./style.css";
 
 // naviagtion for the password reset
 import { useNavigate } from "react-router-dom";
 
-
 import { auth, googleProvider } from "../../firebase";
 import { signInWithPopup } from "firebase/auth";
+
 
 
 export const LoginPage = () => {
@@ -49,6 +49,14 @@ export const LoginPage = () => {
   return (
     <div className="login-page">
       <div className="rectangle" />
+      <div className="top-links">
+          <button className="top-btn" type="submit" onClick={() => navigate("/Eregistrate1")}>
+            Join us to become an E-host
+          </button>
+          <button className="top-btn" type="submit">
+            Admin Login
+          </button>
+        </div>
       <form className="login-box" onSubmit={handleSubmit}>
         <h1 className="title">Login</h1>
         <p className="subtitle">Begin your journey with a single login</p>
