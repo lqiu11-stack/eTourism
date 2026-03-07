@@ -3,6 +3,7 @@ import arrowRight from "../icon/arrow-right.png";
 import backIcon from "../icon/back.png";
 import "./style.css";
 import { useNavigate } from "react-router-dom";
+import { StepProgress } from "../EhostRegistarte/Step.jsx";
 
 export const Eregistrate1 = () => {
   const navigate = useNavigate();
@@ -23,12 +24,7 @@ export const Eregistrate1 = () => {
         <form className="join-box">
           <h1 className="text-wrapper">Ready to become &nbsp;e-host?</h1>
 
-          <div className="group">
-            <div className="ellipse" />
-            <div className="ellipse" />
-            <div className="ellipse" />
-            <div className="ellipse" />
-          </div>
+          <StepProgress step={1} />
 
           <div className="text-wrapper-2">Personal detail</div>
 
@@ -44,7 +40,7 @@ export const Eregistrate1 = () => {
           <label className="text-wrapper-5">Please tell us your E-mail</label>
           <div className="email-wrapper">
             <input className="rectangle-4" type="email" placeholder="Enter email" />
-            <button type="submit" className="next-btn">
+            <button type="submit" className="next-btn" onClick={() => navigate("/Eregistrate2")}>
             <img src={arrowRight} alt="Back" className="next-icon" />
             </button>
           </div>

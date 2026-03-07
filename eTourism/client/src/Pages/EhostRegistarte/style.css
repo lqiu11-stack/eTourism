@@ -83,6 +83,21 @@
   color: white;
 }
 
+.rectangle-5{
+  height: clamp(40px, 3.5vw, 58px);
+  border-radius: 999px;
+  padding: 0 1.2rem;
+  font-size: clamp(16px, 1.1vw, 18px);
+
+  border: none;
+  outline: none;
+
+  background: rgba(255, 255, 255, 0.559);
+  color: white;
+  flex: 1;
+}
+
+
 .rectangle-4{
   height: clamp(40px, 3.5vw, 58px);
   border-radius: 999px;
@@ -178,4 +193,38 @@ input[type="date"]::-webkit-calendar-picker-indicator{
 .next-icon{
   height: clamp(60px, 4vw, 70px);
   width: fit-content; 
+}
+
+
+.p {
+  display: block;
+  max-width: 300px;
+  line-height: 1.5;
+}
+
+.checkbox-group{
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+}
+
+.checkbox-item{
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.checkbox-item input{
+  width: 20px;
+  height: 20px;
+}
+
+
+.suffix-text{
+  color: white;
+  font-size: 16px;
+  white-space: nowrap;
+  padding: 0rem 0rem 0rem 0.5rem;
+
 }
