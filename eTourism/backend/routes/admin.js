@@ -5,6 +5,12 @@ const {
   deleteExperience,
   getBookings,
   getReviews,
+  createUser,
+  getUsers,
+  getUserById,
+  updateUserStatus,
+  updateUserRole,
+  deleteUser,
 } = require('../controllers/adminController');
 
 // GET /api/admin/experiences
@@ -18,5 +24,23 @@ router.get('/bookings', requireAuth, getBookings);
 
 // GET /api/admin/reviews
 router.get('/reviews', requireAuth, getReviews);
+
+// POST /api/admin/users
+router.post('/users', requireAuth, createUser);
+
+// GET /api/admin/users?role=&status=
+router.get('/users', requireAuth, getUsers);
+
+// GET /api/admin/users/:id
+router.get('/users/:id', requireAuth, getUserById);
+
+// PATCH /api/admin/users/:id/status  — suspend or reactivate
+router.patch('/users/:id/status', requireAuth, updateUserStatus);
+
+// PATCH /api/admin/users/:id/role   — change role
+router.patch('/users/:id/role', requireAuth, updateUserRole);
+
+// DELETE /api/admin/users/:id
+router.delete('/users/:id', requireAuth, deleteUser);
 
 module.exports = router;
