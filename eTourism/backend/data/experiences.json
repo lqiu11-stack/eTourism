@@ -1,0 +1,26 @@
+[
+  {
+    "id": 1,
+    "title": "Royal Air Force Museum",
+    "description": "Explore the history of aviation and the Royal Air Force. Collections include aircraft, engines and memorabilia from the First World War to the present day.",
+    "location_name": "Royal Air Force Museum London, Grahame Park Way, London",
+    "latitude": 51.5896,
+    "longitude": -0.2386
+  },
+  {
+    "id": 2,
+    "title": "IWM Duxford",
+    "description": "Imperial War Museum Duxford – Europe's premier aviation museum. Historic aircraft, wartime hangars and live runway events near Cambridge.",
+    "location_name": "IWM Duxford, Cambridgeshire",
+    "latitude": 52.0908,
+    "longitude": 0.1317
+  },
+  {
+    "id": 3,
+    "title": "Queen's Road",
+    "description": "Queen's Road, Bristol – historic shopping and cultural strip linking the city centre with Clifton and the Suspension Bridge.",
+    "location_name": "Queen's Road, Bristol",
+    "latitude": 51.4545,
+    "longitude": -2.6242
+  }
+]
