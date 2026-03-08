@@ -26,8 +26,6 @@ export const Eregistrate2 = () => {
 
           <StepProgress step={2} />
 
-          <div className="text-wrapper-2">Personal detail</div>
-
           <label className="p"> Have you ever have any tourism experience?*</label>
           <div className="checkbox-group">
 
@@ -63,7 +61,7 @@ export const Eregistrate2 = () => {
           <label className="text-wrapper-4">Tell us your past journey</label>
           <div className="email-wrapper">
              <input className="rectangle-4" type="text" placeholder="Tell us more" />
-            <button type="submit" className="next-btn">
+            <button type="submit" className="next-btn" onClick={() => navigate("/Eregistrate3")}>
             <img src={arrowRight} alt="Back" className="next-icon" />
             </button>
           </div>

@@ -26,8 +26,6 @@ export const Eregistrate1 = () => {
 
           <StepProgress step={1} />
 
-          <div className="text-wrapper-2">Personal detail</div>
-
           <label className="p">Please tell us your name*</label>
           <input className="div" type="text" placeholder="Enter your name" />
 

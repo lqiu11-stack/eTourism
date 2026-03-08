@@ -4,8 +4,8 @@ export const StepProgress = ({ step }) => {
   const steps = [
     "Personal detail",
     "Experience",
-    "Location",
-    "Finish"
+    "Tell us more",
+    "Contract"
   ];
 
   return (
