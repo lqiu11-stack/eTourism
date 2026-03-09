@@ -20,6 +20,9 @@ export const Eregistrate3 = () => {
   ];
 
   const [selectedTags, setSelectedTags] = useState([]);
+  const [description, setDescription] = useState("");
+  const [videoLink, setVideoLink] = useState("");
+  const [error, setError] = useState("");
 
   const toggleTag = (tag) => {
     if (selectedTags.includes(tag)) {
@@ -27,6 +30,20 @@ export const Eregistrate3 = () => {
     } else {
       setSelectedTags([...selectedTags, tag]);
     }
+  };
+
+  const handleNext = (e) => {
+    e.preventDefault();
+    if (!description || !videoLink) {
+      setError("Please fill in all required fields.");
+      return;
+    }
+    sessionStorage.setItem("ehost_step3", JSON.stringify({
+      preferredSpotTypes: selectedTags,
+      description,
+      videoLink,
+    }));
+    navigate("/Eregistrate4");
   };
 
   return (
@@ -41,7 +58,7 @@ export const Eregistrate3 = () => {
       </button>
 
       <div className="join-e-host-step">
-        <form className="join-box">
+        <form className="join-box" onSubmit={handleNext}>
           <h1 className="text-wrapper">Ready to become &nbsp;e-host?</h1>
 
           <StepProgress step={3} />
@@ -68,17 +85,22 @@ export const Eregistrate3 = () => {
           </label>
           <textarea
             className="rectangle-6"
-            />
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+          />
 
           <label className="text-wrapper-4">Provide us a video about you and your past journey*</label>
+          {error && <div className="error-text">{error}</div>}
           <div className="email-wrapper">
             <input
               className="rectangle-4"
-              type="link"
+              type="url"
               placeholder="Link only"
+              value={videoLink}
+              onChange={(e) => setVideoLink(e.target.value)}
             />
             <button type="submit" className="next-btn">
-              <img src={arrowRight} alt="Next" className="next-icon" onClick={() => navigate("/Eregistrate4")}/>
+              <img src={arrowRight} alt="Next" className="next-icon" />
             </button>
           </div>
         </form>
