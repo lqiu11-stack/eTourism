@@ -29,12 +29,35 @@ const Booking = {
 
   async reschedule({ booking_id, visitor_id, new_experience_id, new_status }) {
     const { rows } = await pool.query(
-     `UPDATE bookings
-     SET experience_id = $3, status = $4
-     WHERE id = $1 AND visitor_id = $2
-     RETURNING *`,
-    [booking_id, visitor_id, new_experience_id, new_status]
-   );
+      `UPDATE bookings
+       SET experience_id = $3, status = $4
+       WHERE id = $1 AND visitor_id = $2
+       RETURNING *`,
+      [booking_id, visitor_id, new_experience_id, new_status]
+    );
+    return rows[0] || null;
+  },
+
+  async getRefundContext(booking_id, visitor_id) {
+    const { rows } = await pool.query(
+      `SELECT
+         b.id AS booking_id,
+         b.visitor_id,
+         b.experience_id,
+         b.amount_paid,
+         b.status AS booking_status,
+         e.date_time,
+         p.id AS payment_id,
+         p.method AS payment_method,
+         p.status AS payment_status
+       FROM bookings b
+       JOIN experiences e ON b.experience_id = e.id
+       LEFT JOIN payments p ON p.booking_id = b.id
+       WHERE b.id = $1 AND b.visitor_id = $2
+       ORDER BY p.created_at DESC
+       LIMIT 1`,
+      [booking_id, visitor_id]
+    );
     return rows[0] || null;
   },
 
@@ -63,4 +86,4 @@ const Booking = {
   },
 };
 
-module.exports = Booking;
+module.exports = Booking; 

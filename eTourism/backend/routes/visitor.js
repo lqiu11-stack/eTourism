@@ -9,6 +9,7 @@ const {
   getBookingById,
   createReview,
   rescheduleBooking,
+  refundBooking,
 } = require('../controllers/visitorController');
 
 // GET /api/visitor/me
@@ -28,8 +29,12 @@ router.get('/bookings', requireAuth, getBookings);
 
 // GET /api/visitor/bookings/:id
 router.get('/bookings/:id', requireAuth, getBookingById);
+
 // PATCH /api/visitor/bookings/:id/reschedule
 router.patch('/bookings/:id/reschedule', requireAuth, rescheduleBooking);
+
+// POST /api/visitor/bookings/:id/refund
+router.post('/bookings/:id/refund', requireAuth, refundBooking);
 
 // POST /api/visitor/reviews
 router.post('/reviews', requireAuth, createReview);
