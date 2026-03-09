@@ -12,18 +12,21 @@ const Experience = {
   async create({
     ehost_id, title, description, category, country, location_name,
     latitude, longitude, date_time, duration_minutes, max_visitors,
-    price, cover_image, gender_preference, allows_piggyback,
+    price, price_discounted, cover_image, gender_preference, allows_piggyback,
+    sample_video_url,
   }) {
     const { rows } = await pool.query(
       `INSERT INTO experiences
          (ehost_id, title, description, category, country, location_name,
           latitude, longitude, date_time, duration_minutes, max_visitors,
-          price, cover_image, gender_preference, allows_piggyback)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)
+          price, price_discounted, cover_image, gender_preference, allows_piggyback,
+          sample_video_url)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17)
        RETURNING *`,
       [ehost_id, title, description, category, country, location_name,
        latitude, longitude, date_time, duration_minutes, max_visitors,
-       price, cover_image, gender_preference, allows_piggyback]
+       price, price_discounted, cover_image, gender_preference, allows_piggyback,
+       sample_video_url]
     );
     return rows[0];
   },
