@@ -65,7 +65,7 @@ const createBooking = async (req, res) => {
       visitor_id,
       experience_id,
       amount_paid: totalAmount,      
-      booking_type: 'mixed', 
+      booking_type: 'online', 
       meeting_link,
       qty_normal,            
       qty_discounted,        
