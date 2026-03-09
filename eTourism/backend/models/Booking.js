@@ -24,7 +24,7 @@ const Booking = {
     );
     return rows[0];
   },
-
+  
   async updateStatus(id, status) {
     const { rows } = await pool.query(
       'UPDATE bookings SET status = $2 WHERE id = $1 RETURNING *',
