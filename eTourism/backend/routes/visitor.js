@@ -10,6 +10,9 @@ const {
   createReview,
   rescheduleBooking,
   createPaymentSession,
+  createPayPalOrder,
+  capturePayPalOrder,
+  captureStripePayment 
 } = require('../controllers/visitorController');
 
 router.get('/me', requireAuth, getMe);
@@ -29,5 +32,11 @@ router.patch('/bookings/:id/reschedule', requireAuth, rescheduleBooking);
 router.post('/reviews', requireAuth, createReview);
 
 router.post('/payments/create-session', requireAuth, createPaymentSession);
+
+router.post('/payments/stripe/capture', requireAuth, captureStripePayment);
+
+router.post('/payments/paypal/create-order', requireAuth, createPayPalOrder);
+
+router.post('/payments/paypal/capture-order', requireAuth, capturePayPalOrder);
 
 module.exports = router;
