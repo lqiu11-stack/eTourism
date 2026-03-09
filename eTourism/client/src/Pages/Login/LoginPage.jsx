@@ -42,7 +42,7 @@ export const LoginPage = () => {
       setError("Please enter username and password.");
       return;
     }
-    setError("sdsdsds");
+    setError("");
     console.log("Normal Login:", { email, password });
     try {
       const { data } = await axios.post(`${API_BASE}/auth/login`, { email, password });
@@ -50,6 +50,7 @@ export const LoginPage = () => {
       localStorage.setItem("user", JSON.stringify(data.user));
       navigate("/");
     } catch (err) {
+      console.error("Login failed:", err);
       const msg = err.response?.data?.message || "Login failed. Please try again.";
       setError(msg);
     }
