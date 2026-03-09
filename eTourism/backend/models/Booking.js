@@ -9,34 +9,18 @@ const Booking = {
     return rows[0] || null;
   },
 
-  async create({ 
-    visitor_id, 
-    experience_id, 
-    amount_paid, 
-    booking_type, 
-    meeting_link, 
-    qty_normal, 
-    qty_discounted, 
-    contact_name, 
-    contact_email 
+  async create({
+    visitor_id, experience_id, amount_paid, booking_type, meeting_link,
+    qty_normal = 1, qty_discounted = 0, contact_name, contact_email,
   }) {
     const { rows } = await pool.query(
-      `INSERT INTO bookings 
-       (visitor_id, experience_id, amount_paid, booking_type, meeting_link, qty_normal, qty_discounted, contact_name, contact_email, status)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+      `INSERT INTO bookings
+         (visitor_id, experience_id, amount_paid, booking_type, meeting_link,
+          qty_normal, qty_discounted, contact_name, contact_email)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
        RETURNING *`,
-      [
-        visitor_id, 
-        experience_id, 
-        amount_paid, 
-        booking_type || 'online', 
-        meeting_link || '', 
-        qty_normal || 0, 
-        qty_discounted || 0, 
-        contact_name || '', 
-        contact_email || '',
-        'pending'
-      ]
+      [visitor_id, experience_id, amount_paid, booking_type, meeting_link,
+       qty_normal, qty_discounted, contact_name, contact_email]
     );
     return rows[0];
   },
