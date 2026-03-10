@@ -4,9 +4,6 @@ const { describe, it, beforeEach, mock } = require('node:test');
 const assert = require('node:assert/strict');
 const path = require('node:path');
 
-// ── Inject all mocks into require.cache BEFORE any app module is loaded ──────
-
-// 1. Fake DB pool (prevents pg from connecting to real PostgreSQL)
 const fakePool = { query: mock.fn(), end: mock.fn() };
 require.cache[path.resolve(__dirname, '../config/db.js')] = {
   id: path.resolve(__dirname, '../config/db.js'),
@@ -17,7 +14,6 @@ require.cache[path.resolve(__dirname, '../config/db.js')] = {
   paths: [],
 };
 
-// 2. Fake User model
 const mockUser = { findByEmail: mock.fn(), create: mock.fn() };
 require.cache[path.resolve(__dirname, '../models/User.js')] = {
   id: path.resolve(__dirname, '../models/User.js'),
@@ -28,7 +24,6 @@ require.cache[path.resolve(__dirname, '../models/User.js')] = {
   paths: [],
 };
 
-// 3. Fake bcryptjs
 const fakeBcrypt = { hash: mock.fn(), compare: mock.fn() };
 require.cache[require.resolve('bcryptjs')] = {
   id: require.resolve('bcryptjs'),
@@ -39,7 +34,6 @@ require.cache[require.resolve('bcryptjs')] = {
   paths: [],
 };
 
-// 4. Fake jsonwebtoken
 const fakeJwt = { sign: mock.fn(() => 'mock_token'), verify: mock.fn() };
 require.cache[require.resolve('jsonwebtoken')] = {
   id: require.resolve('jsonwebtoken'),
@@ -50,10 +44,8 @@ require.cache[require.resolve('jsonwebtoken')] = {
   paths: [],
 };
 
-// ── Now safe to load the controller ──────────────────────────────────────────
 const { register, login } = require('../controllers/authController');
 
-// ── Mock req/res helpers ──────────────────────────────────────────────────────
 function makeRes() {
   const res = {};
   res.status = mock.fn(() => res);
@@ -72,8 +64,6 @@ function resetMocks() {
   fakeBcrypt.compare.mock.resetCalls();
   fakeJwt.sign.mock.resetCalls();
 }
-
-// ── POST /api/auth/register ───────────────────────────────────────────────────
 
 describe('register()', () => {
   beforeEach(resetMocks);
