@@ -4,28 +4,47 @@ import backIcon from "../icon/back.png";
 import "./style.css";
 import { useNavigate } from "react-router-dom";
 import { StepProgress } from "./Step.jsx";
+import axios from "axios";
+
+const API_BASE = import.meta.env.VITE_API_BASE;
 
 export const Eregistrate4 = () => {
   const navigate = useNavigate();
+  const [agreed, setAgreed] = useState(false);
+  const [error, setError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
-  const options = [
-    "Cultural Tourism",
-    "Historical Tourism",
-    "Art Tourism",
-    "Eco Tourism",
-    "Luxury Tourism",
-    "Culinary Tourism",
-    "Wellness Tourism",
-    "Religious Tourism"
-  ];
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!agreed) {
+      setError("You must agree to the Privacy and Data Use Agreement.");
+      return;
+    }
 
-  const [selectedTags, setSelectedTags] = useState([]);
+    const step1 = JSON.parse(sessionStorage.getItem("ehost_step1") || "{}");
+    const step2 = JSON.parse(sessionStorage.getItem("ehost_step2") || "{}");
+    const step3 = JSON.parse(sessionStorage.getItem("ehost_step3") || "{}");
 
-  const toggleTag = (tag) => {
-    if (selectedTags.includes(tag)) {
-      setSelectedTags(selectedTags.filter((item) => item !== tag));
-    } else {
-      setSelectedTags([...selectedTags, tag]);
+    const payload = {
+      ...step1,
+      ...step2,
+      ...step3,
+      isContractAgreed: true,
+    };
+
+    setSubmitting(true);
+    setError("");
+    try {
+      await axios.post(`${API_BASE}/ehost/apply`, payload);
+      sessionStorage.removeItem("ehost_step1");
+      sessionStorage.removeItem("ehost_step2");
+      sessionStorage.removeItem("ehost_step3");
+      navigate("/");
+    } catch (err) {
+      const msg = err.response?.data?.message || "Submission failed. Please try again.";
+      setError(msg);
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -41,13 +60,13 @@ export const Eregistrate4 = () => {
       </button>
 
       <div className="join-e-host-step">
-        <form className="join-box">
+        <form className="join-box" onSubmit={handleSubmit}>
           <h1 className="text-wrapper">Ready to become &nbsp;e-host?</h1>
 
           <StepProgress step={4} />
 
           <label className="text-wrapper-3">
-            Privacy Contract 
+            Privacy Contract
           </label>
           <div className="contract-box">
             <p>
@@ -90,18 +109,22 @@ export const Eregistrate4 = () => {
               data, please contact the platform support team.
             </p>
           </div>
+
           <label className="checkbox-item">
-                <input
-                type="radio"
-                name="experience"
-                value="yes"
-                />
-                I have read and agree to the Privacy and Data Use Agreement.
-            </label>
+            <input
+              type="checkbox"
+              checked={agreed}
+              onChange={(e) => setAgreed(e.target.checked)}
+            />
+            I have read and agree to the Privacy and Data Use Agreement.
+          </label>
+
+          {error && <div className="error-text">{error}</div>}
+
           <div className="email-wrapper">
-            <text className= "space">After submit the application form, your information will be checked by our admin, the confirm email will be sent into your email, in 2-3 working day.</text>
-            <button type="submit" className="next-btn">
-              <img src={arrowRight} alt="Next" className="next-icon" onClick={() => navigate("/")}/>
+            <span className="space">After submitting the application form, your information will be checked by our admin. A confirmation email will be sent to your email within 2-3 working days.</span>
+            <button type="submit" className="next-btn" disabled={submitting}>
+              <img src={arrowRight} alt="Submit" className="next-icon" />
             </button>
           </div>
         </form>
