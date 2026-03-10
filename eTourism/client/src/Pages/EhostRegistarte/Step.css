@@ -1,0 +1,49 @@
+.progress-container{
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+  margin-bottom: 1rem;
+}
+
+.progress-step{
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+}
+
+.progress-dot{
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: white;
+}
+
+.progress-step.active .progress-dot{
+  background: #7a0000;
+}
+
+.progress-step span{
+  font-size: 14px;
+  text-align: center;
+}
+
+.progress-container{
+  position: relative;
+}
+
+.progress-container::before{
+  content:"";
+  position:absolute;
+  top:7px;
+  left:0;
+  right:0;
+  height:2px;
+  background:rgba(255,255,255,0.4);
+  z-index:-1;
+}
+
+.space{
+    padding: 1rem 0rem 0rem 0rem;
+}

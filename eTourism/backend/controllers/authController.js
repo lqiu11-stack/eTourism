@@ -2,79 +2,117 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 
-// POST /api/auth/register  (visitor only)
-// Body: { email, password, first_name, last_name, date_of_birth, country, language }
 const register = async (req, res) => {
   try {
-    const { email, password, first_name, last_name, date_of_birth, country, language } = req.body;
-
-    if (!email || !password || !first_name || !last_name) {
-      return res.status(400).json({ message: 'email, password, first_name, last_name are required' });
+    if (!process.env.DATABASE_URL) {
+      return res.status(503).json({ error: 'DATABASE_URL is not configured' });
     }
-
+    if (!process.env.JWT_SECRET) {
+      return res.status(503).json({ error: 'JWT_SECRET is not configured' });
+    }
+    const { email, password, name, date_of_birth } = req.body;
+    if (!email || !password) {
+      return res.status(400).json({ error: 'Email and password are required' });
+    }
+    if (!name || String(name).trim() === '') {
+      return res.status(400).json({ error: 'Account name is required' });
+    }
+    if (!date_of_birth) {
+      return res.status(400).json({ error: 'Date of birth is required' });
+    }
+    const role = 'visitor';
     const existing = await User.findByEmail(email);
     if (existing) {
-      return res.status(409).json({ message: 'Email already in use' });
+      return res.status(409).json({ error: 'Email already registered' });
     }
-
     const password_hash = await bcrypt.hash(password, 10);
+    const first_name = String(name).trim();
+    const last_name = '';
     const user = await User.create({
       email,
       password_hash,
-      role: 'visitor',
+      role,
       first_name,
       last_name,
       date_of_birth,
-      country,
-      language,
+      country: null,
+      language: null,
     });
-
-    const token = jwt.sign({ userId: user.id }, process.env.JWT_SECRET);
-    res.status(201).json({ message: 'Registered successfully', token, user });
+    const token = jwt.sign(
+      { userId: user.id, role: user.role },
+      process.env.JWT_SECRET,
+      { expiresIn: '7d' }
+    );
+    res.status(201).json({ token, user });
   } catch (err) {
-    res.status(500).json({ message: 'Server error', error: String(err) });
+    console.error('[register]', err);
+    const message = err.message || (err.detail ? `Database: ${err.detail}` : 'Registration failed');
+    res.status(500).json({ error: message });
   }
 };
 
-// POST /api/auth/login  (all roles)
-// Body: { email, password }
 const login = async (req, res) => {
   try {
-    const { email, password } = req.body;
-
-    if (!email || !password) {
-      return res.status(400).json({ message: 'Email and password are required' });
+    if (!process.env.DATABASE_URL) {
+      return res.status(503).json({ error: 'DATABASE_URL is not configured' });
     }
-
+    if (!process.env.JWT_SECRET) {
+      return res.status(503).json({ error: 'JWT_SECRET is not configured' });
+    }
+    const { email, password } = req.body;
+    if (!email || !password) {
+      return res.status(400).json({ error: 'Email and password are required' });
+    }
     const user = await User.findByEmail(email);
     if (!user) {
-      return res.status(401).json({ message: 'Invalid email or password' });
+      return res.status(401).json({ error: 'Invalid email or password' });
     }
-
-    const match = await bcrypt.compare(password, user.password_hash);
-    if (!match) {
-      return res.status(401).json({ message: 'Invalid email or password' });
+    const valid = await bcrypt.compare(password, user.password_hash);
+    if (!valid) {
+      return res.status(401).json({ error: 'Invalid email or password' });
     }
-
-    if (user.status === 'suspended') {
-      return res.status(403).json({ message: 'Your account has been suspended' });
+    if (user.role === 'ehost') {
+      return res.status(403).json({ error: 'Ehost login is disabled' });
     }
-
-    const token = jwt.sign({ userId: user.id }, process.env.JWT_SECRET);
-    res.json({
-      message: 'Login successful',
-      token,
-      user: {
-        id: user.id,
-        email: user.email,
-        role: user.role,
-        first_name: user.first_name,
-        last_name: user.last_name,
-      }
-    });
+    const token = jwt.sign(
+      { userId: user.id, role: user.role },
+      process.env.JWT_SECRET,
+      { expiresIn: '7d' }
+    );
+    const { password_hash, ...userInfo } = user;
+    res.json({ token, user: userInfo });
   } catch (err) {
-    res.status(500).json({ message: 'Server error', error: String(err) });
+    console.error('[login]', err);
+    const message = err.message || 'Login failed';
+    res.status(500).json({ error: message });
   }
 };
 
-module.exports = { register, login };
+const resetPassword = async (req, res) => {
+  try {
+    if (!process.env.DATABASE_URL) {
+      return res.status(503).json({ error: 'DATABASE_URL is not configured' });
+    }
+    const { email, newPassword, confirmPassword } = req.body;
+    if (!email || !newPassword || !confirmPassword) {
+      return res.status(400).json({ error: 'Email, newPassword and confirmPassword are required' });
+    }
+    if (newPassword !== confirmPassword) {
+      return res.status(400).json({ error: 'New password and confirm password do not match' });
+    }
+    const user = await User.findByEmail(email);
+    if (!user) {
+      return res.status(404).json({ error: 'Email not found' });
+    }
+    const password_hash = await bcrypt.hash(newPassword, 10);
+    await User.update(user.id, { password_hash });
+    res.json({ ok: true });
+  } catch (err) {
+    console.error('[resetPassword]', err);
+    const message = err.message || 'Password reset failed';
+    res.status(500).json({ error: message });
+  }
+};
+
+module.exports = { register, login, resetPassword };
+
