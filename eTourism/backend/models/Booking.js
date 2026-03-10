@@ -9,16 +9,22 @@ const Booking = {
     return rows[0] || null;
   },
 
-  async create({ visitor_id, experience_id, amount_paid, booking_type, meeting_link }) {
+  async create({
+    visitor_id, experience_id, amount_paid, booking_type, meeting_link,
+    qty_normal = 1, qty_discounted = 0, contact_name, contact_email,
+  }) {
     const { rows } = await pool.query(
-      `INSERT INTO bookings (visitor_id, experience_id, amount_paid, booking_type, meeting_link)
-       VALUES ($1, $2, $3, $4, $5)
+      `INSERT INTO bookings
+         (visitor_id, experience_id, amount_paid, booking_type, meeting_link,
+          qty_normal, qty_discounted, contact_name, contact_email)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
        RETURNING *`,
-      [visitor_id, experience_id, amount_paid, booking_type, meeting_link]
+      [visitor_id, experience_id, amount_paid, booking_type, meeting_link,
+       qty_normal, qty_discounted, contact_name, contact_email]
     );
     return rows[0];
   },
-
+  
   async updateStatus(id, status) {
     const { rows } = await pool.query(
       'UPDATE bookings SET status = $2 WHERE id = $1 RETURNING *',
@@ -27,7 +33,7 @@ const Booking = {
     return rows[0] || null;
   },
 
-  async reschedule({ booking_id, visitor_id, new_experience_id, new_status }) {
+  async reschedule({ booking_id, visitor_id, new_experience_id, new_status, reschedule_date }) {
     const { rows } = await pool.query(
       `UPDATE bookings
        SET experience_id = $3, status = $4
