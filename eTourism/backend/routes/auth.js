@@ -7,7 +7,7 @@ router.post('/register', register);
 // POST /api/auth/login
 router.post('/login', login);
 
-// POST /api/auth/reset-password
+// POST /api/auth/reset-password (visitor only)
 router.post('/reset-password', resetPassword);
 
 module.exports = router;
