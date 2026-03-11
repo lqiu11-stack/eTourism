@@ -3,15 +3,12 @@ import apple from "../icon/apple.png";
 import facebook from "../icon/facebook.png";
 import google from "../icon/google.png";
 import "./style.css";
-import axios from "axios";
 // naviagtion for the password reset
 import { useNavigate } from "react-router-dom";
 
 import { auth, googleProvider } from "../../firebase";
 import { signInWithPopup } from "firebase/auth";
 import { apiClient } from "../../api/apiClient";
-
-const API_BASE = import.meta.env.VITE_API_BASE;
 
 export const LoginPage = () => {
   const [email, setUsername] = useState("");
