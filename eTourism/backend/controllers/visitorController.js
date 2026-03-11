@@ -4,6 +4,7 @@ const Booking = require('../models/Booking');
 const Experience = require('../models/Experience');
 const Payment = require('../models/Payment');
 const Refund = require('../models/Refund');
+const ExperienceMeetingLink = require('../models/ExperienceMeetingLink');
 
 const getPayPalClient = () => {
 
@@ -109,6 +110,38 @@ const getBookingById = async (req, res) => {
     }
 
     return res.status(200).json(booking);
+  } catch (err) {
+    return res.status(500).json({ message: 'Server error', error: String(err) });
+  }
+};
+
+const getBookingMeetingLink = async (req, res) => {
+  try {
+    const bookingId = req.params.id;
+    const booking = await Booking.findById(bookingId);
+
+    if (!booking) {
+      return res.status(404).json({ message: 'Booking not found' });
+    }
+
+    if (booking.visitor_id !== req.userId) {
+      return res.status(403).json({ message: 'Forbidden' });
+    }
+
+    if (booking.status !== 'confirmed') {
+      return res.status(403).json({ message: 'Meeting link is only available for successfully booked experiences' });
+    }
+
+    const config = await ExperienceMeetingLink.findByExperienceId(booking.experience_id);
+    if (!config) {
+      return res.status(404).json({ message: 'Meeting link is not configured yet' });
+    }
+
+    return res.status(200).json({
+      platform: config.platform,
+      meeting_url: config.meeting_url,
+      meeting_password: config.meeting_password,
+    });
   } catch (err) {
     return res.status(500).json({ message: 'Server error', error: String(err) });
   }
@@ -407,6 +440,7 @@ module.exports = {
   createBooking,
   getBookings,
   getBookingById,
+  getBookingMeetingLink,
   createReview,
   rescheduleBooking,
   createPaymentSession,

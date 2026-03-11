@@ -9,6 +9,7 @@ import { useNavigate } from "react-router-dom";
 
 import { auth, googleProvider } from "../../firebase";
 import { signInWithPopup } from "firebase/auth";
+import { apiClient } from "../../api/apiClient";
 
 const API_BASE = import.meta.env.VITE_API_BASE;
 
@@ -43,16 +44,26 @@ export const LoginPage = () => {
       return;
     }
     setError("");
-    console.log("Normal Login:", { email, password });
     try {
-      const { data } = await axios.post(`${API_BASE}/auth/login`, { email, password });
-      localStorage.setItem("token", data.token);
-      localStorage.setItem("user", JSON.stringify(data.user));
-      navigate("/");
+      const res = await apiClient.post("/auth/login", {
+        email,
+        password,
+      });
+      const token = res.data?.token;
+      const user = res.data?.user;
+      if (!token || !user) {
+        setError("Login failed.");
+        return;
+      }
+      localStorage.setItem("authToken", token);
+      localStorage.setItem("authUser", JSON.stringify(user));
+      if (user.role === "ehost") {
+        navigate("/ehost/meeting-links");
+        return;
+      }
+      navigate("/visitor/bookings");
     } catch (err) {
-      console.error("Login failed:", err);
-      const msg = err.response?.data?.message || "Login failed. Please try again.";
-      setError(msg);
+      setError(err?.response?.data?.error || "Login failed.");
     }
   };
 
@@ -72,7 +83,7 @@ export const LoginPage = () => {
         <p className="subtitle">Begin your journey with a single login</p>
         <input
           type="email"
-          placeholder="Username"
+          placeholder="Email"
           className="input-field"
           value={email}
           onChange={(e) => setUsername(e.target.value)}

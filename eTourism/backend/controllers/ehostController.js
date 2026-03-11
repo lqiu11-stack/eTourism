@@ -1,4 +1,5 @@
 const pool = require('../config/db');
+const ExperienceMeetingLink = require('../models/ExperienceMeetingLink');
 
 
 
@@ -114,6 +115,74 @@ const getBookings = async (req, res) => {
   res.status(200).json({ message: "Bookings API Placeholder" });
 };
 
+const getExperienceMeetingLink = async (req, res) => {
+  try {
+    const experienceId = req.params.id;
+    const ehostId = req.user ? req.user.id : req.userId;
+
+    const { rows } = await pool.query(
+      `SELECT id, date_time
+       FROM experiences
+       WHERE id = $1 AND ehost_id = $2`,
+      [experienceId, ehostId]
+    );
+
+    const experience = rows[0];
+    if (!experience) {
+      return res.status(404).json({ success: false, message: 'This experience was not found or you do not have permission to view it.' });
+    }
+
+    const config = await ExperienceMeetingLink.findByExperienceId(experience.id);
+    return res.status(200).json({ success: true, data: config });
+  } catch (error) {
+    console.error('Failed to retrieve meeting link config:', error);
+    res.status(500).json({ success: false, message: 'Server internal error' });
+  }
+};
+
+const upsertExperienceMeetingLink = async (req, res) => {
+  try {
+    const experienceId = req.params.id;
+    const ehostId = req.user ? req.user.id : req.userId;
+    const { platform, meeting_url, meeting_password } = req.body || {};
+
+    if (!platform || String(platform).trim() === '') {
+      return res.status(400).json({ success: false, message: 'platform is required' });
+    }
+    if (!meeting_url || String(meeting_url).trim() === '') {
+      return res.status(400).json({ success: false, message: 'meeting_url is required' });
+    }
+
+    const { rows } = await pool.query(
+      `SELECT id, date_time
+       FROM experiences
+       WHERE id = $1 AND ehost_id = $2`,
+      [experienceId, ehostId]
+    );
+
+    const experience = rows[0];
+    if (!experience) {
+      return res.status(404).json({ success: false, message: 'This experience was not found or you do not have permission to modify it.' });
+    }
+
+    if (experience.date_time && new Date(experience.date_time) <= new Date()) {
+      return res.status(400).json({ success: false, message: 'Meeting link can only be configured for upcoming experiences.' });
+    }
+
+    const saved = await ExperienceMeetingLink.upsertByExperienceId({
+      experience_id: experience.id,
+      platform: String(platform).trim(),
+      meeting_url: String(meeting_url).trim(),
+      meeting_password: meeting_password == null ? null : String(meeting_password),
+    });
+
+    return res.status(200).json({ success: true, data: saved });
+  } catch (error) {
+    console.error('Failed to save meeting link config:', error);
+    res.status(500).json({ success: false, message: 'Server internal error' });
+  }
+};
+
 
 //ehost-01: eHost Application Submission API 
 
@@ -187,5 +256,7 @@ module.exports = {
   updateExperience, 
   deleteExperience, 
   getBookings,
+  getExperienceMeetingLink,
+  upsertExperienceMeetingLink,
   submitApplication 
 };

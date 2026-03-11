@@ -1,7 +1,7 @@
-import { useState } from "react";
 import arrowRight from "../icon/arrow-right.png";
 import backIcon from "../icon/back.png";
 import "./style.css";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { StepProgress } from "./Step.jsx";
 import axios from "axios";
@@ -47,7 +47,6 @@ export const Eregistrate4 = () => {
       setSubmitting(false);
     }
   };
-
   return (
     <div className="join-e-host-page">
       <button
