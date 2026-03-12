@@ -4,6 +4,38 @@ const pool = require('../config/db');
 
 const createExperience = async (req, res) => {
   // TODO: Then, the new experience of EH-03 was released.
+  //3-12 update by Emily
+  const ehostId = req.user ? req.user.id : req.userId;
+  const { 
+        // Location 
+        location_name, 
+        country, 
+        latitude, 
+        longitude,
+        // Details 
+        category, 
+        description, 
+        price, 
+        duration_minutes,
+        max_visitors,
+        cover_image 
+    } = req.body;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
   res.status(200).json({ message: "Create API Placeholder" });
 };
 
