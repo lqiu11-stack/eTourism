@@ -21,6 +21,14 @@ const createExperience = async (req, res) => {
         cover_image 
     } = req.body;
 
+    // 3-13 update by Emily 
+    if (!location_name || !country || !price || !description) {
+        return res.status(400).json({ 
+            success: false, 
+            message: 'Required fields are missing: Location name, country, price, and description cannot be empty.' 
+        });
+    }
+
 
 
 
