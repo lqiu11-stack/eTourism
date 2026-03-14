@@ -48,7 +48,7 @@ export const LoginPage = () => {
       const { data } = await axios.post(`${API_BASE}/auth/login`, { email, password });
       localStorage.setItem("token", data.token);
       localStorage.setItem("user", JSON.stringify(data.user));
-      navigate("/");
+      navigate("/Mainpage");
     } catch (err) {
       console.error("Login failed:", err);
       const msg = err.response?.data?.message || "Login failed. Please try again.";
@@ -86,7 +86,7 @@ export const LoginPage = () => {
         />
         {error && <div className="error-text">{error}</div>}
 
-        <button className="login-btn" type="submit" onClick={() => navigate("/Mainpage")}>
+        <button className="login-btn" type="submit">
           Start your journey
         </button>
 
