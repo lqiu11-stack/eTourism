@@ -86,7 +86,7 @@ export const LoginPage = () => {
         />
         {error && <div className="error-text">{error}</div>}
 
-        <button className="login-btn" type="submit">
+        <button className="login-btn" type="submit" onClick={() => navigate("/Mainpage")}>
           Start your journey
         </button>
 
