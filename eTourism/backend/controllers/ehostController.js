@@ -29,6 +29,26 @@ const createExperience = async (req, res) => {
         });
     }
 
+   // 3-14 update by Emily sql insert 
+    const { rows } = await pool.query(
+        `INSERT INTO experiences 
+        (ehost_id, location_name, country, latitude, longitude, category, description, price, duration_minutes, max_visitors, cover_image, status)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, 'pending')
+        RETURNING *`,
+        [
+            ehostId, 
+            location_name, 
+            country, 
+            latitude || null,      
+            longitude || null, 
+            category, 
+            description, 
+            price, 
+            duration_minutes || 60, //60min default
+            max_visitors || 10,     // 10 visitors default
+            cover_image
+        ]
+    );
 
 
 
