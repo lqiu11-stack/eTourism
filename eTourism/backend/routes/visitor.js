@@ -12,6 +12,7 @@ const {
   createPaymentSession,
   createPayPalOrder,
   capturePayPalOrder,
+  refundBooking,
   captureStripePayment 
 } = require('../controllers/visitorController');
 
@@ -28,6 +29,8 @@ router.get('/bookings', requireAuth, getBookings);
 router.get('/bookings/:id', requireAuth, getBookingById);
 
 router.patch('/bookings/:id/reschedule', requireAuth, rescheduleBooking);
+
+router.post('/bookings/:id/refund', requireAuth, refundBooking);
 
 router.post('/reviews', requireAuth, createReview);
 
