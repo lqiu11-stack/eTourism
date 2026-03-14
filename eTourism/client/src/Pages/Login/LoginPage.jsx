@@ -3,17 +3,17 @@ import apple from "../icon/apple.png";
 import facebook from "../icon/facebook.png";
 import google from "../icon/google.png";
 import "./style.css";
-
+import axios from "axios";
 // naviagtion for the password reset
 import { useNavigate } from "react-router-dom";
 
 import { auth, googleProvider } from "../../firebase";
 import { signInWithPopup } from "firebase/auth";
 
-
+const API_BASE = import.meta.env.VITE_API_BASE;
 
 export const LoginPage = () => {
-  const [username, setUsername] = useState("");
+  const [email, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const navigate = useNavigate();
@@ -24,10 +24,10 @@ export const LoginPage = () => {
       const result = await signInWithPopup(auth, googleProvider);
       console.log("Google login successful:", result.user.email);
 
-      //await axios.post("http://localhost:5000/api/auth/google", {
-        //email: result.user.email,
-        //name: result.user.displayName
-      //}); 
+      // await axios.post("http://localhost:5001/api/auth/google", {
+      //   email: result.user.email,
+      //   name: result.user.displayName
+      // }); 
       
       alert("Login successful! Welcome " + result.user.displayName);
     } catch (err) {
@@ -36,14 +36,24 @@ export const LoginPage = () => {
     }
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!username || !password) {
+    if (!email || !password) {
       setError("Please enter username and password.");
       return;
     }
     setError("");
-    console.log("Normal Login:", { username, password });
+    console.log("Normal Login:", { email, password });
+    try {
+      const { data } = await axios.post(`${API_BASE}/auth/login`, { email, password });
+      localStorage.setItem("token", data.token);
+      localStorage.setItem("user", JSON.stringify(data.user));
+      navigate("/");
+    } catch (err) {
+      console.error("Login failed:", err);
+      const msg = err.response?.data?.message || "Login failed. Please try again.";
+      setError(msg);
+    }
   };
 
   return (
@@ -61,10 +71,10 @@ export const LoginPage = () => {
         <h1 className="title">Login</h1>
         <p className="subtitle">Begin your journey with a single login</p>
         <input
-          type="text"
+          type="email"
           placeholder="Username"
           className="input-field"
-          value={username}
+          value={email}
           onChange={(e) => setUsername(e.target.value)}
         />
         <input
@@ -76,7 +86,7 @@ export const LoginPage = () => {
         />
         {error && <div className="error-text">{error}</div>}
 
-        <button className="login-btn" type="submit" onClick={() => navigate("/Mainpage")}>
+        <button className="login-btn" type="submit">
           Start your journey
         </button>
 
