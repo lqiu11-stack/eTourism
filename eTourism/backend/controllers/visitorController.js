@@ -235,7 +235,7 @@ if (payment.method === 'stripe') {
 
   request.requestBody({
     amount: {
-      currency_code: 'USD',
+      currency_code: 'GBP',
       value: refund_amount.toFixed(2)
     }
   });
@@ -344,7 +344,7 @@ const createPaymentSession = async (req, res) => {
       line_items: [
         {
           price_data: {
-            currency: 'usd',
+            currency: 'GBP',
             product_data: {
               name: experience.title,
             },
@@ -382,16 +382,26 @@ const createPayPalOrder = async (req, res) => {
     const client = getPayPalClient();
     const request = new checkoutNodeJssdk.orders.OrdersCreateRequest();
     request.prefer("return=representation");
+    
     request.requestBody({
       intent: 'CAPTURE',
+      application_context: {
+        brand_name: 'eTourism',
+        landing_page: 'LOGIN',
+        user_action: 'PAY_NOW',       
+        shipping_preference: 'NO_SHIPPING', 
+        return_url: `${process.env.VITE_API_URL ? process.env.VITE_API_URL.replace('/api', '') : 'http://localhost:5173'}/payment-success`,
+        cancel_url: `${process.env.VITE_API_URL ? process.env.VITE_API_URL.replace('/api', '') : 'http://localhost:5173'}/payment-cancel`
+      },
       purchase_units: [{
         amount: {
-          currency_code: 'USD',
+          currency_code: 'GBP',
           value: booking.amount_paid.toString()
         },
         reference_id: booking.id.toString()
       }]
     });
+
 
     const response = await client.execute(request);
     return res.status(200).json({
@@ -401,6 +411,7 @@ const createPayPalOrder = async (req, res) => {
    });
    
   } catch (err) {
+    console.error("PayPal Create Order Error:", err);
     return res.status(500).json({ message: 'PayPal Order Error', error: String(err) });
   }
 };
