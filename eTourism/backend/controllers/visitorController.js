@@ -78,7 +78,7 @@ const createBooking = async (req, res) => {
       ? parseFloat(experience.price_discounted) 
       : Math.max(0, normalPrice - 10);
 
-    let totalAmount = (normalPrice * qty_normal) + (discountedPrice * qty_discounted);
+    let totalAmount = Number(((normalPrice * qty_normal) + (discountedPrice * qty_discounted)).toFixed(2));
 
     const newBooking = await Booking.create({
       visitor_id,
@@ -396,7 +396,7 @@ const createPayPalOrder = async (req, res) => {
       purchase_units: [{
         amount: {
           currency_code: 'GBP',
-          value: booking.amount_paid.toString()
+          value: Number(booking.amount_paid).toFixed(2)
         },
         reference_id: booking.id.toString()
       }]
@@ -431,7 +431,7 @@ const captureStripePayment = async (req, res) => {
 
       const booking_id = session.metadata.booking_id;
       
-      const amount = session.amount_total / 100;
+      const amount = Number((session.amount_total / 100).toFixed(2));
       const transaction_id = session.payment_intent; 
 
       const existingPayments = await Payment.findByBooking(booking_id); //
