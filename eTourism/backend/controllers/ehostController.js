@@ -1,13 +1,12 @@
 const pool = require('../config/db');
 
 
-
+//ehost-03: Experience Creation API (for eHosts to submit experience details for review and listing)
 const createExperience = async (req, res) => {
-  // TODO: Then, the new experience of EH-03 was released.
-  //3-12 update by Emily
-  const ehostId = req.user ? req.user.id : req.userId;
-  const { 
-        // Location 
+ 
+try {
+    const ehostId = req.user ? req.user.id : req.userId;
+    const { 
         location_name, 
         country, 
         latitude, 
@@ -39,33 +38,36 @@ const createExperience = async (req, res) => {
             ehostId, 
             location_name, 
             country, 
-            latitude || null,      
+            latitude || null,     
             longitude || null, 
             category, 
             description, 
             price, 
-            duration_minutes || 60, //60min default
-            max_visitors || 10,     // 10 visitors default
+            duration_minutes || 60, 
+            max_visitors || 10,  
             cover_image
         ]
     );
 
+    //3-15 update by Emily response
+    res.status(201).json({
+        success: true,
+        message: 'The project has been successfully submitted; please wait for platform review.核',
+        data: rows[0]
+    });
 
-
-
-
-
-
-
-
-
-
-
-
-
+  } catch (error) {
+    console.error("EH-03 Submission of location and experience details failed:", error);
+    res.status(500).json({ 
+        success: false, 
+        message: 'Server internal error, failed to save experience details. Please try again later.' 
+    });
+  }
 
   res.status(200).json({ message: "Create API Placeholder" });
 };
+
+
 
 // ehost-02: Experience Management APIs (CRUD for experiences, and booking management)
 const getExperiences = async (req, res) => {
