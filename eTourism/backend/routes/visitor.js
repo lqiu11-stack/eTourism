@@ -18,9 +18,9 @@ const {
 
 router.get('/me', requireAuth, getMe);
 
-router.get('/experiences', requireAuth, getExperiences);
+router.get('/experiences', getExperiences);
 
-router.get('/experiences/:id', requireAuth, getExperienceById);
+router.get('/experiences/:id', getExperienceById);
 
 router.post('/bookings', requireAuth, createBooking);
 
