@@ -76,7 +76,7 @@
   width: 100%;
   display:flex;
   justify-content:space-between;
-  padding: 1.5rem 3rem;
+  padding: 25px 18px 25px 48px;
   color:white;
   background:linear-gradient(
     90deg,
@@ -87,7 +87,7 @@
 }
 
 .nav-links a{
-  margin-left:30px;
+  margin-right:30px;
   cursor:pointer;
   color: white;
 }

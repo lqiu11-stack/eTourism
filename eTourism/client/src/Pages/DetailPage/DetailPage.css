@@ -9,9 +9,13 @@
   background:none;
   border:none;
   cursor:pointer;
-
+  max-height: 25px;
   display:flex;
   align-items:center;
+}
+.detail-back-icon{
+  width: 25px;
+  display: block;
 }
 
 .detail-hero{

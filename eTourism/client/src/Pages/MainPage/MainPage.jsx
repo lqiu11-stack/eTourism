@@ -16,8 +16,11 @@ import china from "../icon/china.png";
 import Philippine from "../icon/Philippine.png";
 import korea from "../icon/korea.png";
 import singapore from "../icon/Singapore.png";
+import { useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 
 export const MainPage = () => {
+  const navigate = useNavigate();
   return (
     <div className="main-page">
 
@@ -28,12 +31,14 @@ export const MainPage = () => {
         <div className="hero-content">
 
           <nav className="navbar">
-            <div className="logo">e-Tourism</div>
+            <div className="nav-links">
+              <a>Join us to become E-host</a>
+              </div>
 
             <div className="nav-links">
-              <a>Helping centre</a>
-              <a>My booking</a>
-              <a>Logout</a>
+              <Link to="/help">Helping centre</Link>
+              <Link to="/booking">My booking</Link>
+              <Link to="/login">Logout</Link>
             </div>
           </nav>
 
@@ -219,7 +224,7 @@ export const MainPage = () => {
               <p>20 / 2 / 2025 14:00</p>
               <p>40£ / per ticket</p>
 
-              <button className="book-btn">Click to book &gt;&gt;</button>
+              <button className="book-btn" onClick={() => navigate("/DetailPage")}>Click to book &gt;&gt;</button>
             </div>
 
           </div>

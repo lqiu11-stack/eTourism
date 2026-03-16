@@ -10,9 +10,15 @@ import photo4 from "../icon/london3.jpg";
 import { useNavigate } from "react-router-dom";
 import backIcon from "../icon/back.png";
 import blog from "../icon/blogger.png";
+import { useEffect } from "react";
+import { Link } from "react-router-dom";
 
 export const DetailPage = () => {
      const navigate = useNavigate();
+     useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
+
   return (
     <div className="tour-page">
 
@@ -30,14 +36,14 @@ export const DetailPage = () => {
                     onClick={() => navigate("/MainPage")}
                     aria-label="Back"
                   >
-                    <img src={backIcon} alt="Back" className="back-icon" />
+                    <img src={backIcon} alt="Back" className="detail-back-icon" />
                   </button>
 
           <div className="nav-links">
-            <a>Helping centre</a>
-            <a>My booking</a>
-            <a>Logout</a>
-          </div>
+              <Link to="/help">Helping centre</Link>
+              <Link to="/booking">My booking</Link>
+              <Link to="/login">Logout</Link>
+            </div>
         </nav>
 
         <div className="detail-hero-content">
