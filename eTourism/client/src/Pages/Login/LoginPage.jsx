@@ -10,7 +10,7 @@ import { useNavigate } from "react-router-dom";
 import { auth, googleProvider } from "../../firebase";
 import { signInWithPopup } from "firebase/auth";
 
-const API_BASE = import.meta.env.VITE_API_BASE;
+const API_BASE = import.meta.env.VITE_API_URL;
 
 export const LoginPage = () => {
   const [email, setUsername] = useState("");
@@ -24,18 +24,21 @@ export const LoginPage = () => {
       const result = await signInWithPopup(auth, googleProvider);
       console.log("Google login successful:", result.user.email);
 
-      // await axios.post("http://localhost:5001/api/auth/google", {
-      //   email: result.user.email,
-      //   name: result.user.displayName
-      // }); 
+      const { data } = await axios.post(`${API_BASE}/auth/google`, {
+        email: result.user.email,
+        name: result.user.displayName
+      }); 
       
-      alert("Login successful! Welcome " + result.user.displayName);
+      localStorage.setItem("token", data.token);
+      localStorage.setItem("user", JSON.stringify(data.user));
+      navigate("/");
+      
     } catch (err) {
       console.error("Login failed:", err);
-      setError("Google Login Failed");
+      const msg = err.response?.data?.error || "Google Login Failed";
+      setError(msg);
     }
   };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!email || !password) {
