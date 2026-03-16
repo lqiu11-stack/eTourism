@@ -10,7 +10,7 @@ const register = async (req, res) => {
     if (!process.env.JWT_SECRET) {
       return res.status(503).json({ error: 'JWT_SECRET is not configured' });
     }
-    const { email, password, name, date_of_birth } = req.body;
+    const { email, password, name, date_of_birth, agreeTerms } = req.body;
     if (!email || !password) {
       return res.status(400).json({ error: 'Email and password are required' });
     }
@@ -19,6 +19,9 @@ const register = async (req, res) => {
     }
     if (!date_of_birth) {
       return res.status(400).json({ error: 'Date of birth is required' });
+    }
+    if (agreeTerms !== true) {
+      return res.status(400).json({ error: 'You must agree to the user agreement to register' });
     }
     const role = 'visitor';
     const existing = await User.findByEmail(email);
