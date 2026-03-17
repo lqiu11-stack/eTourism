@@ -86,12 +86,30 @@
   z-index:1000;
 }
 
-.nav-links a{
-  margin-right:30px;
-  cursor:pointer;
-  color: white;
+.nav-links{
+  display: flex;
+  align-items: center;
+  gap: 20px;
 }
 
+.nav-link{
+  color: white;
+  text-decoration: none;
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  cursor: pointer;
+}
+
+.nav-link:hover{
+  opacity: 0.8;
+}
+
+.nav-btn-link{
+  background: none;
+  border: none;
+}
 /* TITLE */
 
 .hero-title{
@@ -665,3 +683,4 @@
 .footer-brand h3{
   margin-bottom:10px;
 }
+

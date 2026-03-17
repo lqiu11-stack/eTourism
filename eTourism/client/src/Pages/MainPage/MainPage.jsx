@@ -21,6 +21,14 @@ import { Link } from "react-router-dom";
 
 export const MainPage = () => {
   const navigate = useNavigate();
+  const token = localStorage.getItem("token");
+  const isLoggedIn = !!token;
+
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    navigate("/login");
+  };
   return (
     <div className="main-page">
 
@@ -36,9 +44,15 @@ export const MainPage = () => {
               </div>
 
             <div className="nav-links">
-              <Link to="/help">Helping centre</Link>
-              <Link to="/booking">My booking</Link>
-              <Link to="/login">Logout</Link>
+              <Link to="/help" className="nav-link">Helping centre</Link>
+              <Link to="/booking" className="nav-link">My booking</Link>
+               {isLoggedIn ? (
+                  <button className="nav-link nav-btn-link" onClick={handleLogout}>
+                    Logout
+                  </button>
+                ) : (
+                  <Link to="/login" className="nav-link">Login</Link>
+                )}
             </div>
           </nav>
 
