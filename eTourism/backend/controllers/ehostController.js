@@ -63,7 +63,7 @@ try {
 
     res.status(201).json({
         success: true,
-        message: 'The project has been successfully submitted; please wait for platform review.核',
+        message: 'The project has been successfully submitted; please wait for platform review.',
         data: rows[0]
     });
 
