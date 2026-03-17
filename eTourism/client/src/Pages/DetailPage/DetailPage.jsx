@@ -83,7 +83,7 @@ Experience the culture, stories, and atmosphere of London through our immersive 
             <p>20/4/2025 14:00</p>
             <p>25£ / per ticket</p>
 
-            <button className="detail-book-btn">
+            <button className="detail-book-btn" onClick={() => navigate("/PaymentPage")}>
               Book it now!
             </button>
           </div>

@@ -7,6 +7,7 @@ import { Eregistrate3 } from "./Pages/EhostRegistarte/EhostRstep3.jsx";
 import { Eregistrate4 } from "./Pages/EhostRegistarte/EhostRstep4.jsx";
 import { MainPage } from "./Pages/MainPage/MainPage.jsx";
 import { DetailPage } from "./Pages/DetailPage/DetailPage.jsx";
+import { PaymentPage } from "./Pages/PaymentPage/PaymentPage.jsx";
 function App() {
   return (
 
@@ -20,6 +21,7 @@ function App() {
         <Route path="/Eregistrate4" element={<Eregistrate4 />} />
         <Route path="/MainPage" element={<MainPage />} />
         <Route path="/DetailPage" element={<DetailPage />} />
+        <Route path="/PaymentPage" element={<PaymentPage />} />
       </Routes>
   );
 }
