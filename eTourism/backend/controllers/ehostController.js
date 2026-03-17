@@ -7,6 +7,7 @@ const createExperience = async (req, res) => {
 try {
     const ehostId = req.user ? req.user.id : req.userId;
     const { 
+        title,
         location_name, 
         country, 
         latitude, 
@@ -22,7 +23,7 @@ try {
     } = req.body;
 
    
-    if (!location_name || !country || !price || !description) {
+    if (!title || !location_name || !country || !price || !description) {
         return res.status(400).json({ 
             success: false, 
             message: 'Required fields are missing: Location name, country, price, and description cannot be empty.' 
