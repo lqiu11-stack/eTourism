@@ -4,6 +4,7 @@ const Booking = require('../models/Booking');
 const Experience = require('../models/Experience');
 const Payment = require('../models/Payment');
 const Refund = require('../models/Refund');
+const ExperienceMeetingLink = require('../models/ExperienceMeetingLink');
 
 const getPayPalClient = () => {
 
@@ -137,7 +138,6 @@ const refundBooking = async (req, res) => {
     const bookingId = req.params.id;
     const visitor_id = req.userId;
     const { reason = '' } = req.body;
-
     const booking = await Booking.findById(bookingId);
 
     if (!booking) {
@@ -206,51 +206,45 @@ const refundBooking = async (req, res) => {
       });
     }
 
-let gatewayRefundId = null;
+    let gatewayRefundId = null;
 
-if (payment.method === 'stripe') {
+    if (payment.method === 'stripe') {
+      if (!payment.transaction_id) {
+        return res.status(400).json({ message: 'Stripe transaction_id is missing' });
+      }
 
-  if (!payment.transaction_id) {
-    return res.status(400).json({ message: 'Stripe transaction_id is missing' });
-  }
+      const stripeRefund = await stripe.refunds.create({
+        payment_intent: payment.transaction_id,
+        amount: Math.round(refund_amount * 100)
+      });
 
-  const stripeRefund = await stripe.refunds.create({
-    payment_intent: payment.transaction_id,
-    amount: Math.round(refund_amount * 100)
-  });
+      gatewayRefundId = stripeRefund.id;
+    } else if (payment.method === 'paypal') {
+      if (!payment.transaction_id) {
+        return res.status(400).json({ message: 'PayPal transaction_id is missing' });
+      }
 
-  gatewayRefundId = stripeRefund.id;
+      const client = getPayPalClient();
 
-} else if (payment.method === 'paypal') {
+      const request = new checkoutNodeJssdk.payments.CapturesRefundRequest(
+        payment.transaction_id
+      );
 
-  if (!payment.transaction_id) {
-    return res.status(400).json({ message: 'PayPal transaction_id is missing' });
-  }
+      request.requestBody({
+        amount: {
+          currency_code: 'GBP',
+          value: refund_amount.toFixed(2)
+        }
+      });
 
-  const client = getPayPalClient();
+      const response = await client.execute(request);
 
-  const request = new checkoutNodeJssdk.payments.CapturesRefundRequest(
-    payment.transaction_id
-  );
-
-  request.requestBody({
-    amount: {
-      currency_code: 'GBP',
-      value: refund_amount.toFixed(2)
+      gatewayRefundId = response.result.id;
+    } else {
+      return res.status(400).json({
+        message: `Unsupported payment method: ${payment.method}`
+      });
     }
-  });
-
-  const response = await client.execute(request);
-
-  gatewayRefundId = response.result.id;
-
-} else {
-
-  return res.status(400).json({
-    message: `Unsupported payment method: ${payment.method}`
-  });
-
-}
 
     const refundRecord = await Refund.create({
       booking_id: bookingId,
@@ -274,6 +268,38 @@ if (payment.method === 'stripe') {
   } catch (err) {
     console.error('Refund Error:', err);
     return res.status(500).json({ message: 'Refund Error', error: String(err) });
+  }
+};
+
+const getBookingMeetingLink = async (req, res) => {
+  try {
+    const bookingId = req.params.id;
+    const booking = await Booking.findById(bookingId);
+
+    if (!booking) {
+      return res.status(404).json({ message: 'Booking not found' });
+    }
+
+    if (booking.visitor_id !== req.userId) {
+      return res.status(403).json({ message: 'Forbidden' });
+    }
+
+    if (booking.status !== 'confirmed') {
+      return res.status(403).json({ message: 'Meeting link is only available for successfully booked experiences' });
+    }
+
+    const config = await ExperienceMeetingLink.findByExperienceId(booking.experience_id);
+    if (!config) {
+      return res.status(404).json({ message: 'Meeting link is not configured yet' });
+    }
+
+    return res.status(200).json({
+      platform: config.platform,
+      meeting_url: config.meeting_url,
+      meeting_password: config.meeting_password,
+    });
+  } catch (err) {
+    return res.status(500).json({ message: 'Server error', error: String(err) });
   }
 };
 
@@ -498,6 +524,7 @@ module.exports = {
   createBooking,
   getBookings,
   getBookingById,
+  getBookingMeetingLink,
   createReview,
   rescheduleBooking,
   createPaymentSession,

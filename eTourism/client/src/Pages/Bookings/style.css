@@ -1,0 +1,156 @@
+.bk-page {
+  min-height: 100vh;
+  padding: 24px;
+  background: #f6f7fb;
+  color: #111827;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+}
+
+.bk-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.bk-title {
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.bk-list {
+  max-width: 860px;
+}
+
+.bk-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 6px 22px rgba(17, 24, 39, 0.08);
+  padding: 14px 16px;
+  margin-bottom: 12px;
+}
+
+.bk-main {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.bk-name {
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.bk-meta {
+  display: flex;
+  gap: 14px;
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.bk-btn {
+  height: 36px;
+  padding: 0 14px;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  cursor: pointer;
+}
+
+.bk-btn.primary {
+  background: #2563eb;
+  color: white;
+}
+
+.bk-btn.secondary {
+  background: transparent;
+  border-color: #e5e7eb;
+  color: #111827;
+}
+
+.bk-empty {
+  font-size: 13px;
+  color: #6b7280;
+  padding: 16px 4px;
+}
+
+.bk-card {
+  max-width: 860px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 6px 22px rgba(17, 24, 39, 0.08);
+  padding: 16px;
+  margin-bottom: 14px;
+}
+
+.bk-row {
+  display: grid;
+  grid-template-columns: 140px 1fr;
+  gap: 12px;
+  padding: 6px 0;
+}
+
+.bk-k {
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.bk-v {
+  font-size: 13px;
+  color: #111827;
+  overflow-wrap: anywhere;
+}
+
+.bk-subtitle {
+  font-size: 14px;
+  font-weight: 700;
+  margin-bottom: 10px;
+}
+
+.bk-note {
+  margin-top: 10px;
+  font-size: 13px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid transparent;
+}
+
+.bk-note.info {
+  background: #eff6ff;
+  color: #1e40af;
+  border-color: #bfdbfe;
+}
+
+.bk-note.error {
+  background: #fef2f2;
+  color: #991b1b;
+  border-color: #fecaca;
+}
+
+.bk-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 12px;
+}
+
+.bk-status {
+  max-width: 860px;
+  font-size: 13px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  margin-bottom: 12px;
+}
+
+.bk-status.success {
+  background: #ecfdf5;
+  color: #065f46;
+  border: 1px solid #a7f3d0;
+}
+
+.bk-status.error {
+  background: #fef2f2;
+  color: #991b1b;
+  border: 1px solid #fecaca;
+}
