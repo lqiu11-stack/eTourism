@@ -125,7 +125,7 @@ const updateExperience = async (req, res) => {
   try {
     const experienceId = req.params.id;
     const ehostId = req.user ? req.user.id : req.userId;
-    const { location_name, description, category, price } = req.body;
+    const { location_name, description, category, price, gender_preference, allows_piggyback } = req.body;
 
     const { rows: checkRows } = await pool.query(
         `SELECT id FROM experiences WHERE id = $1 AND ehost_id = $2`,
