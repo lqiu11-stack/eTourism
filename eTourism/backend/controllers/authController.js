@@ -133,6 +133,53 @@ const googleLogin = async (req, res) => {
   }
 };
 
+const facebookLogin = async (req, res) => {
+  try {
+    if (!process.env.DATABASE_URL) {
+      return res.status(503).json({ error: 'DATABASE_URL is not configured' });
+    }
+    if (!process.env.JWT_SECRET) {
+      return res.status(503).json({ error: 'JWT_SECRET is not configured' });
+    }
+    const { email, name } = req.body;
+    
+    if (!email) {
+      return res.status(400).json({ error: 'Email is required. Please ensure your Facebook account is linked to an email.' });
+    }
+    
+    let user = await User.findByEmail(email);
+    if (!user) {
+      const nameParts = name ? String(name).trim().split(' ') : ['Facebook', 'User'];
+      const first_name = nameParts[0];
+      const last_name = nameParts.length > 1 ? nameParts.slice(1).join(' ') : '';
+      user = await User.create({
+        email,
+        password_hash: 'FACEBOOK_AUTH_NO_PASSWORD',
+        role: 'visitor',
+        first_name,
+        last_name,
+        date_of_birth: '2000-01-01',
+        country: null,
+        language: null,
+      });
+    }
+    if (user.role === 'ehost') {
+      return res.status(403).json({ error: 'Ehost login is disabled' });
+    }
+    const token = jwt.sign(
+      { userId: user.id, role: user.role },
+      process.env.JWT_SECRET,
+      { expiresIn: '7d' }
+    );
+    const { password_hash, ...userInfo } = user;
+    res.json({ token, user: userInfo });
+  } catch (err) {
+    console.error('[facebookLogin]', err);
+    const message = err.message || 'Facebook login failed';
+    res.status(500).json({ error: message });
+  }
+};
+
 const resetPassword = async (req, res) => {
   try {
     if (!process.env.DATABASE_URL) {
@@ -159,5 +206,5 @@ const resetPassword = async (req, res) => {
   }
 };
 
-module.exports = { register, login, resetPassword, googleLogin};
+module.exports = { register, login, resetPassword, googleLogin, facebookLogin};
 

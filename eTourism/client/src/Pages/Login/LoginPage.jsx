@@ -7,7 +7,7 @@ import axios from "axios";
 // naviagtion for the password reset
 import { useNavigate } from "react-router-dom";
 
-import { auth, googleProvider } from "../../firebase";
+import { auth, googleProvider, facebookProvider } from "../../firebase";
 import { signInWithPopup } from "firebase/auth";
 
 const API_BASE = import.meta.env.VITE_API_URL;
@@ -39,6 +39,29 @@ export const LoginPage = () => {
       setError(msg);
     }
   };
+  
+  const handleFacebookLogin = async () => {
+    try {
+      setError("");
+      const result = await signInWithPopup(auth, facebookProvider);
+      console.log("Facebook login successful:", result.user.email);
+
+      const { data } = await axios.post(`${API_BASE}/auth/facebook`, {
+        email: result.user.email,
+        name: result.user.displayName
+      }); 
+      
+      localStorage.setItem("token", data.token);
+      localStorage.setItem("user", JSON.stringify(data.user));
+      navigate("/");
+      
+    } catch (err) {
+      console.error("Facebook Login failed:", err);
+      const msg = err.response?.data?.error || "Facebook Login Failed";
+      setError(msg);
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!email || !password) {
@@ -101,7 +124,7 @@ export const LoginPage = () => {
           <button type="button" className="social-btn" onClick={handleGoogleLogin}>
             <img src={google} alt="google" />
           </button>
-          <button type="button" className="social-btn" onClick={() => console.log("Facebook login")}>
+          <button type="button" className="social-btn" onClick={handleFacebookLogin}>
             <img src={facebook} alt="facebook" />
           </button>
           <button type="button" className="social-btn" onClick={() => console.log("Apple login")}>
