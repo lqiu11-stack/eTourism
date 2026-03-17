@@ -1,11 +1,83 @@
 const pool = require('../config/db');
 
 
-
+//ehost-03: Experience Creation API (for eHosts to submit experience details for review and listing)
 const createExperience = async (req, res) => {
-  // TODO: Then, the new experience of EH-03 was released.
-  res.status(200).json({ message: "Create API Placeholder" });
+ 
+try {
+    const ehostId = req.user ? req.user.id : req.userId;
+    const { 
+        title,
+        location_name, 
+        country, 
+        latitude, 
+        longitude,
+        category, 
+        description, 
+        price, 
+        duration_minutes,
+        max_visitors,
+        cover_image,       // frontend image link url (String)
+        gender_preference, // sex preference
+        allows_piggyback   // Boolean
+    } = req.body;
+
+   
+    if (!title || !location_name || !country || !price || !description) {
+        return res.status(400).json({ 
+            success: false, 
+            message: 'Required fields are missing: Location name, country, price, and description cannot be empty.' 
+        });
+    }
+  //url validation can be more complex in real scenarios, here we just check if it's a non-empty string for simplicity.
+    if (!cover_image || typeof cover_image !== 'string') {
+        return res.status(400).json({ 
+            success: false, 
+            message: 'Please upload a cover image of the experience project.' 
+        });
+    }
+   
+    const { rows } = await pool.query(
+        `INSERT INTO experiences 
+        (title,ehost_id, location_name, country, latitude, longitude, category, description, price, duration_minutes, max_visitors, cover_image, gender_preference, allows_piggyback, status)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, 'pending')
+        RETURNING *`,
+        [
+            title,
+            ehostId, 
+            location_name, 
+            country, 
+            latitude || null,     
+            longitude || null, 
+            category, 
+            description, 
+            price, 
+            duration_minutes || 60, 
+            max_visitors || 10,  
+            cover_image,            
+            gender_preference || 'Any', 
+            allows_piggyback || false  
+        ]
+    );
+
+
+    res.status(201).json({
+        success: true,
+        message: 'The project has been successfully submitted; please wait for platform review.',
+        data: rows[0]
+    });
+
+  } catch (error) {
+    console.error("EH-03 Submission of location and experience details failed:", error);
+    res.status(500).json({ 
+        success: false, 
+        message: 'Server internal error, failed to save experience details. Please try again later.' 
+    });
+  }
+
 };
+
+
 
 // ehost-02: Experience Management APIs (CRUD for experiences, and booking management)
 const getExperiences = async (req, res) => {
@@ -55,7 +127,7 @@ const updateExperience = async (req, res) => {
   try {
     const experienceId = req.params.id;
     const ehostId = req.user ? req.user.id : req.userId;
-    const { location_name, description, category, price } = req.body;
+    const { location_name, description, category, price, gender_preference, allows_piggyback  } = req.body;
 
     const { rows: checkRows } = await pool.query(
         `SELECT id FROM experiences WHERE id = $1 AND ehost_id = $2`,
@@ -73,11 +145,13 @@ const updateExperience = async (req, res) => {
              description = COALESCE($2, description),
              category = COALESCE($3, category),
              price = COALESCE($4, price),
+             gender_preference = COALESCE($5, gender_preference),
+             allows_piggyback = COALESCE($6, allows_piggyback),
              status = 'pending', 
              rejection_reason = NULL
-         WHERE id = $5 AND ehost_id = $6
+         WHERE id = $7 AND ehost_id = $8
          RETURNING *`,
-        [location_name, description, category, price, experienceId, ehostId]
+        [location_name, description, category, price, gender_preference, allows_piggyback, experienceId, ehostId]
     );
     
     res.status(200).json({ success: true, data: updateRows[0] });
@@ -109,10 +183,17 @@ const deleteExperience = async (req, res) => {
   }
 };
 
+
 const getBookings = async (req, res) => {
+ 
   // TODO: Implement EH-04 order and meeting link management later.
   res.status(200).json({ message: "Bookings API Placeholder" });
 };
+
+
+
+
+
 
 
 //ehost-01: eHost Application Submission API 
