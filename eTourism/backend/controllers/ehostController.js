@@ -11,24 +11,31 @@ try {
         country, 
         latitude, 
         longitude,
-        // Details 
         category, 
         description, 
         price, 
         duration_minutes,
         max_visitors,
-        cover_image 
+        cover_image,       // frontend image link url (String)
+        gender_preference, // sex preference
+        allows_piggyback   // Boolean
     } = req.body;
 
-    // 3-13 update by Emily 
+   
     if (!location_name || !country || !price || !description) {
         return res.status(400).json({ 
             success: false, 
             message: 'Required fields are missing: Location name, country, price, and description cannot be empty.' 
         });
     }
-
-   // 3-14 update by Emily sql insert 
+  //url validation can be more complex in real scenarios, here we just check if it's a non-empty string for simplicity.
+    if (!cover_image || typeof cover_image !== 'string') {
+        return res.status(400).json({ 
+            success: false, 
+            message: 'Please upload a cover image of the experience project.' 
+        });
+    }
+   
     const { rows } = await pool.query(
         `INSERT INTO experiences 
         (ehost_id, location_name, country, latitude, longitude, category, description, price, duration_minutes, max_visitors, cover_image, status)
@@ -45,11 +52,13 @@ try {
             price, 
             duration_minutes || 60, 
             max_visitors || 10,  
-            cover_image
+            cover_image,            
+            gender_preference || 'Any', 
+            allows_piggyback || false  
         ]
     );
 
-    //3-15 update by Emily response
+
     res.status(201).json({
         success: true,
         message: 'The project has been successfully submitted; please wait for platform review.核',
@@ -64,7 +73,6 @@ try {
     });
   }
 
-  res.status(200).json({ message: "Create API Placeholder" });
 };
 
 
@@ -135,11 +143,13 @@ const updateExperience = async (req, res) => {
              description = COALESCE($2, description),
              category = COALESCE($3, category),
              price = COALESCE($4, price),
+             gender_preference = COALESCE($5, gender_preference),
+             allows_piggyback = COALESCE($6, allows_piggyback),
              status = 'pending', 
              rejection_reason = NULL
-         WHERE id = $5 AND ehost_id = $6
+         WHERE id = $7 AND ehost_id = $8
          RETURNING *`,
-        [location_name, description, category, price, experienceId, ehostId]
+        [location_name, description, category, price, gender_preference, allows_piggyback, experienceId, ehostId]
     );
     
     res.status(200).json({ success: true, data: updateRows[0] });
@@ -171,10 +181,17 @@ const deleteExperience = async (req, res) => {
   }
 };
 
+
 const getBookings = async (req, res) => {
+ 
   // TODO: Implement EH-04 order and meeting link management later.
   res.status(200).json({ message: "Bookings API Placeholder" });
 };
+
+
+
+
+
 
 
 //ehost-01: eHost Application Submission API 
