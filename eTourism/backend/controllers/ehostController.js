@@ -39,10 +39,11 @@ try {
    
     const { rows } = await pool.query(
         `INSERT INTO experiences 
-        (ehost_id, location_name, country, latitude, longitude, category, description, price, duration_minutes, max_visitors, cover_image, status)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, 'pending')
+        (title,ehost_id, location_name, country, latitude, longitude, category, description, price, duration_minutes, max_visitors, cover_image, gender_preference, allows_piggyback, status)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, 'pending')
         RETURNING *`,
         [
+            title,
             ehostId, 
             location_name, 
             country, 
