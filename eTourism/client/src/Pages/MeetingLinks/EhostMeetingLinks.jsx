@@ -104,6 +104,9 @@ export const EhostMeetingLinks = () => {
       <div className="ml-header">
         <div className="ml-title">Meeting Link Configuration</div>
         <div className="ml-actions">
+          <button className="ml-btn secondary" onClick={() => navigate("/ehost/booking-preferences")}>
+            Booking Preferences
+          </button>
           <button className="ml-btn secondary" onClick={handleLogout}>
             Logout
           </button>

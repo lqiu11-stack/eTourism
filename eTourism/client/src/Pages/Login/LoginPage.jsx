@@ -6,9 +6,12 @@ import "./style.css";
 // naviagtion for the password reset
 import { useNavigate } from "react-router-dom";
 
-import { auth, googleProvider } from "../../firebase";
+import { auth, googleProvider, facebookProvider } from "../../firebase";
 import { signInWithPopup } from "firebase/auth";
 import { apiClient } from "../../api/apiClient";
+import axios from "axios";
+
+const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api";
 
 export const LoginPage = () => {
   const [email, setUsername] = useState("");
@@ -22,15 +25,41 @@ export const LoginPage = () => {
       const result = await signInWithPopup(auth, googleProvider);
       console.log("Google login successful:", result.user.email);
 
-      // await axios.post("http://localhost:5001/api/auth/google", {
-      //   email: result.user.email,
-      //   name: result.user.displayName
-      // }); 
+      const { data } = await axios.post(`${API_BASE}/auth/google`, {
+        email: result.user.email,
+        name: result.user.displayName
+      }); 
       
-      alert("Login successful! Welcome " + result.user.displayName);
+      localStorage.setItem("token", data.token);
+      localStorage.setItem("user", JSON.stringify(data.user));
+      navigate("/");
+      
     } catch (err) {
       console.error("Login failed:", err);
-      setError("Google Login Failed");
+      const msg = err.response?.data?.error || "Google Login Failed";
+      setError(msg);
+    }
+  };
+  
+  const handleFacebookLogin = async () => {
+    try {
+      setError("");
+      const result = await signInWithPopup(auth, facebookProvider);
+      console.log("Facebook login successful:", result.user.email);
+
+      const { data } = await axios.post(`${API_BASE}/auth/facebook`, {
+        email: result.user.email,
+        name: result.user.displayName
+      }); 
+      
+      localStorage.setItem("token", data.token);
+      localStorage.setItem("user", JSON.stringify(data.user));
+      navigate("/");
+      
+    } catch (err) {
+      console.error("Facebook Login failed:", err);
+      const msg = err.response?.data?.error || "Facebook Login Failed";
+      setError(msg);
     }
   };
 
@@ -108,7 +137,7 @@ export const LoginPage = () => {
           <button type="button" className="social-btn" onClick={handleGoogleLogin}>
             <img src={google} alt="google" />
           </button>
-          <button type="button" className="social-btn" onClick={() => console.log("Facebook login")}>
+          <button type="button" className="social-btn" onClick={handleFacebookLogin}>
             <img src={facebook} alt="facebook" />
           </button>
           <button type="button" className="social-btn" onClick={() => console.log("Apple login")}>
