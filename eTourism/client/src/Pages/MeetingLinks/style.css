@@ -1,0 +1,104 @@
+.ml-page {
+  min-height: 100vh;
+  padding: 24px;
+  background: #f6f7fb;
+  color: #111827;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+}
+
+.ml-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.ml-title {
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.ml-card {
+  max-width: 720px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 6px 22px rgba(17, 24, 39, 0.08);
+  padding: 18px;
+}
+
+.ml-row {
+  display: grid;
+  grid-template-columns: 140px 1fr;
+  align-items: center;
+  gap: 12px;
+  margin: 12px 0;
+}
+
+.ml-label {
+  font-size: 13px;
+  color: #374151;
+}
+
+.ml-input,
+.ml-select {
+  height: 38px;
+  border-radius: 10px;
+  border: 1px solid #e5e7eb;
+  padding: 0 12px;
+  outline: none;
+}
+
+.ml-input:focus,
+.ml-select:focus {
+  border-color: #2563eb;
+}
+
+.ml-hint {
+  margin-top: 6px;
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.ml-footer {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 16px;
+}
+
+.ml-btn {
+  height: 36px;
+  padding: 0 14px;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  cursor: pointer;
+}
+
+.ml-btn.primary {
+  background: #2563eb;
+  color: white;
+}
+
+.ml-btn.secondary {
+  background: transparent;
+  border-color: #e5e7eb;
+  color: #111827;
+}
+
+.ml-status {
+  margin-top: 10px;
+  font-size: 13px;
+  padding: 10px 12px;
+  border-radius: 10px;
+}
+
+.ml-status.success {
+  background: #ecfdf5;
+  color: #065f46;
+  border: 1px solid #a7f3d0;
+}
+
+.ml-status.error {
+  background: #fef2f2;
+  color: #991b1b;
+  border: 1px solid #fecaca;
+}

@@ -8,21 +8,29 @@ import { Eregistrate4 } from "./Pages/EhostRegistarte/EhostRstep4.jsx";
 import { MainPage } from "./Pages/MainPage/MainPage.jsx";
 import { DetailPage } from "./Pages/DetailPage/DetailPage.jsx";
 import { PaymentPage } from "./Pages/PaymentPage/PaymentPage.jsx";
+import { EhostMeetingLinks } from "./Pages/MeetingLinks/EhostMeetingLinks.jsx";
+import { EhostBookingPreferences } from "./Pages/BookingPreferences/EhostBookingPreferences.jsx";
+import { VisitorBookings } from "./Pages/Bookings/VisitorBookings.jsx";
+import { VisitorBookingDetail } from "./Pages/Bookings/VisitorBookingDetail.jsx";
+
 function App() {
   return (
-
-      <Routes>
-        <Route path="/" element={<MainPage />} />
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/reset" element={<PassWordReset />} />
-        <Route path="/Eregistrate1" element={<Eregistrate1 />} />
-        <Route path="/Eregistrate2" element={<Eregistrate2 />} />
-        <Route path="/Eregistrate3" element={<Eregistrate3 />} />
-        <Route path="/Eregistrate4" element={<Eregistrate4 />} />
-        <Route path="/MainPage" element={<MainPage />} />
-        <Route path="/DetailPage" element={<DetailPage />} />
-        <Route path="/PaymentPage" element={<PaymentPage />} />
-      </Routes>
+    <Routes>
+      <Route path="/" element={<MainPage />} />
+      <Route path="/login" element={<LoginPage />} />
+      <Route path="/reset" element={<PassWordReset />} />
+      <Route path="/Eregistrate1" element={<Eregistrate1 />} />
+      <Route path="/Eregistrate2" element={<Eregistrate2 />} />
+      <Route path="/Eregistrate3" element={<Eregistrate3 />} />
+      <Route path="/Eregistrate4" element={<Eregistrate4 />} />
+      <Route path="/MainPage" element={<MainPage />} />
+      <Route path="/DetailPage" element={<DetailPage />} />
+      <Route path="/PaymentPage" element={<PaymentPage />} />
+      <Route path="/ehost/meeting-links" element={<EhostMeetingLinks />} />
+      <Route path="/ehost/booking-preferences" element={<EhostBookingPreferences />} />
+      <Route path="/visitor/bookings" element={<VisitorBookings />} />
+      <Route path="/visitor/bookings/:id" element={<VisitorBookingDetail />} />
+    </Routes>
   );
 }
 

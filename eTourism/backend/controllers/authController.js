@@ -71,8 +71,8 @@ const login = async (req, res) => {
     if (!valid) {
       return res.status(401).json({ error: 'Invalid email or password' });
     }
-    if (user.role === 'ehost') {
-      return res.status(403).json({ error: 'Ehost login is disabled' });
+    if (user.role === 'admin') {
+      return res.status(403).json({ error: 'Admin login is disabled' });
     }
     const token = jwt.sign(
       { userId: user.id, role: user.role },

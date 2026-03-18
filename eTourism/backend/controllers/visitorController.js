@@ -4,6 +4,44 @@ const Booking = require('../models/Booking');
 const Experience = require('../models/Experience');
 const Payment = require('../models/Payment');
 const Refund = require('../models/Refund');
+const ExperienceMeetingLink = require('../models/ExperienceMeetingLink');
+const ExperienceBookingPreference = require('../models/ExperienceBookingPreference');
+
+const DEFAULT_CANCELLATION_POLICY = {
+  type: 'tiered_refund_v1',
+  tiers: [
+    { min_days: 14, refund_pct: 100 },
+    { min_days: 7, refund_pct: 50 },
+    { min_days: 0, refund_pct: 0 },
+  ],
+};
+
+const normalizePolicy = (policy) => {
+  if (!policy) return DEFAULT_CANCELLATION_POLICY;
+  if (typeof policy === 'string') {
+    try {
+      const parsed = JSON.parse(policy);
+      return parsed || DEFAULT_CANCELLATION_POLICY;
+    } catch {
+      return DEFAULT_CANCELLATION_POLICY;
+    }
+  }
+  return policy;
+};
+
+const computeRefundPercentage = (policy, daysBeforeEvent) => {
+  const normalized = normalizePolicy(policy);
+  if (normalized?.type !== 'tiered_refund_v1' || !Array.isArray(normalized.tiers)) {
+    return computeRefundPercentage(DEFAULT_CANCELLATION_POLICY, daysBeforeEvent);
+  }
+  const tiers = normalized.tiers
+    .filter((t) => typeof t?.min_days === 'number' && typeof t?.refund_pct === 'number')
+    .sort((a, b) => b.min_days - a.min_days);
+  const matched = tiers.find((t) => daysBeforeEvent >= t.min_days);
+  if (!matched) return 0;
+  const pct = Math.max(0, Math.min(100, matched.refund_pct));
+  return pct;
+};
 
 const getPayPalClient = () => {
 
@@ -43,14 +81,15 @@ const getExperienceById = async (req, res) => {
 const createBooking = async (req, res) => {
   try {
   
-    const { 
-      experience_id, 
-      qty_normal = 0, 
-      qty_discounted = 0, 
-      contact_name, 
+    const {
+      experience_id,
+      qty_normal = 0,
+      qty_discounted = 0,
+      contact_name,
       contact_email,
       agreed_to_terms,
-      meeting_link = '' 
+      meeting_link = '',
+      group_gender_breakdown,
     } = req.body;
     
     const visitor_id = req.userId;
@@ -67,9 +106,84 @@ const createBooking = async (req, res) => {
       return res.status(404).json({ message: 'Experience not found' });
     }
 
-    const totalTickets = qty_normal + qty_discounted;
-    if (totalTickets > experience.max_visitors) {
+    const qtyNormal = Number(qty_normal);
+    const qtyDiscounted = Number(qty_discounted);
+
+    if (!Number.isInteger(qtyNormal) || qtyNormal < 0) {
+      return res.status(400).json({ message: 'qty_normal must be a non-negative integer' });
+    }
+    if (!Number.isInteger(qtyDiscounted) || qtyDiscounted < 0) {
+      return res.status(400).json({ message: 'qty_discounted must be a non-negative integer' });
+    }
+
+    const totalTickets = qtyNormal + qtyDiscounted;
+    if (totalTickets < 1) {
+      return res.status(400).json({ message: 'At least one ticket is required' });
+    }
+    if (experience.max_visitors != null && totalTickets > experience.max_visitors) {
       return res.status(400).json({ message: `Sold out! Only ${experience.max_visitors} spots available.` });
+    }
+
+    const preference = await ExperienceBookingPreference.findByExperienceId(experience_id);
+    const minNoticeMinutes = Math.max(0, Number(preference?.min_notice_minutes ?? 0));
+    const minGroupSize = Math.max(1, Number(preference?.min_group_size ?? 1));
+    const maxGroupSize = preference?.max_group_size == null
+      ? (experience.max_visitors ?? null)
+      : Number(preference.max_group_size);
+    const groupRule = String(preference?.group_rule ?? 'any');
+    const cancellationPolicy = normalizePolicy(preference?.cancellation_policy);
+
+    if (Number.isFinite(maxGroupSize) && maxGroupSize < minGroupSize) {
+      return res.status(400).json({ message: 'Invalid booking preferences: max group size is smaller than min group size' });
+    }
+
+    if (totalTickets < minGroupSize) {
+      return res.status(400).json({ message: `Minimum group size is ${minGroupSize}` });
+    }
+    if (Number.isFinite(maxGroupSize) && totalTickets > maxGroupSize) {
+      return res.status(400).json({ message: `Maximum group size is ${maxGroupSize}` });
+    }
+
+    if (experience.date_time && minNoticeMinutes > 0) {
+      const eventTime = new Date(experience.date_time).getTime();
+      const now = Date.now();
+      const diffMinutes = Math.floor((eventTime - now) / (1000 * 60));
+      if (diffMinutes < minNoticeMinutes) {
+        return res.status(400).json({ message: `Booking must be at least ${minNoticeMinutes} minutes before start` });
+      }
+    }
+
+    const hasBreakdown = group_gender_breakdown != null;
+    if (groupRule !== 'any' && !hasBreakdown) {
+      return res.status(400).json({ message: 'group_gender_breakdown is required for this experience' });
+    }
+
+    let normalizedBreakdown = null;
+    if (hasBreakdown) {
+      let breakdown = group_gender_breakdown;
+      if (typeof group_gender_breakdown === 'string') {
+        try {
+          breakdown = JSON.parse(group_gender_breakdown);
+        } catch {
+          return res.status(400).json({ message: 'group_gender_breakdown must be valid JSON' });
+        }
+      }
+      const male = Number(breakdown?.male ?? 0);
+      const female = Number(breakdown?.female ?? 0);
+      const other = Number(breakdown?.other ?? 0);
+      const unspecified = Number(breakdown?.unspecified ?? 0);
+      const counts = [male, female, other, unspecified];
+      if (!counts.every((v) => Number.isInteger(v) && v >= 0)) {
+        return res.status(400).json({ message: 'group_gender_breakdown values must be non-negative integers' });
+      }
+      const sum = male + female + other + unspecified;
+      if (sum !== totalTickets) {
+        return res.status(400).json({ message: 'group_gender_breakdown total must match ticket count' });
+      }
+      if (groupRule === 'no_all_male_groups' && male === totalTickets) {
+        return res.status(400).json({ message: 'All-male groups are not accepted for this experience' });
+      }
+      normalizedBreakdown = { male, female, other, unspecified };
     }
 
     const normalPrice = parseFloat(experience.price || 0);
@@ -78,7 +192,7 @@ const createBooking = async (req, res) => {
       ? parseFloat(experience.price_discounted) 
       : Math.max(0, normalPrice - 10);
 
-    let totalAmount = Number(((normalPrice * qty_normal) + (discountedPrice * qty_discounted)).toFixed(2));
+    let totalAmount = Number(((normalPrice * qtyNormal) + (discountedPrice * qtyDiscounted)).toFixed(2));
 
     const newBooking = await Booking.create({
       visitor_id,
@@ -86,10 +200,12 @@ const createBooking = async (req, res) => {
       amount_paid: totalAmount,      
       booking_type: 'online', 
       meeting_link,
-      qty_normal,            
-      qty_discounted,        
-      contact_name,          
-      contact_email          
+      qty_normal: qtyNormal,
+      qty_discounted: qtyDiscounted,
+      contact_name,
+      contact_email,
+      group_gender_breakdown: normalizedBreakdown,
+      cancellation_policy_snapshot: cancellationPolicy,
     });
 
     return res.status(201).json({
@@ -137,7 +253,6 @@ const refundBooking = async (req, res) => {
     const bookingId = req.params.id;
     const visitor_id = req.userId;
     const { reason = '' } = req.body;
-
     const booking = await Booking.findById(bookingId);
 
     if (!booking) {
@@ -175,15 +290,10 @@ const refundBooking = async (req, res) => {
     const diffMs = eventDate.getTime() - now.getTime();
     const days_before_event = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
 
-    let refund_percentage = 0;
-
-    if (days_before_event >= 14) {
-      refund_percentage = 100;
-    } else if (days_before_event >= 7) {
-      refund_percentage = 50;
-    } else {
-      refund_percentage = 0;
-    }
+    const refund_percentage = computeRefundPercentage(
+      booking.cancellation_policy_snapshot,
+      days_before_event
+    );
 
     const originalAmount = parseFloat(payment.amount || booking.amount_paid || 0);
     const refund_amount = Number((originalAmount * refund_percentage / 100).toFixed(2));
@@ -206,51 +316,45 @@ const refundBooking = async (req, res) => {
       });
     }
 
-let gatewayRefundId = null;
+    let gatewayRefundId = null;
 
-if (payment.method === 'stripe') {
+    if (payment.method === 'stripe') {
+      if (!payment.transaction_id) {
+        return res.status(400).json({ message: 'Stripe transaction_id is missing' });
+      }
 
-  if (!payment.transaction_id) {
-    return res.status(400).json({ message: 'Stripe transaction_id is missing' });
-  }
+      const stripeRefund = await stripe.refunds.create({
+        payment_intent: payment.transaction_id,
+        amount: Math.round(refund_amount * 100)
+      });
 
-  const stripeRefund = await stripe.refunds.create({
-    payment_intent: payment.transaction_id,
-    amount: Math.round(refund_amount * 100)
-  });
+      gatewayRefundId = stripeRefund.id;
+    } else if (payment.method === 'paypal') {
+      if (!payment.transaction_id) {
+        return res.status(400).json({ message: 'PayPal transaction_id is missing' });
+      }
 
-  gatewayRefundId = stripeRefund.id;
+      const client = getPayPalClient();
 
-} else if (payment.method === 'paypal') {
+      const request = new checkoutNodeJssdk.payments.CapturesRefundRequest(
+        payment.transaction_id
+      );
 
-  if (!payment.transaction_id) {
-    return res.status(400).json({ message: 'PayPal transaction_id is missing' });
-  }
+      request.requestBody({
+        amount: {
+          currency_code: 'GBP',
+          value: refund_amount.toFixed(2)
+        }
+      });
 
-  const client = getPayPalClient();
+      const response = await client.execute(request);
 
-  const request = new checkoutNodeJssdk.payments.CapturesRefundRequest(
-    payment.transaction_id
-  );
-
-  request.requestBody({
-    amount: {
-      currency_code: 'GBP',
-      value: refund_amount.toFixed(2)
+      gatewayRefundId = response.result.id;
+    } else {
+      return res.status(400).json({
+        message: `Unsupported payment method: ${payment.method}`
+      });
     }
-  });
-
-  const response = await client.execute(request);
-
-  gatewayRefundId = response.result.id;
-
-} else {
-
-  return res.status(400).json({
-    message: `Unsupported payment method: ${payment.method}`
-  });
-
-}
 
     const refundRecord = await Refund.create({
       booking_id: bookingId,
@@ -274,6 +378,38 @@ if (payment.method === 'stripe') {
   } catch (err) {
     console.error('Refund Error:', err);
     return res.status(500).json({ message: 'Refund Error', error: String(err) });
+  }
+};
+
+const getBookingMeetingLink = async (req, res) => {
+  try {
+    const bookingId = req.params.id;
+    const booking = await Booking.findById(bookingId);
+
+    if (!booking) {
+      return res.status(404).json({ message: 'Booking not found' });
+    }
+
+    if (booking.visitor_id !== req.userId) {
+      return res.status(403).json({ message: 'Forbidden' });
+    }
+
+    if (booking.status !== 'confirmed') {
+      return res.status(403).json({ message: 'Meeting link is only available for successfully booked experiences' });
+    }
+
+    const config = await ExperienceMeetingLink.findByExperienceId(booking.experience_id);
+    if (!config) {
+      return res.status(404).json({ message: 'Meeting link is not configured yet' });
+    }
+
+    return res.status(200).json({
+      platform: config.platform,
+      meeting_url: config.meeting_url,
+      meeting_password: config.meeting_password,
+    });
+  } catch (err) {
+    return res.status(500).json({ message: 'Server error', error: String(err) });
   }
 };
 
@@ -498,6 +634,7 @@ module.exports = {
   createBooking,
   getBookings,
   getBookingById,
+  getBookingMeetingLink,
   createReview,
   rescheduleBooking,
   createPaymentSession,
