@@ -9,24 +9,10 @@ function requireAuth(req, res, next) {
   try {
     const payload = jwt.verify(token, process.env.JWT_SECRET);
     req.userId = payload.userId;
-    req.userRole = payload.role;
     next();
   } catch {
     res.status(401).json({ error: 'Invalid token' });
   }
-}
-
-function requireRole(roles) {
-  const allowed = Array.isArray(roles) ? roles : [roles];
-  return (req, res, next) => {
-    if (!req.userRole) {
-      return res.status(403).json({ error: 'Forbidden' });
-    }
-    if (!allowed.includes(req.userRole)) {
-      return res.status(403).json({ error: 'Forbidden' });
-    }
-    next();
-  };
 }
 
 
@@ -62,4 +48,4 @@ const validateApplication = (req, res, next) => {
   next();
 };
 
-module.exports = { requireAuth, requireRole, validateApplication };
+module.exports = { requireAuth, validateApplication };

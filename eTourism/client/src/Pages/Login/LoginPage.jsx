@@ -3,15 +3,14 @@ import apple from "../icon/apple.png";
 import facebook from "../icon/facebook.png";
 import google from "../icon/google.png";
 import "./style.css";
+import axios from "axios";
 // naviagtion for the password reset
 import { useNavigate } from "react-router-dom";
 
 import { auth, googleProvider, facebookProvider } from "../../firebase";
 import { signInWithPopup } from "firebase/auth";
-import { apiClient } from "../../api/apiClient";
-import axios from "axios";
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api";
+const API_BASE = import.meta.env.VITE_API_URL;
 
 export const LoginPage = () => {
   const [email, setUsername] = useState("");
@@ -70,28 +69,16 @@ export const LoginPage = () => {
       return;
     }
     setError("");
+    console.log("Normal Login:", { email, password });
     try {
-      const res = await apiClient.post("/auth/login", {
-        email,
-        password,
-      });
-      const token = res.data?.token;
-      const user = res.data?.user;
-      if (!token || !user) {
-        setError("Login failed.");
-        return;
-      }
-      localStorage.setItem("authToken", token);
-      localStorage.setItem("authUser", JSON.stringify(user));
-      localStorage.setItem("token", token);
-      localStorage.setItem("user", JSON.stringify(user));
-      if (user.role === "ehost") {
-        navigate("/ehost/meeting-links");
-        return;
-      }
-      navigate("/visitor/bookings");
+      const { data } = await axios.post(`${API_BASE}/auth/login`, { email, password });
+      localStorage.setItem("token", data.token);
+      localStorage.setItem("user", JSON.stringify(data.user));
+      navigate("/Mainpage");
     } catch (err) {
-      setError(err?.response?.data?.error || "Login failed.");
+      console.error("Login failed:", err);
+      const msg = err.response?.data?.message || "Login failed. Please try again.";
+      setError(msg);
     }
   };
 
@@ -111,7 +98,7 @@ export const LoginPage = () => {
         <p className="subtitle">Begin your journey with a single login</p>
         <input
           type="email"
-          placeholder="Email"
+          placeholder="Username"
           className="input-field"
           value={email}
           onChange={(e) => setUsername(e.target.value)}

@@ -183,7 +183,7 @@ describe('login()', () => {
     assert.match(res.json.mock.calls[0].arguments[0].error, /invalid email or password/i);
   });
 
-  it('200 : ehost login is allowed', async () => {
+  it('403 : ehost login is blocked', async () => {
     mockUser.findByEmail.mock.mockImplementation(async () => ({
       id: 2, password_hash: 'hashed_pw', role: 'ehost', status: 'active',
     }));
@@ -193,10 +193,8 @@ describe('login()', () => {
     const res = makeRes();
     await login(req, res);
 
-    const body = res.json.mock.calls[0].arguments[0];
-    assert.equal(body.token, 'mock_token');
-    assert.equal(body.user.role, 'ehost');
-    assert.equal(body.user.password_hash, undefined, 'password_hash must not be returned');
+    assert.equal(res.status.mock.calls[0].arguments[0], 403);
+    assert.match(res.json.mock.calls[0].arguments[0].error, /ehost/i);
   });
 });
 
