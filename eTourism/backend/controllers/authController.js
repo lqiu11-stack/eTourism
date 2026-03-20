@@ -195,7 +195,7 @@ const resetPassword = async (req, res) => {
     }
     const password_hash = await bcrypt.hash(newPassword, 10);
     await User.update(user.id, { password_hash });
-    res.json({ ok: true });
+    res.json({ message: 'Password reset successfully' });
   } catch (err) {
     console.error('[resetPassword]', err);
     const message = err.message || 'Password reset failed';
