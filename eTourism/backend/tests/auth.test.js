@@ -183,7 +183,7 @@ describe('login()', () => {
     assert.match(res.json.mock.calls[0].arguments[0].error, /invalid email or password/i);
   });
 
-  it('403 : ehost login is blocked', async () => {
+  it('200 : ehost login is allowed', async () => {
     mockUser.findByEmail.mock.mockImplementation(async () => ({
       id: 2, password_hash: 'hashed_pw', role: 'ehost', status: 'active',
     }));
@@ -193,8 +193,71 @@ describe('login()', () => {
     const res = makeRes();
     await login(req, res);
 
-    assert.equal(res.status.mock.calls[0].arguments[0], 403);
-    assert.match(res.json.mock.calls[0].arguments[0].error, /ehost/i);
+    assert.equal(res.json.mock.calls[0].arguments[0].user.role, 'ehost');
+  });
+
+  it('200 : admin login is allowed', async () => {
+    mockUser.findByEmail.mock.mockImplementation(async () => ({
+      id: 3, password_hash: 'hashed_pw', role: 'admin', status: 'active',
+    }));
+    fakeBcrypt.compare.mock.mockImplementation(async () => true);
+
+    const req = makeReq({ email: 'admin@test.com', password: 'adminpass' });
+    const res = makeRes();
+    await login(req, res);
+
+    const body = res.json.mock.calls[0].arguments[0];
+    assert.equal(body.user.role, 'admin');
+    assert.equal(body.token, 'mock_token');
+  });
+
+});
+
+const { resetPassword } = require('../controllers/authController');
+
+describe('resetPassword()', () => {
+  beforeEach(resetMocks);
+
+  it('200 : resets password successfully', async () => {
+    mockUser.findByEmail.mock.mockImplementation(async () => ({ id: 1, email: 'user@test.com' }));
+    fakeBcrypt.hash.mock.mockImplementation(async () => 'new_hashed_pw');
+    mockUser.update.mock.mockImplementation(async () => {});
+
+    const req = makeReq({ email: 'user@test.com', newPassword: 'newpass123', confirmPassword: 'newpass123' });
+    const res = makeRes();
+    await resetPassword(req, res);
+
+    const body = res.json.mock.calls[0].arguments[0];
+    assert.match(body.message, /reset successfully/i);
+  });
+
+  it('400 : missing required fields', async () => {
+    const req = makeReq({ email: 'user@test.com', newPassword: 'newpass123' });
+    const res = makeRes();
+    await resetPassword(req, res);
+
+    assert.equal(res.status.mock.calls[0].arguments[0], 400);
+    assert.match(res.json.mock.calls[0].arguments[0].error, /required/i);
+  });
+
+  it('400 : passwords do not match', async () => {
+    const req = makeReq({ email: 'user@test.com', newPassword: 'newpass123', confirmPassword: 'different' });
+    const res = makeRes();
+    await resetPassword(req, res);
+
+    assert.equal(res.status.mock.calls[0].arguments[0], 400);
+    assert.match(res.json.mock.calls[0].arguments[0].error, /do not match/i);
+  });
+
+  it('404 : email not found', async () => {
+    mockUser.findByEmail.mock.mockImplementation(async () => null);
+
+    const req = makeReq({ email: 'ghost@test.com', newPassword: 'newpass123', confirmPassword: 'newpass123' });
+    const res = makeRes();
+    await resetPassword(req, res);
+
+    assert.equal(res.status.mock.calls[0].arguments[0], 404);
+    assert.match(res.json.mock.calls[0].arguments[0].error, /not found/i);
   });
 });
 

@@ -1,4 +1,6 @@
 const User = require('../models/User');
+const pool = require('../config/db');
+const bcrypt = require('bcrypt');
 
 const getExperiences = async (req, res) => {
   // TODO
@@ -16,6 +18,105 @@ const getReviews = async (req, res) => {
   // TODO
 };
 
+// GET /api/admin/applications?status=pending
+const getApplications = async (req, res) => {
+  try {
+    const { status } = req.query;
+    let query = 'SELECT * FROM ehost_applications';
+    const values = [];
+    if (status) {
+      values.push(status);
+      query += ` WHERE status = $1`;
+    }
+    query += ' ORDER BY id DESC';
+    const { rows } = await pool.query(query, values);
+    res.json(rows);
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: String(err) });
+  }
+};
+
+// PATCH /api/admin/applications/:id/approve
+// Creates a user account with role=ehost and marks application as approved
+const approveApplication = async (req, res) => {
+  try {
+    const { rows } = await pool.query(
+      'SELECT * FROM ehost_applications WHERE id = $1',
+      [req.params.id]
+    );
+    const application = rows[0];
+    if (!application) {
+      return res.status(404).json({ message: 'Application not found' });
+    }
+    if (application.status !== 'pending') {
+      return res.status(400).json({ message: `Application is already ${application.status}` });
+    }
+
+    const existing = await User.findByEmail(application.email);
+    if (existing) {
+      return res.status(409).json({ message: 'A user with this email already exists' });
+    }
+
+    // Generate a temporary password — ehost must reset on first login
+    const tempPassword = Math.random().toString(36).slice(-10);
+    const password_hash = await bcrypt.hash(tempPassword, 10);
+
+    const nameParts = application.name.trim().split(' ');
+    const first_name = nameParts[0];
+    const last_name = nameParts.slice(1).join(' ') || '';
+
+    const user = await User.create({
+      email: application.email,
+      password_hash,
+      role: 'ehost',
+      first_name,
+      last_name,
+      date_of_birth: application.birthday,
+      country: application.preferred_country,
+      language: null,
+    });
+
+    await pool.query(
+      'UPDATE ehost_applications SET status = $1 WHERE id = $2',
+      ['approved', req.params.id]
+    );
+
+    res.json({
+      message: 'Application approved. Ehost account created.',
+      user,
+      temp_password: tempPassword,
+    });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: String(err) });
+  }
+};
+
+// PATCH /api/admin/applications/:id/reject
+const rejectApplication = async (req, res) => {
+  try {
+    const { rows } = await pool.query(
+      'SELECT * FROM ehost_applications WHERE id = $1',
+      [req.params.id]
+    );
+    const application = rows[0];
+    if (!application) {
+      return res.status(404).json({ message: 'Application not found' });
+    }
+    if (application.status !== 'pending') {
+      return res.status(400).json({ message: `Application is already ${application.status}` });
+    }
+
+    await pool.query(
+      'UPDATE ehost_applications SET status = $1 WHERE id = $2',
+      ['rejected', req.params.id]
+    );
+
+    res.json({ message: 'Application rejected.' });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: String(err) });
+  }
+};
+
 // POST /api/admin/users
 // Body: { email, password, role, first_name, last_name, date_of_birth, country, language }
 const createUser = async (req, res) => {
@@ -31,7 +132,6 @@ const createUser = async (req, res) => {
     if (existing) {
       return res.status(409).json({ message: 'Email already in use' });
     }
-    const bcrypt = require('bcrypt');
     const password_hash = await bcrypt.hash(password, 10);
     const user = await User.create({ email, password_hash, role, first_name, last_name, date_of_birth, country, language });
     res.status(201).json({ message: 'User created successfully', user });
@@ -108,6 +208,9 @@ module.exports = {
   deleteExperience,
   getBookings,
   getReviews,
+  getApplications,
+  approveApplication,
+  rejectApplication,
   createUser,
   getUsers,
   getUserById,

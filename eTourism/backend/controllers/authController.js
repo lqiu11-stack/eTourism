@@ -71,9 +71,6 @@ const login = async (req, res) => {
     if (!valid) {
       return res.status(401).json({ error: 'Invalid email or password' });
     }
-    if (user.role === 'ehost') {
-      return res.status(403).json({ error: 'Ehost login is disabled' });
-    }
     const token = jwt.sign(
       { userId: user.id, role: user.role },
       process.env.JWT_SECRET,
@@ -115,9 +112,6 @@ const googleLogin = async (req, res) => {
         country: null,
         language: null,
       });
-    }
-    if (user.role === 'ehost') {
-      return res.status(403).json({ error: 'Ehost login is disabled' });
     }
     const token = jwt.sign(
       { userId: user.id, role: user.role },
@@ -163,9 +157,6 @@ const facebookLogin = async (req, res) => {
         language: null,
       });
     }
-    if (user.role === 'ehost') {
-      return res.status(403).json({ error: 'Ehost login is disabled' });
-    }
     const token = jwt.sign(
       { userId: user.id, role: user.role },
       process.env.JWT_SECRET,
@@ -198,7 +189,7 @@ const resetPassword = async (req, res) => {
     }
     const password_hash = await bcrypt.hash(newPassword, 10);
     await User.update(user.id, { password_hash });
-    res.json({ ok: true });
+    res.json({ message: 'Password reset successfully' });
   } catch (err) {
     console.error('[resetPassword]', err);
     const message = err.message || 'Password reset failed';
