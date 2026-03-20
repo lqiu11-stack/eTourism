@@ -5,6 +5,9 @@ const {
   deleteExperience,
   getBookings,
   getReviews,
+  getApplications,
+  approveApplication,
+  rejectApplication,
   createUser,
   getUsers,
   getUserById,
@@ -12,6 +15,15 @@ const {
   updateUserRole,
   deleteUser,
 } = require('../controllers/adminController');
+
+// GET /api/admin/applications?status=pending
+router.get('/applications', requireRole('admin'), getApplications);
+
+// PATCH /api/admin/applications/:id/approve
+router.patch('/applications/:id/approve', requireRole('admin'), approveApplication);
+
+// PATCH /api/admin/applications/:id/reject
+router.patch('/applications/:id/reject', requireRole('admin'), rejectApplication);
 
 // GET /api/admin/experiences
 router.get('/experiences', requireRole('admin'), getExperiences);
