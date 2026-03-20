@@ -9,10 +9,31 @@ function requireAuth(req, res, next) {
   try {
     const payload = jwt.verify(token, process.env.JWT_SECRET);
     req.userId = payload.userId;
+    req.userRole = payload.role;
     next();
   } catch {
     res.status(401).json({ error: 'Invalid token' });
   }
+}
+
+function requireRole(...roles) {
+  return (req, res, next) => {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ error: 'No token provided' });
+    }
+    try {
+      const payload = jwt.verify(authHeader.slice(7), process.env.JWT_SECRET);
+      if (!roles.includes(payload.role)) {
+        return res.status(403).json({ error: 'Forbidden' });
+      }
+      req.userId = payload.userId;
+      req.userRole = payload.role;
+      next();
+    } catch {
+      res.status(401).json({ error: 'Invalid token' });
+    }
+  };
 }
 
 
@@ -48,4 +69,4 @@ const validateApplication = (req, res, next) => {
   next();
 };
 
-module.exports = { requireAuth, validateApplication };
+module.exports = { requireAuth, requireRole, validateApplication };
