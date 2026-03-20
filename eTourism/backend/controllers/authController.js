@@ -113,9 +113,6 @@ const googleLogin = async (req, res) => {
         language: null,
       });
     }
-    if (user.role === 'ehost') {
-      return res.status(403).json({ error: 'Ehost login is disabled' });
-    }
     const token = jwt.sign(
       { userId: user.id, role: user.role },
       process.env.JWT_SECRET,
@@ -159,9 +156,6 @@ const facebookLogin = async (req, res) => {
         country: null,
         language: null,
       });
-    }
-    if (user.role === 'ehost') {
-      return res.status(403).json({ error: 'Ehost login is disabled' });
     }
     const token = jwt.sign(
       { userId: user.id, role: user.role },
