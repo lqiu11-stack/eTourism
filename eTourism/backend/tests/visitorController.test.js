@@ -75,20 +75,15 @@ require.cache[require.resolve('stripe')] = {
 const fakePayPalClient = { execute: mock.fn() };
 const fakePayPal = {
   core: {
-    SandboxEnvironment: mock.fn(),
-    PayPalHttpClient: mock.fn(() => fakePayPalClient),
+    SandboxEnvironment: function() {},
+    PayPalHttpClient: function() { return fakePayPalClient; },
   },
   orders: {
-    OrdersCreateRequest: mock.fn(() => ({
-      prefer: mock.fn(),
-      requestBody: mock.fn(),
-    })),
-    OrdersCaptureRequest: mock.fn(() => ({
-      requestBody: mock.fn(),
-    })),
+    OrdersCreateRequest: function() { return { prefer: function() {}, requestBody: function() {} }; },
+    OrdersCaptureRequest: function() { return { requestBody: function() {} }; },
   },
   payments: {
-    CapturesRefundRequest: mock.fn(() => ({ requestBody: mock.fn() })),
+    CapturesRefundRequest: function() { return { requestBody: function() {} }; },
   },
 };
 require.cache[require.resolve('@paypal/checkout-server-sdk')] = {
