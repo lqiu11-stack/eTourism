@@ -1,13 +1,59 @@
 const User = require('../models/User');
 const pool = require('../config/db');
 const bcrypt = require('bcrypt');
+const Experience = require('../models/Experience');
 
+// GET /api/admin/experiences?status=pending
 const getExperiences = async (req, res) => {
-  // TODO
+  try {
+    const { status } = req.query;
+    const experiences = await Experience.findAll({ status });
+    res.json(experiences);
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: String(err) });
+  }
 };
 
+// PATCH /api/admin/experiences/:id/approve
+const approveExperience = async (req, res) => {
+  try {
+    const experience = await Experience.update(req.params.id, { status: 'approved' });
+    if (!experience) {
+      return res.status(404).json({ message: 'Experience not found' });
+    }
+    res.json({ message: 'Experience approved.', experience });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: String(err) });
+  }
+};
+
+// PATCH /api/admin/experiences/:id/reject
+const rejectExperience = async (req, res) => {
+  try {
+    const experience = await Experience.update(req.params.id, { status: 'rejected' });
+    if (!experience) {
+      return res.status(404).json({ message: 'Experience not found' });
+    }
+    res.json({ message: 'Experience rejected.', experience });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: String(err) });
+  }
+};
+
+// DELETE /api/admin/experiences/:id
 const deleteExperience = async (req, res) => {
-  // TODO
+  try {
+    const { rowCount } = await pool.query(
+      'DELETE FROM experiences WHERE id = $1',
+      [req.params.id]
+    );
+    if (rowCount === 0) {
+      return res.status(404).json({ message: 'Experience not found' });
+    }
+    res.json({ message: 'Experience deleted successfully' });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: String(err) });
+  }
 };
 
 const getBookings = async (req, res) => {
@@ -203,8 +249,11 @@ const deleteUser = async (req, res) => {
   }
 };
 
+
 module.exports = {
   getExperiences,
+  approveExperience,
+  rejectExperience,
   deleteExperience,
   getBookings,
   getReviews,

@@ -2,6 +2,8 @@ const router = require('express').Router();
 const { requireRole } = require('../middleware/auth');
 const {
   getExperiences,
+  approveExperience,
+  rejectExperience,
   deleteExperience,
   getBookings,
   getReviews,
