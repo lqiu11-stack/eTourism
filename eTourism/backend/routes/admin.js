@@ -30,6 +30,12 @@ router.patch('/applications/:id/reject', requireRole('admin'), rejectApplication
 // GET /api/admin/experiences
 router.get('/experiences', requireRole('admin'), getExperiences);
 
+// PATCH /api/admin/experiences/:id/approve
+router.patch('/experiences/:id/approve', requireRole('admin'), approveExperience);
+
+// PATCH /api/admin/experiences/:id/reject
+router.patch('/experiences/:id/reject', requireRole('admin'), rejectExperience);
+
 // DELETE /api/admin/experiences/:id
 router.delete('/experiences/:id', requireRole('admin'), deleteExperience);
 

@@ -4,9 +4,10 @@ const bcrypt = require('bcrypt');
 const Experience = require('../models/Experience');
 
 // GET /api/admin/experiences?status=pending
+
 const getExperiences = async (req, res) => {
   try {
-    const { status } = req.query;
+    const status = req.query.status || 'pending';
     const experiences = await Experience.findAll({ status });
     res.json(experiences);
   } catch (err) {
@@ -43,13 +44,8 @@ const rejectExperience = async (req, res) => {
 // DELETE /api/admin/experiences/:id
 const deleteExperience = async (req, res) => {
   try {
-    const { rowCount } = await pool.query(
-      'DELETE FROM experiences WHERE id = $1',
-      [req.params.id]
-    );
-    if (rowCount === 0) {
-      return res.status(404).json({ message: 'Experience not found' });
-    }
+    const deleted = await Experience.delete(req.params.id);
+    if (!deleted) return res.status(404).json({ message: 'Experience not found' });
     res.json({ message: 'Experience deleted successfully' });
   } catch (err) {
     res.status(500).json({ message: 'Server error', error: String(err) });
