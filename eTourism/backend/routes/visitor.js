@@ -1,5 +1,5 @@
 const router = require('express').Router();
-const { requireRole } = require('../middleware/auth');
+const { requireAuth } = require('../middleware/auth');
 const {
   getMe,
   getExperiences,
@@ -7,6 +7,7 @@ const {
   createBooking,
   getBookings,
   getBookingById,
+  getRefundStatus,
   createReview,
   rescheduleBooking,
   createPaymentSession,
@@ -16,30 +17,32 @@ const {
   captureStripePayment 
 } = require('../controllers/visitorController');
 
-router.get('/me', requireRole('visitor'), getMe);
+router.get('/me', requireAuth, getMe);
 
-router.get('/experiences', requireRole('visitor'), getExperiences);
+router.get('/experiences', requireAuth, getExperiences);
 
-router.get('/experiences/:id', requireRole('visitor'), getExperienceById);
+router.get('/experiences/:id', requireAuth, getExperienceById);
 
-router.post('/bookings', requireRole('visitor'), createBooking);
+router.post('/bookings', requireAuth, createBooking);
 
-router.get('/bookings', requireRole('visitor'), getBookings);
+router.get('/bookings', requireAuth, getBookings);
 
-router.get('/bookings/:id', requireRole('visitor'), getBookingById);
+router.get('/bookings/:id', requireAuth, getBookingById);
 
-router.patch('/bookings/:id/reschedule', requireRole('visitor'), rescheduleBooking);
+router.get('/bookings/:id/refund-status', requireAuth, getRefundStatus);
 
-router.post('/bookings/:id/refund', requireRole('visitor'), refundBooking);
+router.patch('/bookings/:id/reschedule', requireAuth, rescheduleBooking);
 
-router.post('/reviews', requireRole('visitor'), createReview);
+router.post('/bookings/:id/refund', requireAuth, refundBooking);
 
-router.post('/payments/create-session', requireRole('visitor'), createPaymentSession);
+router.post('/reviews', requireAuth, createReview);
 
-router.post('/payments/stripe/capture', requireRole('visitor'), captureStripePayment);
+router.post('/payments/create-session', requireAuth, createPaymentSession);
 
-router.post('/payments/paypal/create-order', requireRole('visitor'), createPayPalOrder);
+router.post('/payments/stripe/capture', requireAuth, captureStripePayment);
 
-router.post('/payments/paypal/capture-order', requireRole('visitor'), capturePayPalOrder);
+router.post('/payments/paypal/create-order', requireAuth, createPayPalOrder);
+
+router.post('/payments/paypal/capture-order', requireAuth, capturePayPalOrder);
 
 module.exports = router;
