@@ -6,11 +6,6 @@ function normalizeToken(token) {
   return '';
 }
 
-/**
- * @param {object} [options]
- * @param {string} [options.missingMessage]
- * @returns {Promise<{ record: object, tokenValue: string } | { error: { status: number, body: object } }>}
- */
 async function validateInviteToken(token, options = {}) {
   const missingMessage = options.missingMessage || 'token is required';
   const tokenValue = normalizeToken(token);

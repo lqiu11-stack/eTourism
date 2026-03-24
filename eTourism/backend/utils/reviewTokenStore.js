@@ -35,9 +35,6 @@ async function appendToken(record) {
   await writeTokens(tokens);
 }
 
-/**
- * @returns {Promise<boolean>} true if token existed and was updated
- */
 async function markTokenUsed(tokenValue) {
   const tokens = await readTokens();
   const idx = tokens.findIndex((t) => t && t.token === tokenValue);

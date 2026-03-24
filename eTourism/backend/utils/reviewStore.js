@@ -46,7 +46,6 @@ async function appendReview(review) {
   return review;
 }
 
-/** @param {Omit<{id:number,created_at:string},'id'|'created_at'>} fields */
 async function createReview(fields) {
   await ensureDataDir();
   const list = await readReviews();

@@ -1,5 +1,4 @@
 {
-  "$comment": "POST /api/reviews JSON body = questionnaire fields below + token (string). Persisted rows in data/reviews.json also include id, user_id, experience_id, created_at.",
   "token": {
     "type": "string",
     "description": "Invite UUID from reviewTokens.json"

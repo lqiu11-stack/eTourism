@@ -1,10 +1,3 @@
-/**
- * Feedback questionnaire (POST /api/reviews body, plus `token`).
- *
- * Persisted record in reviews.json also includes:
- *   id, user_id, experience_id, created_at (added by server from token + store).
- */
-
 const QUESTIONNAIRE_SCHEMA = {
   rating: {
     label: 'rating (overall rating)',
@@ -64,10 +57,6 @@ function parseRecommend(value) {
   };
 }
 
-/**
- * Parse questionnaire fields from request body (excluding token).
- * @returns {{ ok: true, payload: object } | { ok: false, message: string }}
- */
 function parseQuestionnaireBody(body) {
   if (!body || typeof body !== 'object') {
     return { ok: false, message: 'Request body must be a JSON object' };
