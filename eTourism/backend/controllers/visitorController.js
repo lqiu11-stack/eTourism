@@ -138,6 +138,13 @@ const refundBooking = async (req, res) => {
     const visitor_id = req.userId;
     const { reason = '' } = req.body;
 
+    if (!visitor_id) {
+      return res.status(401).json({ message: 'Unauthorised' });
+    }
+    if (!reason || !reason.trim()) {
+      return res.status(400).json({ message: 'Reason is required' });
+    }
+
     const booking = await Booking.findById(bookingId);
 
     if (!booking) {
