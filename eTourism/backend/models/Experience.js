@@ -61,6 +61,13 @@ const Experience = {
     );
     return rows;
   },
+  async delete(id) {
+    const { rowCount } = await pool.query(
+      'DELETE FROM experiences WHERE id = $1',
+      [id]
+    );
+    return rowCount > 0;
+  },
 };
 
 module.exports = Experience;
