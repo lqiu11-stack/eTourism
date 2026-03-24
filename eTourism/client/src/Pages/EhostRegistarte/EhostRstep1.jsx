@@ -27,7 +27,7 @@ export const Eregistrate1 = () => {
       <button
         type="button"
         className="back-btn"
-        onClick={() => navigate("/")}
+        onClick={() => navigate("/login")}
         aria-label="Back"
       >
         <img src={backIcon} alt="Back" className="back-icon" />

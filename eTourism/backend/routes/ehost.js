@@ -1,5 +1,5 @@
 const router = require('express').Router();
-const { requireAuth, validateApplication } = require('../middleware/auth');
+const { requireRole, validateApplication } = require('../middleware/auth');
 const {
   createExperience,
   getExperiences,
@@ -10,22 +10,22 @@ const {
 } = require('../controllers/ehostController');
 
 // POST /api/ehost/experiences
-router.post('/experiences', requireAuth, createExperience);
+router.post('/experiences', requireRole('ehost'), createExperience);
 
 // GET /api/ehost/experiences
-router.get('/experiences', requireAuth, getExperiences);
+router.get('/experiences', requireRole('ehost'), getExperiences);
 
 // GET /api/ehost/experiences/:id
-router.get('/experiences/:id', requireAuth, getExperienceById);
+router.get('/experiences/:id', requireRole('ehost'), getExperienceById);
 
 // PUT /api/ehost/experiences/:id
-router.put('/experiences/:id', requireAuth, updateExperience);
+router.put('/experiences/:id', requireRole('ehost'), updateExperience);
 
 // DELETE /api/ehost/experiences/:id
-router.delete('/experiences/:id', requireAuth, deleteExperience);
+router.delete('/experiences/:id', requireRole('ehost'), deleteExperience);
 
 // GET /api/ehost/bookings
-router.get('/bookings', requireAuth, getBookings);
+router.get('/bookings', requireRole('ehost'), getBookings);
 
 
 

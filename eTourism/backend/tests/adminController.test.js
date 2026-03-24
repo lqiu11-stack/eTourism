@@ -48,6 +48,9 @@ const {
   updateUserStatus,
   updateUserRole,
   deleteUser,
+  getApplications,
+  approveApplication,
+  rejectApplication,
 } = require('../controllers/adminController');
 
 function makeRes() {
@@ -69,6 +72,8 @@ function resetMocks() {
   mockUser.update.mock.resetCalls();
   mockUser.delete.mock.resetCalls();
   fakeBcrypt.hash.mock.resetCalls();
+  fakePool.query.mock.resetCalls();
+  fakePool.query.mock.mockImplementation(() => Promise.resolve({ rows: [] }));
 }
 
 describe('createUser()', () => {
@@ -358,6 +363,173 @@ describe('deleteUser()', () => {
     const req = makeReq({}, { id: '1' });
     const res = makeRes();
     await deleteUser(req, res);
+
+    assert.equal(res.status.mock.calls[0].arguments[0], 500);
+  });
+});
+
+describe('getApplications()', () => {
+  beforeEach(resetMocks);
+
+  it('200 : returns all applications without filter', async () => {
+    const apps = [{ id: 1, email: 'a@test.com', status: 'pending' }];
+    fakePool.query.mock.mockImplementation(() => Promise.resolve({ rows: apps }));
+
+    const req = makeReq({}, {}, {});
+    const res = makeRes();
+    await getApplications(req, res);
+
+    assert.deepEqual(res.json.mock.calls[0].arguments[0], apps);
+  });
+
+  it('200 : filters applications by status', async () => {
+    const apps = [{ id: 2, email: 'b@test.com', status: 'approved' }];
+    fakePool.query.mock.mockImplementation(() => Promise.resolve({ rows: apps }));
+
+    const req = makeReq({}, {}, { status: 'approved' });
+    const res = makeRes();
+    await getApplications(req, res);
+
+    assert.deepEqual(res.json.mock.calls[0].arguments[0], apps);
+  });
+
+  it('500 : database error', async () => {
+    fakePool.query.mock.mockImplementation(() => Promise.reject(new Error('DB fail')));
+
+    const req = makeReq({}, {}, {});
+    const res = makeRes();
+    await getApplications(req, res);
+
+    assert.equal(res.status.mock.calls[0].arguments[0], 500);
+  });
+});
+
+describe('approveApplication()', () => {
+  beforeEach(resetMocks);
+
+  it('200 : approves application and creates ehost user', async () => {
+    const app = { id: 1, email: 'john@test.com', name: 'John Smith', birthday: '1990-01-01', preferred_country: 'UK', status: 'pending' };
+    const createdUser = { id: 10, email: 'john@test.com', role: 'ehost' };
+
+    let calls = 0;
+    fakePool.query.mock.mockImplementation(() => {
+      calls++;
+      if (calls === 1) return Promise.resolve({ rows: [app] }); // find application
+      return Promise.resolve({ rows: [] });                      // update status
+    });
+    mockUser.findByEmail.mock.mockImplementation(async () => null);
+    fakeBcrypt.hash.mock.mockImplementation(async () => 'hashed_pw');
+    mockUser.create.mock.mockImplementation(async () => createdUser);
+
+    const req = makeReq({}, { id: '1' });
+    const res = makeRes();
+    await approveApplication(req, res);
+
+    const body = res.json.mock.calls[0].arguments[0];
+    assert.match(body.message, /approved/i);
+    assert.deepEqual(body.user, createdUser);
+    assert.ok(body.temp_password);
+  });
+
+  it('404 : application not found', async () => {
+    fakePool.query.mock.mockImplementation(() => Promise.resolve({ rows: [] }));
+
+    const req = makeReq({}, { id: '999' });
+    const res = makeRes();
+    await approveApplication(req, res);
+
+    assert.equal(res.status.mock.calls[0].arguments[0], 404);
+    assert.match(res.json.mock.calls[0].arguments[0].message, /not found/i);
+  });
+
+  it('400 : application already approved', async () => {
+    fakePool.query.mock.mockImplementation(() =>
+      Promise.resolve({ rows: [{ id: 1, status: 'approved' }] })
+    );
+
+    const req = makeReq({}, { id: '1' });
+    const res = makeRes();
+    await approveApplication(req, res);
+
+    assert.equal(res.status.mock.calls[0].arguments[0], 400);
+    assert.match(res.json.mock.calls[0].arguments[0].message, /already/i);
+  });
+
+  it('409 : user with this email already exists', async () => {
+    fakePool.query.mock.mockImplementation(() =>
+      Promise.resolve({ rows: [{ id: 1, email: 'john@test.com', name: 'John', status: 'pending' }] })
+    );
+    mockUser.findByEmail.mock.mockImplementation(async () => ({ id: 5 }));
+
+    const req = makeReq({}, { id: '1' });
+    const res = makeRes();
+    await approveApplication(req, res);
+
+    assert.equal(res.status.mock.calls[0].arguments[0], 409);
+    assert.match(res.json.mock.calls[0].arguments[0].message, /already exists/i);
+  });
+
+  it('500 : database error on find', async () => {
+    fakePool.query.mock.mockImplementation(() => Promise.reject(new Error('DB fail')));
+
+    const req = makeReq({}, { id: '1' });
+    const res = makeRes();
+    await approveApplication(req, res);
+
+    assert.equal(res.status.mock.calls[0].arguments[0], 500);
+  });
+});
+
+describe('rejectApplication()', () => {
+  beforeEach(resetMocks);
+
+  it('200 : rejects application successfully', async () => {
+    const app = { id: 1, email: 'john@test.com', status: 'pending' };
+
+    let calls = 0;
+    fakePool.query.mock.mockImplementation(() => {
+      calls++;
+      if (calls === 1) return Promise.resolve({ rows: [app] }); // find application
+      return Promise.resolve({ rows: [] });                      // update status
+    });
+
+    const req = makeReq({}, { id: '1' });
+    const res = makeRes();
+    await rejectApplication(req, res);
+
+    assert.match(res.json.mock.calls[0].arguments[0].message, /rejected/i);
+  });
+
+  it('404 : application not found', async () => {
+    fakePool.query.mock.mockImplementation(() => Promise.resolve({ rows: [] }));
+
+    const req = makeReq({}, { id: '999' });
+    const res = makeRes();
+    await rejectApplication(req, res);
+
+    assert.equal(res.status.mock.calls[0].arguments[0], 404);
+    assert.match(res.json.mock.calls[0].arguments[0].message, /not found/i);
+  });
+
+  it('400 : application already rejected', async () => {
+    fakePool.query.mock.mockImplementation(() =>
+      Promise.resolve({ rows: [{ id: 1, status: 'rejected' }] })
+    );
+
+    const req = makeReq({}, { id: '1' });
+    const res = makeRes();
+    await rejectApplication(req, res);
+
+    assert.equal(res.status.mock.calls[0].arguments[0], 400);
+    assert.match(res.json.mock.calls[0].arguments[0].message, /already/i);
+  });
+
+  it('500 : database error', async () => {
+    fakePool.query.mock.mockImplementation(() => Promise.reject(new Error('DB fail')));
+
+    const req = makeReq({}, { id: '1' });
+    const res = makeRes();
+    await rejectApplication(req, res);
 
     assert.equal(res.status.mock.calls[0].arguments[0], 500);
   });

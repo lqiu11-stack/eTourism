@@ -1,10 +1,13 @@
 const router = require('express').Router();
-const { requireAuth } = require('../middleware/auth');
+const { requireRole } = require('../middleware/auth');
 const {
   getExperiences,
   deleteExperience,
   getBookings,
   getReviews,
+  getApplications,
+  approveApplication,
+  rejectApplication,
   createUser,
   getUsers,
   getUserById,
@@ -13,34 +16,43 @@ const {
   deleteUser,
 } = require('../controllers/adminController');
 
+// GET /api/admin/applications?status=pending
+router.get('/applications', requireRole('admin'), getApplications);
+
+// PATCH /api/admin/applications/:id/approve
+router.patch('/applications/:id/approve', requireRole('admin'), approveApplication);
+
+// PATCH /api/admin/applications/:id/reject
+router.patch('/applications/:id/reject', requireRole('admin'), rejectApplication);
+
 // GET /api/admin/experiences
-router.get('/experiences', requireAuth, getExperiences);
+router.get('/experiences', requireRole('admin'), getExperiences);
 
 // DELETE /api/admin/experiences/:id
-router.delete('/experiences/:id', requireAuth, deleteExperience);
+router.delete('/experiences/:id', requireRole('admin'), deleteExperience);
 
 // GET /api/admin/bookings
-router.get('/bookings', requireAuth, getBookings);
+router.get('/bookings', requireRole('admin'), getBookings);
 
 // GET /api/admin/reviews
-router.get('/reviews', requireAuth, getReviews);
+router.get('/reviews', requireRole('admin'), getReviews);
 
 // POST /api/admin/users
-router.post('/users', requireAuth, createUser);
+router.post('/users', requireRole('admin'), createUser);
 
 // GET /api/admin/users?role=&status=
-router.get('/users', requireAuth, getUsers);
+router.get('/users', requireRole('admin'), getUsers);
 
 // GET /api/admin/users/:id
-router.get('/users/:id', requireAuth, getUserById);
+router.get('/users/:id', requireRole('admin'), getUserById);
 
 // PATCH /api/admin/users/:id/status  — suspend or reactivate
-router.patch('/users/:id/status', requireAuth, updateUserStatus);
+router.patch('/users/:id/status', requireRole('admin'), updateUserStatus);
 
 // PATCH /api/admin/users/:id/role   — change role
-router.patch('/users/:id/role', requireAuth, updateUserRole);
+router.patch('/users/:id/role', requireRole('admin'), updateUserRole);
 
 // DELETE /api/admin/users/:id
-router.delete('/users/:id', requireAuth, deleteUser);
+router.delete('/users/:id', requireRole('admin'), deleteUser);
 
 module.exports = router;

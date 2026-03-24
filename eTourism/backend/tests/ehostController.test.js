@@ -42,25 +42,72 @@ function makeReq(body = {}, params = {}, query = {}, user = null) {
 
 function resetMocks() {
   fakePool.query.mock.resetCalls();
+  fakePool.query.mock.mockImplementation(() => Promise.resolve({ rows: [] }));
 }
 
 describe('submitApplication()', () => {
   beforeEach(resetMocks);
 
   it('201 : submits application successfully', async () => {
-    // TODO
+    let calls = 0;
+    fakePool.query.mock.mockImplementation(() => {
+      calls++;
+      if (calls === 1) return Promise.resolve({ rows: [] });       // duplicate check
+      return Promise.resolve({ rows: [{ id: 1 }] });               // insert
+    });
+
+    const req = makeReq({
+      name: 'John Smith', birthday: '1990-01-01', nationality: 'UK',
+      email: 'john@example.com', hasExperience: true, preferredCountry: 'UK',
+      description: 'Great tour guide', videoLink: 'https://youtube.com/x',
+      isContractAgreed: true,
+    });
+    const res = makeRes();
+    await submitApplication(req, res);
+
+    assert.equal(res.status.mock.calls[0].arguments[0], 201);
+    assert.equal(res.json.mock.calls[0].arguments[0].applicationId, 1);
   });
 
   it('409 : email already submitted an application', async () => {
-    // TODO
+    fakePool.query.mock.mockImplementation(() => Promise.resolve({ rows: [{ id: 99 }] }));
+
+    const req = makeReq({ email: 'existing@example.com' });
+    const res = makeRes();
+    await submitApplication(req, res);
+
+    assert.equal(res.status.mock.calls[0].arguments[0], 409);
+    assert.match(res.json.mock.calls[0].arguments[0].message, /already submitted/i);
   });
 
   it('500 : database error on duplicate check', async () => {
-    // TODO
+    fakePool.query.mock.mockImplementation(() => Promise.reject(new Error('DB fail')));
+
+    const req = makeReq({ email: 'john@example.com' });
+    const res = makeRes();
+    await submitApplication(req, res);
+
+    assert.equal(res.status.mock.calls[0].arguments[0], 500);
   });
 
   it('500 : database error on insert', async () => {
-    // TODO
+    let calls = 0;
+    fakePool.query.mock.mockImplementation(() => {
+      calls++;
+      if (calls === 1) return Promise.resolve({ rows: [] });
+      return Promise.reject(new Error('Insert fail'));
+    });
+
+    const req = makeReq({
+      name: 'John Smith', birthday: '1990-01-01', nationality: 'UK',
+      email: 'john@example.com', hasExperience: true, preferredCountry: 'UK',
+      description: 'Great tour guide', videoLink: 'https://youtube.com/x',
+      isContractAgreed: true,
+    });
+    const res = makeRes();
+    await submitApplication(req, res);
+
+    assert.equal(res.status.mock.calls[0].arguments[0], 500);
   });
 });
 
@@ -68,15 +115,39 @@ describe('getExperiences()', () => {
   beforeEach(resetMocks);
 
   it('200 : returns list of experiences for ehost', async () => {
-    // TODO
+    const experiences = [
+      { id: 1, location_name: 'London', price: 50, status: 'approved' },
+      { id: 2, location_name: 'Paris', price: 80, status: 'pending' },
+    ];
+    fakePool.query.mock.mockImplementation(() => Promise.resolve({ rows: experiences }));
+
+    const req = makeReq({}, {}, {}, { id: 5 });
+    const res = makeRes();
+    await getExperiences(req, res);
+
+    assert.equal(res.status.mock.calls[0].arguments[0], 200);
+    assert.deepEqual(res.json.mock.calls[0].arguments[0].data, experiences);
   });
 
   it('200 : returns empty array when ehost has no experiences', async () => {
-    // TODO
+    fakePool.query.mock.mockImplementation(() => Promise.resolve({ rows: [] }));
+
+    const req = makeReq({}, {}, {}, { id: 5 });
+    const res = makeRes();
+    await getExperiences(req, res);
+
+    assert.equal(res.status.mock.calls[0].arguments[0], 200);
+    assert.deepEqual(res.json.mock.calls[0].arguments[0].data, []);
   });
 
   it('500 : database error', async () => {
-    // TODO
+    fakePool.query.mock.mockImplementation(() => Promise.reject(new Error('DB fail')));
+
+    const req = makeReq({}, {}, {}, { id: 5 });
+    const res = makeRes();
+    await getExperiences(req, res);
+
+    assert.equal(res.status.mock.calls[0].arguments[0], 500);
   });
 });
 
@@ -84,15 +155,35 @@ describe('getExperienceById()', () => {
   beforeEach(resetMocks);
 
   it('200 : returns experience when found and owned by ehost', async () => {
-    // TODO
+    const experience = { id: 1, title: 'City Tour', ehost_id: 5 };
+    fakePool.query.mock.mockImplementation(() => Promise.resolve({ rows: [experience] }));
+
+    const req = makeReq({}, { id: '1' }, {}, { id: 5 });
+    const res = makeRes();
+    await getExperienceById(req, res);
+
+    assert.equal(res.status.mock.calls[0].arguments[0], 200);
+    assert.deepEqual(res.json.mock.calls[0].arguments[0].data, experience);
   });
 
   it('404 : experience not found or not owned by ehost', async () => {
-    // TODO
+    fakePool.query.mock.mockImplementation(() => Promise.resolve({ rows: [] }));
+
+    const req = makeReq({}, { id: '999' }, {}, { id: 5 });
+    const res = makeRes();
+    await getExperienceById(req, res);
+
+    assert.equal(res.status.mock.calls[0].arguments[0], 404);
   });
 
   it('500 : database error', async () => {
-    // TODO
+    fakePool.query.mock.mockImplementation(() => Promise.reject(new Error('DB fail')));
+
+    const req = makeReq({}, { id: '1' }, {}, { id: 5 });
+    const res = makeRes();
+    await getExperienceById(req, res);
+
+    assert.equal(res.status.mock.calls[0].arguments[0], 500);
   });
 });
 
@@ -100,19 +191,49 @@ describe('updateExperience()', () => {
   beforeEach(resetMocks);
 
   it('200 : updates experience and sets status to pending', async () => {
-    // TODO
+    const updated = { id: 1, location_name: 'New York', status: 'pending' };
+    // first query: ownership check
+    fakePool.query.mock.mockImplementationOnce(() => Promise.resolve({ rows: [{ id: 1 }] }));
+    // second query: update
+    fakePool.query.mock.mockImplementationOnce(() => Promise.resolve({ rows: [updated] }));
+
+    const req = makeReq({ location_name: 'New York', price: 60 }, { id: '1' }, {}, { id: 5 });
+    const res = makeRes();
+    await updateExperience(req, res);
+
+    assert.equal(res.status.mock.calls[0].arguments[0], 200);
+    assert.deepEqual(res.json.mock.calls[0].arguments[0].data, updated);
   });
 
   it('404 : experience not found or not owned by ehost', async () => {
-    // TODO
+    fakePool.query.mock.mockImplementation(() => Promise.resolve({ rows: [] }));
+
+    const req = makeReq({ location_name: 'New York' }, { id: '999' }, {}, { id: 5 });
+    const res = makeRes();
+    await updateExperience(req, res);
+
+    assert.equal(res.status.mock.calls[0].arguments[0], 404);
   });
 
   it('500 : database error on ownership check', async () => {
-    // TODO
+    fakePool.query.mock.mockImplementation(() => Promise.reject(new Error('DB fail')));
+
+    const req = makeReq({ location_name: 'New York' }, { id: '1' }, {}, { id: 5 });
+    const res = makeRes();
+    await updateExperience(req, res);
+
+    assert.equal(res.status.mock.calls[0].arguments[0], 500);
   });
 
   it('500 : database error on update', async () => {
-    // TODO
+    fakePool.query.mock.mockImplementationOnce(() => Promise.resolve({ rows: [{ id: 1 }] }));
+    fakePool.query.mock.mockImplementationOnce(() => Promise.reject(new Error('Update fail')));
+
+    const req = makeReq({ location_name: 'New York' }, { id: '1' }, {}, { id: 5 });
+    const res = makeRes();
+    await updateExperience(req, res);
+
+    assert.equal(res.status.mock.calls[0].arguments[0], 500);
   });
 });
 
@@ -120,23 +241,85 @@ describe('deleteExperience()', () => {
   beforeEach(resetMocks);
 
   it('200 : soft-deletes experience successfully', async () => {
-    // TODO
+    fakePool.query.mock.mockImplementation(() => Promise.resolve({ rows: [{ id: 1 }] }));
+
+    const req = makeReq({}, { id: '1' }, {}, { id: 5 });
+    const res = makeRes();
+    await deleteExperience(req, res);
+
+    assert.equal(res.status.mock.calls[0].arguments[0], 200);
+    assert.match(res.json.mock.calls[0].arguments[0].message, /removed/i);
   });
 
   it('404 : experience not found or not owned by ehost', async () => {
-    // TODO
+    fakePool.query.mock.mockImplementation(() => Promise.resolve({ rows: [] }));
+
+    const req = makeReq({}, { id: '999' }, {}, { id: 5 });
+    const res = makeRes();
+    await deleteExperience(req, res);
+
+    assert.equal(res.status.mock.calls[0].arguments[0], 404);
   });
 
   it('500 : database error', async () => {
-    // TODO
+    fakePool.query.mock.mockImplementation(() => Promise.reject(new Error('DB fail')));
+
+    const req = makeReq({}, { id: '1' }, {}, { id: 5 });
+    const res = makeRes();
+    await deleteExperience(req, res);
+
+    assert.equal(res.status.mock.calls[0].arguments[0], 500);
   });
 });
 
 describe('createExperience()', () => {
   beforeEach(resetMocks);
 
-  it('200 : placeholder returns success message', async () => {
-    // TODO
+  it('201 : creates experience successfully', async () => {
+    const newExp = { id: 1, title: 'City Tour', status: 'pending' };
+    fakePool.query.mock.mockImplementation(() => Promise.resolve({ rows: [newExp] }));
+
+    const req = makeReq({
+      title: 'City Tour', location_name: 'London', country: 'UK',
+      price: 50, description: 'A great tour', cover_image: 'https://img.com/x.jpg',
+    }, {}, {}, { id: 5 });
+    const res = makeRes();
+    await createExperience(req, res);
+
+    assert.equal(res.status.mock.calls[0].arguments[0], 201);
+    assert.deepEqual(res.json.mock.calls[0].arguments[0].data, newExp);
+  });
+
+  it('400 : missing required fields', async () => {
+    const req = makeReq({ title: 'City Tour' }, {}, {}, { id: 5 });
+    const res = makeRes();
+    await createExperience(req, res);
+
+    assert.equal(res.status.mock.calls[0].arguments[0], 400);
+  });
+
+  it('400 : missing cover image', async () => {
+    const req = makeReq({
+      title: 'City Tour', location_name: 'London', country: 'UK',
+      price: 50, description: 'A great tour',
+    }, {}, {}, { id: 5 });
+    const res = makeRes();
+    await createExperience(req, res);
+
+    assert.equal(res.status.mock.calls[0].arguments[0], 400);
+  });
+
+  it('500 : database error', async () => {
+    fakePool.query.mock.mockImplementation(() => Promise.reject(new Error('DB fail')));
+
+    const req = makeReq({
+      title: 'City Tour', location_name: 'London', country: 'UK',
+      price: 50, description: 'A great tour', cover_image: 'https://img.com/x.jpg',
+    }, {}, {}, { id: 5 });
+    const res = makeRes();
+    await createExperience(req, res);
+
+    assert.equal(res.status.mock.calls[0].arguments[0], 500);
   });
 });
 
@@ -144,6 +327,11 @@ describe('getBookings()', () => {
   beforeEach(resetMocks);
 
   it('200 : placeholder returns bookings message', async () => {
-    // TODO
+    const req = makeReq({}, {}, {}, { id: 5 });
+    const res = makeRes();
+    await getBookings(req, res);
+
+    assert.equal(res.status.mock.calls[0].arguments[0], 200);
+    assert.match(res.json.mock.calls[0].arguments[0].message, /placeholder/i);
   });
 });
