@@ -381,6 +381,7 @@
 /* LEFT */
 .refund-left {
   flex: 1;
+  gap: 3px;
   max-width: 450px;
 }
 
@@ -390,6 +391,7 @@
 
 .refund-left p {
   margin: 6px 0;
+  font-size: 14px;
 }
 
 .refund-state {
@@ -401,9 +403,14 @@
 .refund-right {
   width: 300px;
   display: flex;
+  gap: 3px;
   flex-direction: column;
-  gap: 10px;
   font-size: 20px;
+}
+
+.refund-right p {
+  margin: 6px 0;
+  font-size: 14px;
 }
 
 .action-btn {
@@ -448,4 +455,70 @@
   background: none;
   font-size: 22px;
   cursor: pointer;
+}
+
+
+/* user data*/
+.user-data-wrapper {
+  width: 100%;
+}
+
+.user-data-top {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 20px;
+}
+
+.user-data-box {
+  background: #e6d7d4;
+  border-radius: 28px;
+  padding: 30px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.user-data-row {
+  display: grid;
+  grid-template-columns: 180px 1fr;
+  align-items: center;
+  gap: 20px;
+}
+
+.user-data-row label {
+  font-size: 20px;
+  font-weight: 600;
+  color: #2d1f1f;
+}
+
+.user-data-row input {
+  width: 100%;
+  padding: 14px 18px;
+  border: none;
+  border-radius: 18px;
+  background: white;
+  font-size: 18px;
+  color: #2d1f1f;
+  outline: none;
+}
+
+.user-data-row input:disabled {
+  background: #f5eeee;
+  color: #555;
+}
+
+.userdata-typein{
+  width: 200px;
+  padding: 5px 10px;
+  border-radius: 20px;
+  border: none;
+  font-size: 14px;
+
+}
+.userdata-typein-email{
+  width: 250px;
+  padding: 5px 10px;
+  border-radius: 20px;
+  border: none;
+  font-size: 14px;
 }

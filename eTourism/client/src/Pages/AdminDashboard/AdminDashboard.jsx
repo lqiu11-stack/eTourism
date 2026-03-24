@@ -46,14 +46,21 @@ const handleRefund = (item) => {
 };
 
   /* fake detail for userdata */
-  const user=[
-    {
-      username: "Abey",
-      registrationDate: "10/06/2021",
-      edit: "edit"
-    }
-  ]
-  const [userdata, setUserdata] = useState(user);
+    const [userData, setUserData] = useState([
+      {
+        email: "amy@gmail.com",
+        password: "12345678",
+        role: "admin",
+        first_name: "Amy",
+        last_name: "AA",
+        date_of_birth: "2022-03-10",
+        country: "UK",
+        language: "English",
+      }
+    ]);
+  const [isEditingUser, setIsEditingUser] = useState(false);
+  const [showUserModal, setShowUserModal] = useState(false);
+  const [selectedUser, setSelectedUser] = useState(null);
 
   /* fake detail for chat box (can delete after) */
   const chatList = [
@@ -175,47 +182,6 @@ const reportData = [
   
   const [activeTab, setActiveTab] = useState("booking");
 
-    const UserData = () => {return (
-    <div>
-
-      {/* Top search + buttons */}
-      <div className="booking-top">
-
-        <div className="search-wrapper">
-          <input
-            className="admin-search-bar"
-            placeholder="Search by username"
-          />
-          <button className="admin-search-btn">
-             <img src ={search} className="admin-search-icon"></img>
-          </button>
-         
-        </div>
-
-        <button className="sort-btn">Sort by alphabet</button>
-        {/* <button className="sort-btn">Sort by event name</button> */}
-      </div>
-
-      {/* Table */}
-      <div className="table-box">
-        <div className="user-table-header">
-          <span>Username</span>
-          <span>Registration date</span>
-          <span>Edit user file</span>
-        </div>
-        {userdata.map((item) => (
-          <div className="user-table-row" key={item.id}>
-            <div>{item.username}</div>
-            <div>{item.registrationDate}</div>
-            <div>
-              <button className="sort-btn">Edit user profile</button>
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
     const MessageBox = () => {
   return (
     <div>
@@ -555,7 +521,16 @@ const reportData = [
           handleRefund={handleRefund}
         />
       )}
-        {activeTab === "user" && <UserData />}
+        {activeTab === "user" && (
+          <UserData
+          userData={userData}
+          setUserData={setUserData}
+          showUserModal={showUserModal}
+          setShowUserModal={setShowUserModal}
+          selectedUser={selectedUser}
+          setSelectedUser={setSelectedUser}
+        />
+        )}
         {activeTab === "message" && <MessageBox />}
         {activeTab === "request" && <Request />}
         {activeTab === "profile" && <Profile />}
@@ -724,3 +699,183 @@ const Booking = ({
     </div>
   );
 };
+
+const UserData = ({
+  userData,
+  setUserData,
+  showUserModal,
+  setShowUserModal,
+  selectedUser,
+  setSelectedUser,
+}) => {return (
+    <div>
+
+      {/* Top search + buttons */}
+      <div className="booking-top">
+
+        <div className="search-wrapper">
+          <input
+            className="admin-search-bar"
+            placeholder="Search by username"
+          />
+          <button className="admin-search-btn">
+             <img src ={search} className="admin-search-icon"></img>
+          </button>
+         
+        </div>
+
+        <button className="sort-btn">Sort by alphabet</button>
+        {/* <button className="sort-btn">Sort by event name</button> */}
+      </div>
+
+      {/* Table */}
+      <div className="table-box">
+        <div className="user-table-header">
+          <span>Username</span>
+          <span>Registration date</span>
+          <span>Edit user file</span>
+        </div>
+        {userData.map((item, index) => (
+          <div className="user-table-row" key={index}>
+            <div>{item.email}</div>
+            <div>{item.role}</div>
+            <div>
+              <button
+                className="sort-btn"
+                onClick={() => {
+                  setSelectedUser(item);
+                  setShowUserModal(true);
+                }}
+              >
+                Edit user profile
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+      {showUserModal && selectedUser && (
+          <div className="refund-overlay">
+            <div className="refund-panel">
+
+              <button
+                className="close-btn"
+                onClick={() => setShowUserModal(false)}
+              >
+                ✕
+              </button>
+              {/*        
+              email: "amy@gmail.com",
+              password: "12345678",
+              role: "admin",
+              first_name: "Amy",
+              last_name: "AA",
+              date_of_birth: "2022-03-10",
+              country: "UK",
+              language: "English", */}
+
+              <div className="refund-left">
+                <h3>Edit User</h3>
+
+                <p>Email:</p>
+                
+                <input
+                 className="userdata-typein-email"
+                  value={selectedUser.email}/>
+
+                <p>Role:</p>
+                <input
+                 className="userdata-typein"
+                  value={selectedUser.role}
+                  onChange={(e) =>
+                    setSelectedUser({
+                      ...selectedUser,
+                      role: e.target.value,
+                    })
+                  }
+                />
+
+                <p>First Name:</p>
+                <input
+                 className="userdata-typein"
+                  value={selectedUser.first_name}
+                  onChange={(e) =>
+                    setSelectedUser({
+                      ...selectedUser,
+                      first_name: e.target.value,
+                    })
+                  }
+                />
+
+                <p>Last Name:</p>
+                <input
+                 className="userdata-typein"
+                  value={selectedUser.last_name}
+                  onChange={(e) =>
+                    setSelectedUser({
+                      ...selectedUser,
+                      last_name: e.target.value,
+                    })
+                  }
+                />
+
+
+              </div>
+
+              <div className="refund-right">
+                <p>Date of birth:</p>
+                <input
+                  className="userdata-typein"
+                  value={selectedUser.date_of_birth}
+                  onChange={(e) =>
+                    setSelectedUser({
+                      ...selectedUser,
+                      date_of_birth: e.target.value,
+                    })
+                  }
+                />
+
+                <p>Location:</p>
+                <input
+                 className="userdata-typein"
+                  value={selectedUser.country}
+                  onChange={(e) =>
+                    setSelectedUser({
+                      ...selectedUser,
+                      country: e.target.value,
+                    })
+                  }
+                />
+
+                <p>Language:</p>
+                <input
+                 className="userdata-typein"
+                  value={selectedUser.language}
+                  onChange={(e) =>
+                    setSelectedUser({
+                      ...selectedUser,
+                      language: e.target.value,
+                    })
+                  }
+                />
+                
+                <button
+                  className="save-btn"
+                  onClick={() => {
+                    setUserData((prev) =>
+                      prev.map((u) =>
+                        u.email === selectedUser.email ? selectedUser : u
+                      )
+                    );
+                    setShowUserModal(false);
+                  }}
+                >
+                  Save
+                </button>
+              </div>
+
+            </div>
+          </div>
+        )}
+    </div>
+  );
+}
