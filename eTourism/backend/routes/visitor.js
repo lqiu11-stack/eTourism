@@ -7,6 +7,7 @@ const {
   createBooking,
   getBookings,
   getBookingById,
+  getRefundStatus,
   createReview,
   rescheduleBooking,
   createPaymentSession,
@@ -27,6 +28,8 @@ router.post('/bookings', requireRole('visitor'), createBooking);
 router.get('/bookings', requireRole('visitor'), getBookings);
 
 router.get('/bookings/:id', requireRole('visitor'), getBookingById);
+
+router.get('/bookings/:id/refund-status', requireRole('visitor'), getRefundStatus);
 
 router.patch('/bookings/:id/reschedule', requireRole('visitor'), rescheduleBooking);
 

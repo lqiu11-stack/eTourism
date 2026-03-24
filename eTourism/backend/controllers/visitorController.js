@@ -116,17 +116,82 @@ const getBookings = async (req, res) => {
 const getBookingById = async (req, res) => {
   try {
     const bookingId = req.params.id;
+    const visitor_id = req.userId;
+
     const booking = await Booking.findById(bookingId);
 
     if (!booking) {
       return res.status(404).json({ message: 'Booking not found' });
     }
 
-    if (booking.visitor_id !== req.userId) {
+    if (booking.visitor_id !== visitor_id) {
       return res.status(403).json({ message: 'Forbidden' });
     }
 
-    return res.status(200).json(booking);
+    const refund = await Refund.findByBookingId(bookingId);
+    const payments = await Payment.findByBooking(bookingId);
+    const payment = payments && payments.length > 0 ? payments[0] : null;
+
+    return res.status(200).json({
+      ...booking,
+      refund: refund
+        ? {
+            id: refund.id,
+            status: refund.status,
+            refund_amount: refund.refund_amount,
+            refund_percentage: refund.refund_percentage,
+            days_before_event: refund.days_before_event,
+            reason: refund.reason,
+            processed_at: refund.processed_at,
+            payment_method: payment ? payment.method : null
+          }
+        : null
+    });
+  } catch (err) {
+    return res.status(500).json({ message: 'Server error', error: String(err) });
+  }
+};
+
+const getRefundStatus = async (req, res) => {
+  try {
+    const bookingId = req.params.id;
+    const visitor_id = req.userId;
+
+    const booking = await Booking.findById(bookingId);
+
+    if (!booking) {
+      return res.status(404).json({ message: 'Booking not found' });
+    }
+
+    if (booking.visitor_id !== visitor_id) {
+      return res.status(403).json({ message: 'Forbidden' });
+    }
+
+    const refund = await Refund.findByBookingId(bookingId);
+    const payments = await Payment.findByBooking(bookingId);
+    const payment = payments && payments.length > 0 ? payments[0] : null;
+
+    if (!refund) {
+      return res.status(200).json({
+        booking_id: booking.id,
+        booking_status: booking.status,
+        has_refund: false,
+        message: 'No refund record found for this booking'
+      });
+    }
+
+    return res.status(200).json({
+      booking_id: booking.id,
+      booking_status: booking.status,
+      has_refund: true,
+      refund_status: refund.status,
+      refund_amount: refund.refund_amount,
+      refund_percentage: refund.refund_percentage,
+      days_before_event: refund.days_before_event,
+      reason: refund.reason,
+      processed_at: refund.processed_at,
+      payment_method: payment ? payment.method : null
+    });
   } catch (err) {
     return res.status(500).json({ message: 'Server error', error: String(err) });
   }
@@ -505,6 +570,7 @@ module.exports = {
   createBooking,
   getBookings,
   getBookingById,
+  getRefundStatus,
   createReview,
   rescheduleBooking,
   createPaymentSession,
