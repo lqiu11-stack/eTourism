@@ -197,3 +197,53 @@ Clients may aggregate `rating` (or other fields) over `reviews` to compute avera
 
 - Implementation: `eTourism/backend` — `controllers/reviewController.js`, `routes/reviews.js`, `routes/experiences.js`, and the `utils` / `data` paths above.
 - This report: **`docs/README-report.md`**. When APIs or fields change, update this file for coursework reports and team onboarding.
+
+---
+
+## 9. Addendum — Questionnaire module, schema file, and JSON I/O hardening
+
+This section records a follow-up update: the feedback **questionnaire** is defined explicitly in code and a JSON schema document; **`POST /api/reviews`** delegates field parsing to a shared helper; and **file read/write** paths surface clearer failures when `reviewTokens.json` or `reviews.json` is corrupt or cannot be written.
+
+### 9.1 Questionnaire definition (`utils/reviewQuestionnaire.js`)
+
+- **`QUESTIONNAIRE_SCHEMA`** — Describes each submitted field with a short label and type/range metadata:
+  - `rating` — overall rating, integer 1–5  
+  - `host_rating` — eHost performance, 1–5  
+  - `content_rating` — content quality, 1–5  
+  - `technical_rating` — technical quality, 1–5  
+  - `recommend` — boolean  
+  - `comment` / `improvement` — strings (optional empty)
+- **`parseQuestionnaireBody(body)`** — Validates the JSON body (excluding `token`) and returns either `{ ok: true, payload }` with the normalized questionnaire object, or `{ ok: false, message }` for **400** responses.  
+- **`controllers/reviewController.js`** (`submitReview`) calls **`validateInviteToken`** first, then **`parseQuestionnaireBody`**, then **`createReview`** with `{ user_id, experience_id, ...payload }`.
+
+Behaviour of **`POST /api/reviews`** (Section 4.3) is unchanged for clients; error messages for invalid scores or `recommend` now reference the schema labels where applicable.
+
+### 9.2 Machine-readable schema (`schemas/reviewQuestionnaire.json`)
+
+A JSON document under **`eTourism/backend/schemas/reviewQuestionnaire.json`** summarizes the same fields (plus `token`) with `type`, `minimum`/`maximum` for ratings, and short **description** strings. It is intended for documentation, OpenAPI-style tooling, or coursework appendices—not loaded at runtime by the server.
+
+### 9.3 Extended file layout
+
+Add to the tree in Section 3:
+
+```
+eTourism/backend/
+├── schemas/
+│   └── reviewQuestionnaire.json   # field descriptions for POST /api/reviews body
+├── utils/
+│   ├── reviewQuestionnaire.js     # QUESTIONNAIRE_SCHEMA + parseQuestionnaireBody
+│   └── … (reviewTokenStore, reviewInviteToken, reviewStore as before)
+```
+
+### 9.4 JSON read/write error handling
+
+| File | Module | Behaviour |
+|------|--------|-----------|
+| `reviewTokens.json` | `utils/reviewTokenStore.js` | **`readTokens`:** if the file exists but **`JSON.parse` fails** (syntax error), throws an `Error` whose message indicates invalid JSON in `reviewTokens.json` (propagates to controller → **500**). **`writeTokens`:** write failures are wrapped with `Failed to write reviewTokens.json: …`. |
+| `data/reviews.json` | `utils/reviewStore.js` | **`readReviews`:** same pattern for corrupt JSON. **`writeReviewsList`:** centralizes persistence after append/create; write failures throw `Failed to write reviews.json: …`. |
+
+`ENOENT` on read still yields an empty array (`[]`) so a missing file is treated as no data yet.
+
+### 9.5 Maintenance note
+
+If questionnaire fields or validation rules change, update **both** `utils/reviewQuestionnaire.js` and **`schemas/reviewQuestionnaire.json`**, and adjust Sections **2.1** and **4.3** in this document if the persisted shape or API contract changes.

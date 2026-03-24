@@ -15,6 +15,11 @@ async function readReviews() {
     return Array.isArray(data) ? data : [];
   } catch (err) {
     if (err.code === 'ENOENT') return [];
+    if (err instanceof SyntaxError) {
+      const wrapped = new Error(`Invalid JSON in reviews.json: ${err.message}`);
+      wrapped.cause = err;
+      throw wrapped;
+    }
     throw err;
   }
 }
@@ -23,11 +28,21 @@ function nextReviewId(list) {
   return list.reduce((max, r) => Math.max(max, Number(r.id) || 0), 0) + 1;
 }
 
+async function writeReviewsList(list) {
+  try {
+    await fs.writeFile(REVIEWS_FILE, `${JSON.stringify(list, null, 2)}\n`, 'utf8');
+  } catch (err) {
+    const wrapped = new Error(`Failed to write reviews.json: ${err.message}`);
+    wrapped.cause = err;
+    throw wrapped;
+  }
+}
+
 async function appendReview(review) {
   await ensureDataDir();
   const list = await readReviews();
   list.push(review);
-  await fs.writeFile(REVIEWS_FILE, `${JSON.stringify(list, null, 2)}\n`, 'utf8');
+  await writeReviewsList(list);
   return review;
 }
 
@@ -42,7 +57,7 @@ async function createReview(fields) {
     created_at: new Date().toISOString(),
   };
   list.push(review);
-  await fs.writeFile(REVIEWS_FILE, `${JSON.stringify(list, null, 2)}\n`, 'utf8');
+  await writeReviewsList(list);
   return review;
 }
 

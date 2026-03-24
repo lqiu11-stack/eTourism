@@ -4,26 +4,12 @@ const Experience = require('../models/Experience');
 const { appendToken, markTokenUsed } = require('../utils/reviewTokenStore');
 const { validateInviteToken } = require('../utils/reviewInviteToken');
 const { createReview, findByExperienceId } = require('../utils/reviewStore');
+const { parseQuestionnaireBody } = require('../utils/reviewQuestionnaire');
 
 const REVIEW_LINK_BASE =
   process.env.REVIEW_FRONTEND_URL || 'http://localhost:3000/review';
 const TOKEN_TTL_MS =
   (Number(process.env.REVIEW_TOKEN_TTL_DAYS) || 7) * 24 * 60 * 60 * 1000;
-
-function parseRating1to5(value, fieldName) {
-  const n = Number(value);
-  if (!Number.isInteger(n) || n < 1 || n > 5) {
-    return { error: `${fieldName} must be an integer between 1 and 5` };
-  }
-  return { value: n };
-}
-
-function parseRecommend(value) {
-  if (value === true || value === false) return { value };
-  if (value === 1 || value === '1' || value === 'true') return { value: true };
-  if (value === 0 || value === '0' || value === 'false') return { value: false };
-  return { error: 'recommend must be a boolean' };
-}
 
 const sendReviewEmail = async (req, res) => {
   try {
@@ -124,43 +110,15 @@ const submitReview = async (req, res) => {
 
     const { record, tokenValue } = tokenResult;
 
-    const rOverall = parseRating1to5(req.body?.rating, 'rating');
-    if (rOverall.error) {
-      return res.status(400).json({ message: rOverall.error });
+    const parsed = parseQuestionnaireBody(req.body);
+    if (!parsed.ok) {
+      return res.status(400).json({ message: parsed.message });
     }
-    const rHost = parseRating1to5(req.body?.host_rating, 'host_rating');
-    if (rHost.error) {
-      return res.status(400).json({ message: rHost.error });
-    }
-    const rContent = parseRating1to5(req.body?.content_rating, 'content_rating');
-    if (rContent.error) {
-      return res.status(400).json({ message: rContent.error });
-    }
-    const rTech = parseRating1to5(req.body?.technical_rating, 'technical_rating');
-    if (rTech.error) {
-      return res.status(400).json({ message: rTech.error });
-    }
-
-    const rec = parseRecommend(req.body?.recommend);
-    if (rec.error) {
-      return res.status(400).json({ message: rec.error });
-    }
-
-    const comment =
-      req.body?.comment != null ? String(req.body.comment) : '';
-    const improvement =
-      req.body?.improvement != null ? String(req.body.improvement) : '';
 
     const saved = await createReview({
       user_id: record.user_id,
       experience_id: record.experience_id,
-      rating: rOverall.value,
-      host_rating: rHost.value,
-      content_rating: rContent.value,
-      technical_rating: rTech.value,
-      recommend: rec.value,
-      comment,
-      improvement,
+      ...parsed.payload,
     });
 
     const marked = await markTokenUsed(tokenValue);

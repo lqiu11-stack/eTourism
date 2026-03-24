@@ -10,12 +10,23 @@ async function readTokens() {
     return Array.isArray(data) ? data : [];
   } catch (err) {
     if (err.code === 'ENOENT') return [];
+    if (err instanceof SyntaxError) {
+      const wrapped = new Error(`Invalid JSON in reviewTokens.json: ${err.message}`);
+      wrapped.cause = err;
+      throw wrapped;
+    }
     throw err;
   }
 }
 
 async function writeTokens(tokens) {
-  await fs.writeFile(TOKENS_FILE, `${JSON.stringify(tokens, null, 2)}\n`, 'utf8');
+  try {
+    await fs.writeFile(TOKENS_FILE, `${JSON.stringify(tokens, null, 2)}\n`, 'utf8');
+  } catch (err) {
+    const wrapped = new Error(`Failed to write reviewTokens.json: ${err.message}`);
+    wrapped.cause = err;
+    throw wrapped;
+  }
 }
 
 async function appendToken(record) {
