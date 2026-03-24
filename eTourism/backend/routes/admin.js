@@ -1,6 +1,8 @@
 const router = require('express').Router();
 const { requireRole } = require('../middleware/auth');
 const {
+  getAgreement,
+  acceptAgreement,
   getExperiences,
   deleteExperience,
   getBookings,
@@ -15,6 +17,12 @@ const {
   updateUserRole,
   deleteUser,
 } = require('../controllers/adminController');
+
+// User agreement (same handlers as former /api/agreements; no admin auth — visitors need text + accept)
+// GET /api/admin/agreements
+router.get('/agreements', getAgreement);
+// POST /api/admin/agreements/accept
+router.post('/agreements/accept', acceptAgreement);
 
 // GET /api/admin/applications?status=pending
 router.get('/applications', requireRole('admin'), getApplications);
