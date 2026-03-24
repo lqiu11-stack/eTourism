@@ -4,6 +4,8 @@ import backIcon from "../icon/back.png";
 import "./style.css";
 import { useNavigate } from "react-router-dom";
 import { StepProgress } from "../EhostRegistarte/Step.jsx";
+import { storage } from "../../firebase";
+import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
 
 export const Eregistrate3 = () => {
   const navigate = useNavigate();
@@ -21,7 +23,9 @@ export const Eregistrate3 = () => {
 
   const [selectedTags, setSelectedTags] = useState([]);
   const [description, setDescription] = useState("");
-  const [videoLink, setVideoLink] = useState("");
+  const [videoFile, setVideoFile] = useState(null);
+  const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
   const [error, setError] = useState("");
 
   const toggleTag = (tag) => {
@@ -34,16 +38,36 @@ export const Eregistrate3 = () => {
 
   const handleNext = (e) => {
     e.preventDefault();
-    if (!description || !videoLink) {
+    if (!description || !videoFile) {
       setError("Please fill in all required fields.");
       return;
     }
-    sessionStorage.setItem("ehost_step3", JSON.stringify({
-      preferredSpotTypes: selectedTags,
-      description,
-      videoLink,
-    }));
-    navigate("/Eregistrate4");
+
+    setUploading(true);
+    setError("");
+    const storageRef = ref(storage, `videos/${Date.now()}_${videoFile.name}`);
+    const uploadTask = uploadBytesResumable(storageRef, videoFile);
+
+    uploadTask.on(
+      "state_changed",
+      (snapshot) => {
+        const progress = Math.round((snapshot.bytesTransferred / snapshot.totalBytes) * 100);
+        setUploadProgress(progress);
+      },
+      () => {
+        setError("Upload failed. Please try again.");
+        setUploading(false);
+      },
+      async () => {
+        const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
+        sessionStorage.setItem("ehost_step3", JSON.stringify({
+          preferredSpotTypes: selectedTags,
+          description,
+          videoLink: downloadURL,
+        }));
+        navigate("/Eregistrate4");
+      }
+    );
   };
 
   return (
@@ -91,15 +115,16 @@ export const Eregistrate3 = () => {
 
           <label className="text-wrapper-4">Provide us a video about you and your past journey*</label>
           {error && <div className="error-text">{error}</div>}
+          {uploading && <div className="error-text">Uploading... {uploadProgress}%</div>}
           <div className="email-wrapper">
             <input
               className="rectangle-4"
-              type="url"
-              placeholder="Link only"
-              value={videoLink}
-              onChange={(e) => setVideoLink(e.target.value)}
+              type="file"
+              accept="video/*"
+              onChange={(e) => setVideoFile(e.target.files[0])}
+              disabled={uploading}
             />
-            <button type="submit" className="next-btn">
+            <button type="submit" className="next-btn" disabled={uploading}>
               <img src={arrowRight} alt="Next" className="next-icon" />
             </button>
           </div>
