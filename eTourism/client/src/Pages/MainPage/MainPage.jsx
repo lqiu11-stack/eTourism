@@ -52,10 +52,7 @@ export const MainPage = () => {
   const [searchDate, setSearchDate] = useState("");
 
   useEffect(() => {
-    if (!token) return;
-    axios.get(`${API_BASE}/visitor/experiences`, {
-      headers: { Authorization: `Bearer ${token}` }
-    })
+    axios.get(`${API_BASE}/visitor/experiences`)
       .then(({ data }) => { setExperiences(data); setFiltered(data); })
       .catch(() => {});
   }, []);
