@@ -34,18 +34,14 @@ export const DetailPage = () => {
   useEffect(() => {
     window.scrollTo(0, 0);
     const id = searchParams.get("id");
-    if (!token || !id) return;
-    axios.get(`${API_BASE}/visitor/experiences/${id}`, {
-      headers: { Authorization: `Bearer ${token}` }
-    })
+    if (!id) return;
+    axios.get(`${API_BASE}/visitor/experiences/${id}`)
       .then(({ data }) => setExperience(data))
       .catch(() => {});
-    axios.get(`${API_BASE}/visitor/reviews?experience_id=${id}`, {
-      headers: { Authorization: `Bearer ${token}` }
-    })
+    axios.get(`${API_BASE}/visitor/reviews?experience_id=${id}`)
       .then(({ data }) => setReviews(data))
       .catch(() => {});
-  }, [searchParams, token]);
+  }, [searchParams]);
 
   return (
     <div className="tour-page">
@@ -98,7 +94,7 @@ export const DetailPage = () => {
             <p>{experience ? new Date(experience.date_time).toLocaleString() : ""}</p>
             <p>{experience ? `${experience.price}£ / per ticket` : ""}</p>
 
-            <button className="detail-book-btn" onClick={() => navigate("/PaymentPage")}>
+            <button className="detail-book-btn" onClick={() => navigate(`/PaymentPage?id=${searchParams.get("id")}`)}>
               Book it now!
             </button>
           </div>
@@ -145,19 +141,14 @@ export const DetailPage = () => {
         <div className="detail-guide-card">
 
           <img
-            src={head}
+            src={experience?.ehost_profile_image || head}
             className="detail-guide-avatar"
             alt="detail-guide"
           />
 
           <div>
-            <h4>Daniel</h4>
-
-            <p>
-              Hi, I'm Daniel, a licensed Bangkok tour guide specializing
-              in cultural and religious heritage tours. My guiding style is
-              interactive and story-driven.
-            </p>
+            <h4>{experience?.ehost_first_name} {experience?.ehost_last_name}</h4>
+            <p>{experience?.ehost_bio}</p>
           </div>
 
         </div>
