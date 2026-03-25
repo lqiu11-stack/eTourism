@@ -278,11 +278,9 @@ export const MainPage = () => {
             <button className="more-btn">Click here to check more</button>
           </div>
           <div className="card-list">
-            {isLoggedIn
-              ? soldOut.length > 0
+            {soldOut.length > 0
                 ? soldOut.map(renderCard)
                 : <p style={{color:'#666'}}>No experiences found.</p>
-              : <p style={{color:'#666'}}>Please <a href="/login">log in</a> to see available experiences.</p>
             }
           </div>
         </div>
@@ -299,11 +297,9 @@ export const MainPage = () => {
             <button className="more-btn">Click here to check more</button>
           </div>
           <div className="card-list">
-            {isLoggedIn
-              ? monthly.length > 0
+            { monthly.length > 0
                 ? monthly.map(renderCard)
                 : <p style={{color:'#666'}}>No experiences found.</p>
-              : <p style={{color:'#666'}}>Please <a href="/login">log in</a> to see available experiences.</p>
             }
           </div>
         </div>
