@@ -8,6 +8,8 @@ import { Eregistrate4 } from "./Pages/EhostRegistarte/EhostRstep4.jsx";
 import { MainPage } from "./Pages/MainPage/MainPage.jsx";
 import { DetailPage } from "./Pages/DetailPage/DetailPage.jsx";
 import { PaymentPage } from "./Pages/PaymentPage/PaymentPage.jsx";
+import { Dashboard } from "./Pages/AdminDashboard/AdminDashboard.jsx";
+
 function App() {
   return (
 
@@ -22,6 +24,7 @@ function App() {
         <Route path="/MainPage" element={<MainPage />} />
         <Route path="/DetailPage" element={<DetailPage />} />
         <Route path="/PaymentPage" element={<PaymentPage />} />
+        <Route path="/Dashboard" element={<Dashboard  />} />
       </Routes>
   );
 }

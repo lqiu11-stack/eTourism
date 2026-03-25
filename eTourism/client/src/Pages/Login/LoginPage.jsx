@@ -89,7 +89,7 @@ export const LoginPage = () => {
           <button className="top-btn" type="submit" onClick={() => navigate("/Eregistrate1")}>
             Join us to become an E-host
           </button>
-          <button className="top-btn" type="submit">
+          <button className="top-btn" type="submit" onClick={() => navigate("/DashBoard")}>
             Admin Login
           </button>
         </div>
