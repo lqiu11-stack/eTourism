@@ -92,7 +92,7 @@ export const MainPage = () => {
   }, {});
 
   const renderCard = (exp) => (
-    <div className="tour-card" key={exp.id}>
+    <div className="tour-card" key={exp.id} onClick={() => navigate(`/DetailPage?id=${exp.id}`)} style={{cursor:'pointer'}}>
       <div className="tour-image">
         <img src={getImage(exp)} alt={exp.title} />
         <div className="image-overlay">
@@ -102,7 +102,7 @@ export const MainPage = () => {
       <div className="tour-info">
         <p>{formatDate(exp.date_time)}</p>
         <p>{exp.price}£ / per ticket</p>
-        <button className="book-btn" onClick={() => navigate(`/DetailPage?id=${exp.id}`)}>
+        <button className="book-btn">
           Click to book &gt;&gt;
         </button>
       </div>
