@@ -14,7 +14,8 @@ const {
   createPayPalOrder,
   capturePayPalOrder,
   refundBooking,
-  captureStripePayment 
+  captureStripePayment,
+  getReviews
 } = require('../controllers/visitorController');
 
 router.get('/me', requireRole('visitor'), getMe);
@@ -35,6 +36,7 @@ router.patch('/bookings/:id/reschedule', requireRole('visitor'), rescheduleBooki
 
 router.post('/bookings/:id/refund', requireRole('visitor'), refundBooking);
 
+router.get('/reviews', requireRole('visitor'), getReviews);
 router.post('/reviews', requireRole('visitor'), createReview);
 
 router.post('/payments/create-session', requireRole('visitor'), createPaymentSession);

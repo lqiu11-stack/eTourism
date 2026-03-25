@@ -1,31 +1,51 @@
+import { useState, useEffect } from "react";
+import axios from "axios";
 import "./DetailPage.css";
 
 import heroImg from "../icon/London.png";
 import videoImg from "../icon/livecover.png";
 import head from "../icon/head.png";
-import photo1 from "../icon/London.png";
 import photo2 from "../icon/london1.jpg";
 import photo3 from "../icon/london2.jpg";
 import photo4 from "../icon/london3.jpg";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams, Link } from "react-router-dom";
 import backIcon from "../icon/back.png";
 import blog from "../icon/blogger.png";
-import { useEffect } from "react";
-import { Link } from "react-router-dom";
+
+const API_BASE = import.meta.env.VITE_API_URL;
+
+const renderStars = (rating) => Array(Number(rating)).fill('\u2605').join(' ');
 
 export const DetailPage = () => {
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const token = localStorage.getItem("token");
   const isLoggedIn = !!token;
+
+  const [experience, setExperience] = useState(null);
+  const [reviews, setReviews] = useState([]);
 
   const handleLogout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
     navigate("/login");
   };
-     const navigate = useNavigate();
-     useEffect(() => {
+
+  useEffect(() => {
     window.scrollTo(0, 0);
-  }, []);
+    const id = searchParams.get("id");
+    if (!token || !id) return;
+    axios.get(`${API_BASE}/visitor/experiences/${id}`, {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+      .then(({ data }) => setExperience(data))
+      .catch(() => {});
+    axios.get(`${API_BASE}/visitor/reviews?experience_id=${id}`, {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+      .then(({ data }) => setReviews(data))
+      .catch(() => {});
+  }, [searchParams, token]);
 
   return (
     <div className="tour-page">
@@ -63,25 +83,20 @@ export const DetailPage = () => {
         <div className="detail-hero-content">
 
           <div className="detail-hero-left">
-            <h1>London Tourism</h1>
+            <h1>{experience?.title}</h1>
 
-            <p>
-              Explore the timeless beauty of London, a city where history and modern life meet.
-Visit world-famous landmarks like Big Ben, the London Eye, and the River Thames.
-Experience the culture, stories, and atmosphere of London through our immersive live tour.
-            </p>
+            <p>{experience?.description}</p>
 
             <div className="detail-tags">
-              <span>UK</span>
-              <span>City view</span>
-              <span>English</span>
+              {experience?.country && <span>{experience.country}</span>}
+              {experience?.category && <span>{experience.category}</span>}
             </div>
           </div>
 
           <div className="detail-hero-right">
             <h3>Live Start</h3>
-            <p>20/4/2025 14:00</p>
-            <p>25£ / per ticket</p>
+            <p>{experience ? new Date(experience.date_time).toLocaleString() : ""}</p>
+            <p>{experience ? `${experience.price}£ / per ticket` : ""}</p>
 
             <button className="detail-book-btn" onClick={() => navigate("/PaymentPage")}>
               Book it now!
@@ -99,26 +114,25 @@ Experience the culture, stories, and atmosphere of London through our immersive 
           <h3>Are you still hesitating?</h3>
           <p>Check our past video</p>
 
-          <img src={videoImg} alt="detail-live video"/>
+          {experience?.sample_video_url ? (
+            <video
+              src={experience.sample_video_url}
+              controls
+              className="detail-video-player"
+            />
+          ) : (
+            <img src={videoImg} alt="detail-live video"/>
+          )}
         </div>
 
         <div className="detail-video-right">
-          <p>
-            This live stream takes viewers on an immersive evening tour of
-            Wat Arun (Temple of Dawn) in Bangkok, capturing the breathtaking
-            moment when the temple’s golden lights illuminate against the
-            Chao Phraya River.
-          </p>
-
-          <p>
-            Led by a professional local guide, the stream offers real-time
-            storytelling, cultural insights, and interactive Q&A.
-          </p>
-
+          {experience?.video_description?.split("\n\n").map((para, i) => (
+            <p key={i}>{para}</p>
+          ))}
           <ul>
-            <li>Wat Arun’s main prang and porcelain details</li>
-            <li>Evening lights along the Chao Phraya River</li>
-            <li>Nearby highlights such as Wat Pho</li>
+            {experience?.video_highlights?.map((item, i) => (
+              <li key={i}>{item}</li>
+            ))}
           </ul>
         </div>
 
@@ -152,58 +166,37 @@ Experience the culture, stories, and atmosphere of London through our immersive 
 
 
       {/* REVIEWS */}
-      <section className="detail-blog-section">
-
-        <div className="blog-card">
-
-        <div className="blog-top">
-            <span className="quote">❝</span>
-
-            <div className="stars">
-            ★ ★ ★ ★ ★
+      {reviews.length > 0 && (
+        <>
+          <section className="detail-blog-section">
+            <div className="blog-card">
+              <div className="blog-top">
+                <span className="quote">{"\u275D"}</span>
+                <div className="stars">{renderStars(reviews[0].rating)}</div>
+              </div>
+              <h3 className="blog-name">{reviews[0].first_name} {reviews[0].last_name}</h3>
+              <p className="blog-text">{reviews[0].comment}</p>
             </div>
-        </div>
+            <div className="detail-video-left">
+              <h3>Recommended by Travel Bloggers</h3>
+              <p>Book the ticket and join us!</p>
+              <img src={blog} alt="blogger"/>
+            </div>
+          </section>
 
-        <h3 className="blog-name">Miky</h3>
-
-        <p className="blog-text">
-            As a travel blogger who has explored many cities around the world, I was truly impressed by this live tour experience. Watching London come alive at sunset while learning about its history and culture from a local guide was both relaxing and fascinating. The views of Big Ben and the River Thames were absolutely breathtaking. I would highly recommend this experience to anyone who wants to discover London in a unique and immersive way.
-        </p>
-
-        </div>
-        <div className="detail-video-left">
-          <h3>Recommended by Travel Bloggers</h3>
-          <p>Book the ticket and join us!</p>
-
-          <img src={blog} alt="detail-live video"/>
-        </div>
-
-      </section>
-
-      <section className="detail-review-section">
-
-        <h3>Customer’s review is important for us</h3>
-
-        <div className="detail-reviews">
-
-          <div className="detail-review">
-            <h4>Alex from US</h4>
-            <p>Wow, this view is absolutely stunning!</p>
-          </div>
-
-          <div className="detail-review">
-            <h4>Amy from UK</h4>
-            <p>The sunset colors and the temple lights are incredible.</p>
-          </div>
-
-          <div className="detail-review">
-            <h4>John from UK</h4>
-            <p>The guide explains the history very clearly.</p>
-          </div>
-
-        </div>
-
-      </section>
+          <section className="detail-review-section">
+            <h3>{"Customer’s review is important for us"}</h3>
+            <div className="detail-reviews">
+              {reviews.slice(1).map((r) => (
+                <div className="detail-review" key={r.id}>
+                  <h4>{r.first_name}{r.country ? ` from ${r.country}` : ""}</h4>
+                  <p>{r.comment}</p>
+                </div>
+              ))}
+            </div>
+          </section>
+        </>
+      )}
 
 
       {/* REFUND */}
@@ -226,7 +219,7 @@ Experience the culture, stories, and atmosphere of London through our immersive 
 
         <div className="detail-photo-grid">
 
-          <img src={photo1}/>
+          <img src={photo2}/>
           <img src={photo2}/>
           <img src={photo3}/>
           <img src={photo4}/>

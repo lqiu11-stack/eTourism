@@ -27,14 +27,42 @@ const getExperiences = async (req, res) => {
 
 const getExperienceById = async (req, res) => {
   try {
-    const experienceId = req.params.id;
-    const experience = await Experience.findById(experienceId);
+    const pool = require('../config/db');
+    const { rows } = await pool.query(
+      `SELECT e.*,
+              u.first_name    AS ehost_first_name,
+              u.last_name     AS ehost_last_name,
+              u.bio           AS ehost_bio,
+              u.profile_image AS ehost_profile_image
+       FROM experiences e
+       LEFT JOIN users u ON u.id = e.ehost_id
+       WHERE e.id = $1`,
+      [req.params.id]
+    );
+    if (!rows[0]) return res.status(404).json({ message: 'Experience not found' });
+    return res.status(200).json(rows[0]);
+  } catch (err) {
+    return res.status(500).json({ message: 'Server error', error: String(err) });
+  }
+};
 
-    if (!experience) {
-      return res.status(404).json({ message: 'Experience not found' });
+const getReviews = async (req, res) => {
+  try {
+    const { experience_id } = req.query;
+    if (!experience_id) {
+      return res.status(400).json({ message: 'experience_id query param is required' });
     }
-
-    return res.status(200).json(experience);
+    const pool = require('../config/db');
+    const { rows } = await pool.query(
+      `SELECT r.id, r.rating, r.comment, r.created_at,
+              u.first_name, u.last_name, u.country
+       FROM reviews r
+       JOIN users u ON u.id = r.visitor_id
+       WHERE r.experience_id = $1
+       ORDER BY r.created_at DESC`,
+      [experience_id]
+    );
+    return res.status(200).json(rows);
   } catch (err) {
     return res.status(500).json({ message: 'Server error', error: String(err) });
   }
@@ -577,5 +605,6 @@ module.exports = {
   createPayPalOrder,
   capturePayPalOrder,
   refundBooking,
-  captureStripePayment
+  captureStripePayment,
+  getReviews
 };
