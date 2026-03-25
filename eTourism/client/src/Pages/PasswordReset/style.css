@@ -154,3 +154,15 @@
   color: white;
   cursor: pointer;
 }
+
+.reset-error {
+  color: #ff6b6b;
+  font-size: 14px;
+  margin: 0;
+}
+
+.reset-success {
+  color: #6bffb8;
+  font-size: 14px;
+  margin: 0;
+}
