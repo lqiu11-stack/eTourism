@@ -54,6 +54,21 @@ const Experience = {
     return rows;
   },
 
+  async findByIdWithHost(id) {
+    const { rows } = await pool.query(
+      `SELECT e.*,
+              u.first_name    AS ehost_first_name,
+              u.last_name     AS ehost_last_name,
+              u.bio           AS ehost_bio,
+              u.profile_image AS ehost_profile_image
+       FROM experiences e
+       LEFT JOIN users u ON u.id = e.ehost_id
+       WHERE e.id = $1`,
+      [id]
+    );
+    return rows[0] || null;
+  },
+
   async findByHost(ehost_id) {
     const { rows } = await pool.query(
       'SELECT * FROM experiences WHERE ehost_id = $1 ORDER BY created_at DESC',
