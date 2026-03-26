@@ -4,6 +4,7 @@ const Booking = require('../models/Booking');
 const Experience = require('../models/Experience');
 const Payment = require('../models/Payment');
 const Refund = require('../models/Refund');
+const Review = require('../models/Review');
 
 const getPayPalClient = () => {
 
@@ -27,14 +28,22 @@ const getExperiences = async (req, res) => {
 
 const getExperienceById = async (req, res) => {
   try {
-    const experienceId = req.params.id;
-    const experience = await Experience.findById(experienceId);
-
-    if (!experience) {
-      return res.status(404).json({ message: 'Experience not found' });
-    }
-
+    const experience = await Experience.findByIdWithHost(req.params.id);
+    if (!experience) return res.status(404).json({ message: 'Experience not found' });
     return res.status(200).json(experience);
+  } catch (err) {
+    return res.status(500).json({ message: 'Server error', error: String(err) });
+  }
+};
+
+const getReviews = async (req, res) => {
+  try {
+    const { experience_id } = req.query;
+    if (!experience_id) {
+      return res.status(400).json({ message: 'experience_id query param is required' });
+    }
+    const reviews = await Review.findByExperience(experience_id);
+    return res.status(200).json(reviews);
   } catch (err) {
     return res.status(500).json({ message: 'Server error', error: String(err) });
   }
@@ -577,5 +586,6 @@ module.exports = {
   createPayPalOrder,
   capturePayPalOrder,
   refundBooking,
-  captureStripePayment
+  captureStripePayment,
+  getReviews
 };

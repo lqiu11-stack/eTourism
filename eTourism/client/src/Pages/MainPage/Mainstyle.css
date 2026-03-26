@@ -328,6 +328,22 @@
   border-radius: 25px;
   overflow: hidden;
   box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+  position: relative;
+}
+
+.tour-card::before{
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0);
+  border-radius: inherit;
+  transition: 0.3s ease;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.tour-card:hover::before{
+  background: rgba(0,0,0,0.2);
 }
 
 .tour-image{
@@ -682,5 +698,9 @@
 
 .footer-brand h3{
   margin-bottom:10px;
+}
+
+.card-empty-msg {
+  color: #666;
 }
 

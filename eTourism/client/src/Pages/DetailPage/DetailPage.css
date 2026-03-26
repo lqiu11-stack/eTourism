@@ -107,6 +107,12 @@
   border-radius:10px;
   margin-top: 10px;
 }
+.detail-video-player{
+  width:600px;
+  border-radius:10px;
+  margin-top: 10px;
+  background:#000;
+}
 .detail-video-left{
     padding: 0px 100px 0px 100px;
 

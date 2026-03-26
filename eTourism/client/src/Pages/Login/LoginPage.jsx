@@ -5,7 +5,7 @@ import google from "../icon/google.png";
 import "./style.css";
 import axios from "axios";
 // naviagtion for the password reset
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 
 import { auth, googleProvider, facebookProvider } from "../../firebase";
 import { signInWithPopup } from "firebase/auth";
@@ -17,6 +17,8 @@ export const LoginPage = () => {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const redirectTo = searchParams.get("redirect") || "/";
 
   const handleGoogleLogin = async () => {
     try {
@@ -31,8 +33,8 @@ export const LoginPage = () => {
       
       localStorage.setItem("token", data.token);
       localStorage.setItem("user", JSON.stringify(data.user));
-      navigate("/");
-      
+      navigate(redirectTo);
+
     } catch (err) {
       console.error("Login failed:", err);
       const msg = err.response?.data?.error || "Google Login Failed";
@@ -53,8 +55,8 @@ export const LoginPage = () => {
       
       localStorage.setItem("token", data.token);
       localStorage.setItem("user", JSON.stringify(data.user));
-      navigate("/");
-      
+      navigate(redirectTo);
+
     } catch (err) {
       console.error("Facebook Login failed:", err);
       const msg = err.response?.data?.error || "Facebook Login Failed";
@@ -74,7 +76,7 @@ export const LoginPage = () => {
       const { data } = await axios.post(`${API_BASE}/auth/login`, { email, password });
       localStorage.setItem("token", data.token);
       localStorage.setItem("user", JSON.stringify(data.user));
-      navigate("/Mainpage");
+      navigate(redirectTo);
     } catch (err) {
       console.error("Login failed:", err);
       const msg = err.response?.data?.message || "Login failed. Please try again.";
