@@ -92,7 +92,7 @@ export const DetailPage = () => {
           <div className="detail-hero-right">
             <h3>Live Start</h3>
             <p>{experience ? new Date(experience.date_time).toLocaleString() : ""}</p>
-            <p>{experience ? `${experience.price}£ / per ticket` : ""}</p>
+            <p>{experience ? `£${experience.price} / per ticket` : ""}</p>
 
             <button className="detail-book-btn" onClick={() => navigate(`/PaymentPage?id=${searchParams.get("id")}`)}>
               Book it now!
