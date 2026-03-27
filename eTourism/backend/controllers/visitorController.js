@@ -515,9 +515,11 @@ const captureStripePayment = async (req, res) => {
       const amount = Number((session.amount_total / 100).toFixed(2));
       const transaction_id = session.payment_intent; 
 
-      const existingPayments = await Payment.findByBooking(booking_id); //
+      const existingPayments = await Payment.findByBooking(booking_id);
       if (existingPayments.length > 0) {
-        return res.status(200).json({ message: 'Payment already captured', status: 'success' });
+        const booking = await Booking.findById(booking_id);
+        const experience = await Experience.findById(booking.experience_id);
+        return res.status(200).json({ status: 'success', booking, experience });
       }
 
       await Payment.create({
@@ -530,7 +532,10 @@ const captureStripePayment = async (req, res) => {
 
       await Booking.updateStatus(booking_id, 'confirmed');
 
-      return res.status(200).json({ message: 'Stripe payment successful and recorded', status: 'success' });
+      const booking = await Booking.findById(booking_id);
+      const experience = await Experience.findById(booking.experience_id);
+
+      return res.status(200).json({ status: 'success', booking, experience });
     } else {
       return res.status(400).json({ message: 'Payment not completed yet' });
     }

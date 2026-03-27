@@ -101,6 +101,7 @@ export const PaymentPage = () => {
     setLoading(true);
     try {
       const bookingId = await createBooking();
+      localStorage.setItem("pending_booking_id", bookingId);
       const { data } = await axios.post(
         `${API_BASE}/visitor/payments/create-session`,
         { booking_id: bookingId },
@@ -151,7 +152,7 @@ export const PaymentPage = () => {
           </button>
           <div className="nav-links">
             <Link to="/help" className="nav-link">Helping centre</Link>
-            <Link to="/booking" className="nav-link">My booking</Link>
+            <Link to="/Mybooking" className="nav-link">My booking</Link>
             {isLoggedIn ? (
               <button className="nav-link nav-btn-link" onClick={handleLogout}>Logout</button>
             ) : (
