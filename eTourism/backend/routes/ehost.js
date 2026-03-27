@@ -7,6 +7,15 @@ const {
   updateExperience,
   deleteExperience,
   getBookings,
+  getCalendarSlots,
+  createCalendarSlot,
+  updateCalendarSlot,
+  deleteCalendarSlot,
+  setUnavailableDates,
+  updateBookingMeetingLink,
+  getBookingPreferences,
+  updateBookingPreferences,
+  submitApplication,
 } = require('../controllers/ehostController');
 
 // POST /api/ehost/experiences
@@ -21,18 +30,33 @@ router.get('/experiences/:id', requireRole('ehost'), getExperienceById);
 // PUT /api/ehost/experiences/:id
 router.put('/experiences/:id', requireRole('ehost'), updateExperience);
 
+// GET /api/ehost/experiences/:id/booking-preferences
+router.get('/experiences/:id/booking-preferences', requireRole('ehost'), getBookingPreferences);
+
+// PATCH /api/ehost/experiences/:id/booking-preferences
+router.patch('/experiences/:id/booking-preferences', requireRole('ehost'), updateBookingPreferences);
+
 // DELETE /api/ehost/experiences/:id
 router.delete('/experiences/:id', requireRole('ehost'), deleteExperience);
 
 // GET /api/ehost/bookings
 router.get('/bookings', requireRole('ehost'), getBookings);
 
+router.get('/calendar/slots', requireRole('ehost'), getCalendarSlots);
+
+router.post('/calendar/slots', requireRole('ehost'), createCalendarSlot);
+
+router.put('/calendar/slots/:id', requireRole('ehost'), updateCalendarSlot);
+
+router.delete('/calendar/slots/:id', requireRole('ehost'), deleteCalendarSlot);
+
+router.post('/calendar/unavailable-dates', requireRole('ehost'), setUnavailableDates);
+
+// PATCH /api/ehost/bookings/:id/meeting-link
+router.patch('/bookings/:id/meeting-link', requireRole('ehost'), updateBookingMeetingLink);
 
 
 
-//3-4 update ehost registionation and login by Emily
-const express = require('express');
-const { submitApplication } = require('../controllers/ehostController');
 
 router.post('/apply', validateApplication, submitApplication);
 module.exports = router;

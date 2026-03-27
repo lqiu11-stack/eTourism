@@ -21,7 +21,7 @@ require.cache[path.resolve(__dirname, '../models/Booking.js')] = {
   paths: [],
 };
 
-const mockExperience = { findById: mock.fn(), findAll: mock.fn() };
+const mockExperience = { findById: mock.fn(), findByIdWithHost: mock.fn(), findAll: mock.fn() };
 require.cache[path.resolve(__dirname, '../models/Experience.js')] = {
   id: path.resolve(__dirname, '../models/Experience.js'),
   filename: path.resolve(__dirname, '../models/Experience.js'),
@@ -130,6 +130,7 @@ function resetMocks() {
   mockBooking.updateStatus.mock.resetCalls();
   mockBooking.getRefundContext.mock.resetCalls();
   mockExperience.findById.mock.resetCalls();
+  mockExperience.findByIdWithHost.mock.resetCalls();
   mockExperience.findAll.mock.resetCalls();
   mockPayment.create.mock.resetCalls();
   mockPayment.findByBooking.mock.resetCalls();
@@ -143,9 +144,10 @@ function resetMocks() {
 
 describe('createBooking()', () => {
   beforeEach(resetMocks);
+  const futureSlot = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
 
   it('201 : creates a booking successfully', async () => {
-    const fakeExperience = { id: 1, max_visitors: 10, price: '50.00', price_discounted: '40.00', title: 'Test Tour' };
+    const fakeExperience = { id: 1, max_visitors: 10, price: '50.00', price_discounted: '40.00', title: 'Test Tour', date_time: futureSlot, status: 'approved' };
     const fakeBooking = { id: 1, visitor_id: 42, experience_id: 1, amount_paid: 140 };
     mockExperience.findById.mock.mockImplementationOnce(async () => fakeExperience);
     mockBooking.create.mock.mockImplementationOnce(async () => fakeBooking);
@@ -158,6 +160,7 @@ describe('createBooking()', () => {
     assert.equal(res.status.mock.calls[0].arguments[0], 201);
     assert.equal(res.json.mock.calls[0].arguments[0].message, 'Booking created successfully');
     assert.deepEqual(res.json.mock.calls[0].arguments[0].booking, fakeBooking);
+    assert.equal(mockBooking.create.mock.calls[0].arguments[0].meeting_link, '');
   });
 
   it('400 : agreed_to_terms is not true', async () => {
@@ -177,7 +180,7 @@ describe('createBooking()', () => {
   });
 
   it('400 : total tickets exceed max_visitors', async () => {
-    const fakeExperience = { id: 1, max_visitors: 2, price: '50.00', title: 'Test Tour' };
+    const fakeExperience = { id: 1, max_visitors: 2, price: '50.00', title: 'Test Tour', date_time: futureSlot, status: 'approved' };
     mockExperience.findById.mock.mockImplementationOnce(async () => fakeExperience);
     const req = makeReq(
       { experience_id: 1, agreed_to_terms: true, qty_normal: 2, qty_discounted: 1 },
@@ -189,6 +192,98 @@ describe('createBooking()', () => {
     assert.match(res.json.mock.calls[0].arguments[0].message, /Sold out/);
   });
 
+  it('400 : invalid quantity values', async () => {
+    const fakeExperience = { id: 1, max_visitors: 10, price: '50.00', title: 'Test Tour', date_time: futureSlot, status: 'approved' };
+    mockExperience.findById.mock.mockImplementationOnce(async () => fakeExperience);
+    const req = makeReq(
+      { experience_id: 1, agreed_to_terms: true, qty_normal: -1, qty_discounted: 0 },
+      {}, {}, 42
+    );
+    const res = makeRes();
+    await createBooking(req, res);
+
+    assert.equal(res.status.mock.calls[0].arguments[0], 400);
+    assert.match(res.json.mock.calls[0].arguments[0].message, /must be non-negative integers/i);
+  });
+
+  it('400 : zero total tickets', async () => {
+    const fakeExperience = { id: 1, max_visitors: 10, price: '50.00', title: 'Test Tour', date_time: futureSlot, status: 'approved' };
+    mockExperience.findById.mock.mockImplementationOnce(async () => fakeExperience);
+    const req = makeReq(
+      { experience_id: 1, agreed_to_terms: true, qty_normal: 0, qty_discounted: 0 },
+      {}, {}, 42
+    );
+    const res = makeRes();
+    await createBooking(req, res);
+
+    assert.equal(res.status.mock.calls[0].arguments[0], 400);
+    assert.equal(res.json.mock.calls[0].arguments[0].message, 'At least one ticket is required.');
+  });
+
+  it('400 : booking closed when experience already started', async () => {
+    const fakeExperience = {
+      id: 1,
+      max_visitors: 10,
+      price: '50.00',
+      title: 'Test Tour',
+      date_time: new Date(Date.now() - 60 * 1000).toISOString(),
+    };
+    mockExperience.findById.mock.mockImplementationOnce(async () => fakeExperience);
+    const req = makeReq(
+      { experience_id: 1, agreed_to_terms: true, qty_normal: 1, qty_discounted: 0 },
+      {}, {}, 42
+    );
+    const res = makeRes();
+    await createBooking(req, res);
+
+    assert.equal(res.status.mock.calls[0].arguments[0], 400);
+    assert.match(res.json.mock.calls[0].arguments[0].message, /Booking is closed/i);
+  });
+
+  it('400 : missing group gender info for restricted preference', async () => {
+    const fakeExperience = { id: 1, max_visitors: 10, price: '50.00', title: 'Test Tour', gender_preference: 'female_only', date_time: futureSlot, status: 'approved' };
+    mockExperience.findById.mock.mockImplementationOnce(async () => fakeExperience);
+    const req = makeReq(
+      { experience_id: 1, agreed_to_terms: true, qty_normal: 1, qty_discounted: 0 },
+      {}, {}, 42
+    );
+    const res = makeRes();
+    await createBooking(req, res);
+
+    assert.equal(res.status.mock.calls[0].arguments[0], 400);
+    assert.match(res.json.mock.calls[0].arguments[0].message, /requires group gender information/i);
+  });
+
+  it('400 : blocks all-male group for no_all_male_groups preference', async () => {
+    const fakeExperience = { id: 1, max_visitors: 10, price: '50.00', title: 'Test Tour', gender_preference: 'no_all_male_groups', date_time: futureSlot, status: 'approved' };
+    mockExperience.findById.mock.mockImplementationOnce(async () => fakeExperience);
+    const req = makeReq(
+      { experience_id: 1, agreed_to_terms: true, qty_normal: 2, qty_discounted: 0, group_gender_type: 'all_male' },
+      {}, {}, 42
+    );
+    const res = makeRes();
+    await createBooking(req, res);
+
+    assert.equal(res.status.mock.calls[0].arguments[0], 400);
+    assert.match(res.json.mock.calls[0].arguments[0].message, /All-male groups are not accepted/i);
+  });
+
+  it('201 : allows compliant group under gender preference', async () => {
+    const fakeExperience = { id: 1, max_visitors: 10, price: '50.00', price_discounted: '40.00', title: 'Test Tour', gender_preference: 'female_only', date_time: futureSlot, status: 'approved' };
+    const fakeBooking = { id: 2, visitor_id: 42, experience_id: 1, amount_paid: 50 };
+    mockExperience.findById.mock.mockImplementationOnce(async () => fakeExperience);
+    mockBooking.create.mock.mockImplementationOnce(async () => fakeBooking);
+    const req = makeReq(
+      { experience_id: 1, agreed_to_terms: true, qty_normal: 1, qty_discounted: 0, group_gender_profile: { male_count: 0, female_count: 1, other_count: 0 } },
+      {}, {}, 42
+    );
+    const res = makeRes();
+    await createBooking(req, res);
+
+    assert.equal(res.status.mock.calls[0].arguments[0], 201);
+    assert.equal(res.json.mock.calls[0].arguments[0].booking.id, 2);
+  });
+
   it('404 : experience not found', async () => {
     mockExperience.findById.mock.mockImplementationOnce(async () => null);
     const req = makeReq({ experience_id: 999, agreed_to_terms: true }, {}, {}, 42);
@@ -198,8 +293,36 @@ describe('createBooking()', () => {
     assert.equal(res.json.mock.calls[0].arguments[0].message, 'Experience not found');
   });
 
+  it('400 : rejects booking for unavailable slot status', async () => {
+    const fakeExperience = { id: 1, max_visitors: 10, price: '50.00', title: 'Test Tour', date_time: futureSlot, status: 'pending' };
+    mockExperience.findById.mock.mockImplementationOnce(async () => fakeExperience);
+    const req = makeReq(
+      { experience_id: 1, agreed_to_terms: true, qty_normal: 1, qty_discounted: 0 },
+      {}, {}, 42
+    );
+    const res = makeRes();
+    await createBooking(req, res);
+
+    assert.equal(res.status.mock.calls[0].arguments[0], 400);
+    assert.match(res.json.mock.calls[0].arguments[0].message, /not available/i);
+  });
+
+  it('400 : rejects booking when no slot is available', async () => {
+    const fakeExperience = { id: 1, max_visitors: 10, price: '50.00', title: 'Test Tour', date_time: null, status: 'approved' };
+    mockExperience.findById.mock.mockImplementationOnce(async () => fakeExperience);
+    const req = makeReq(
+      { experience_id: 1, agreed_to_terms: true, qty_normal: 1, qty_discounted: 0 },
+      {}, {}, 42
+    );
+    const res = makeRes();
+    await createBooking(req, res);
+
+    assert.equal(res.status.mock.calls[0].arguments[0], 400);
+    assert.match(res.json.mock.calls[0].arguments[0].message, /no available time slot/i);
+  });
+
   it('500 : database error on booking create', async () => {
-    const fakeExperience = { id: 1, max_visitors: 10, price: '50.00', title: 'Test Tour' };
+    const fakeExperience = { id: 1, max_visitors: 10, price: '50.00', title: 'Test Tour', date_time: futureSlot, status: 'approved' };
     mockExperience.findById.mock.mockImplementationOnce(async () => fakeExperience);
     mockBooking.create.mock.mockImplementationOnce(async () => { throw new Error('DB connection failed'); });
     const req = makeReq(
@@ -216,14 +339,21 @@ describe('createBooking()', () => {
 describe('getBookings()', () => {
   beforeEach(resetMocks);
 
-  it('200 : returns all bookings for visitor', async () => {
-    const fakeBookings = [{ id: 1, visitor_id: 42 }, { id: 2, visitor_id: 42 }];
+  it('200 : returns bookings with parsed meeting link only for confirmed', async () => {
+    const fakeBookings = [
+      { id: 1, visitor_id: 42, status: 'confirmed', meeting_link: JSON.stringify({ platform: 'Zoom', link: 'https://zoom.us/j/123', password: '1111' }) },
+      { id: 2, visitor_id: 42, status: 'pending', meeting_link: 'https://meet.google.com/raw-link' },
+    ];
     mockBooking.findByVisitor.mock.mockImplementationOnce(async () => fakeBookings);
     const req = makeReq({}, {}, {}, 42);
     const res = makeRes();
     await getBookings(req, res);
     assert.equal(res.status.mock.calls[0].arguments[0], 200);
-    assert.deepEqual(res.json.mock.calls[0].arguments[0], fakeBookings);
+    const response = res.json.mock.calls[0].arguments[0];
+    assert.equal(response[0].meeting_link, 'https://zoom.us/j/123');
+    assert.equal(response[0].meeting_config.password, '1111');
+    assert.equal(response[1].meeting_link, null);
+    assert.equal(response[1].meeting_config, null);
   });
 
   it('500 : database error', async () => {
@@ -240,13 +370,16 @@ describe('getBookingById()', () => {
   beforeEach(resetMocks);
 
   it('200 : returns booking when found and owned by visitor', async () => {
-    const fakeBooking = { id: 1, visitor_id: 42 };
+    const fakeBooking = { id: 1, visitor_id: 42, status: 'confirmed', meeting_link: JSON.stringify({ platform: 'WhatsApp', link: 'https://wa.me/111222333', password: null }) };
     mockBooking.findById.mock.mockImplementationOnce(async () => fakeBooking);
+    mockRefund.findByBookingId.mock.mockImplementationOnce(async () => null);
+    mockPayment.findByBooking.mock.mockImplementationOnce(async () => []);
     const req = makeReq({}, { id: 1 }, {}, 42);
     const res = makeRes();
     await getBookingById(req, res);
     assert.equal(res.status.mock.calls[0].arguments[0], 200);
-    assert.deepEqual(res.json.mock.calls[0].arguments[0], fakeBooking);
+    assert.equal(res.json.mock.calls[0].arguments[0].meeting_link, 'https://wa.me/111222333');
+    assert.equal(res.json.mock.calls[0].arguments[0].meeting_config.platform, 'WhatsApp');
   });
 
   it('403 : booking belongs to a different visitor', async () => {
@@ -682,7 +815,7 @@ describe('getExperienceById()', () => {
 
   it('returns a single experience by id', async () => {
     const fakeExperience = { id: 1, title: 'Tour A' };
-    mockExperience.findById.mock.mockImplementationOnce(async () => fakeExperience);
+    mockExperience.findByIdWithHost.mock.mockImplementationOnce(async () => fakeExperience);
     const req = makeReq({}, { id: 1 }, {}, 42);
     const res = makeRes();
     await getExperienceById(req, res);
