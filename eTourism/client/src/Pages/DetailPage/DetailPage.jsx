@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import axios from "axios";
 import "./DetailPage.css";
 
-import heroImg from "../icon/London.png";
 import videoImg from "../icon/livecover.png";
 import head from "../icon/head.png";
 import photo2 from "../icon/london1.jpg";
@@ -11,6 +10,7 @@ import photo4 from "../icon/london3.jpg";
 import { useNavigate, useSearchParams, Link } from "react-router-dom";
 import backIcon from "../icon/back.png";
 import blog from "../icon/blogger.png";
+import { getCountryImage } from "../../utils/countryImages";
 
 const API_BASE = import.meta.env.VITE_API_URL;
 
@@ -49,7 +49,7 @@ export const DetailPage = () => {
       {/* HERO */}
       <section
         className="detail-hero"
-        style={{ backgroundImage: `url(${heroImg})` }}
+        style={{ backgroundImage: `url(${getCountryImage(experience?.country)})` }}
       >
         <div className="detail-hero-overlay"/>
 

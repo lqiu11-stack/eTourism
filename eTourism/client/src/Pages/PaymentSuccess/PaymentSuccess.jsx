@@ -1,85 +1,121 @@
 import "./PaymentSuccess.css";
-import thailandImg from "../icon/thai.png"; 
-// import thailandImg from "../icon/thai.png"; 
 import { useEffect, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, Link, useNavigate } from "react-router-dom";
 import axios from "axios";
 import backIcon from "../icon/back.png";
-import { Link } from "react-router-dom";
 import link2Icon from "../icon/link-2.png";
 import approveIcon from "../icon/approve.png";
 import enjoyIcon from "../icon/enjoy.png";
 import success from "../icon/success.png";
-import { useNavigate } from "react-router-dom";
+import { getCountryImage } from "../../utils/countryImages";
 
 const API_BASE = import.meta.env.VITE_API_URL;
 
+const formatDate = (dt) => {
+  if (!dt) return 'Date TBC';
+  const d = new Date(dt);
+  return `${d.getDate()} / ${d.getMonth() + 1} / ${d.getFullYear()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+};
+
 export const PaymentSuccessPage = () => {
-    const navigate = useNavigate();
-    /*login */
-    const token = localStorage.getItem("token");
-    const isLoggedIn = !!token;
-     const handleLogout = () => {
-        localStorage.removeItem("token");
-        localStorage.removeItem("user");
-        navigate("/login");
-    };
+  const navigate = useNavigate();
+  const token = localStorage.getItem("token");
+  const isLoggedIn = !!token;
 
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    navigate("/login");
+  };
 
-    /* check payment */ 
-    const [searchParams] = useSearchParams();
-    const sessionId = searchParams.get("session_id");
+  const [searchParams] = useSearchParams();
+  const sessionId = searchParams.get("session_id");
 
-    useEffect(() => {
-        if (!sessionId) return;
+  const [booking, setBooking] = useState(null);
+  const [experience, setExperience] = useState(null);
+  const [loading, setLoading] = useState(!!sessionId);
+  const [error, setError] = useState(sessionId ? "" : "No session found.");
+  const [refundPolicy, setRefundPolicy] = useState("");
 
-        axios.post(
+  useEffect(() => {
+    fetch("/refund-policy.txt")
+      .then((r) => r.text())
+      .then(setRefundPolicy)
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    const bookingId = localStorage.getItem("pending_booking_id");
+
+    const fetchBooking = (id) =>
+      axios.get(`${API_BASE}/visitor/bookings/${id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      }).then(({ data }) => {
+        setBooking(data);
+        return axios.get(`${API_BASE}/visitor/experiences/${data.experience_id}`);
+      }).then(({ data }) => {
+        setExperience(data);
+        localStorage.removeItem("pending_booking_id");
+      });
+
+    if (sessionId) {
+      axios.post(
         `${API_BASE}/visitor/payments/capture-stripe`,
         { session_id: sessionId },
-        {
-            headers: {
-            Authorization: `Bearer ${token}`,
-            },
-        }
-        )
-        .then(() => {
-        console.log("Payment captured");
+        { headers: { Authorization: `Bearer ${token}` } }
+      )
+        .then(({ data }) => {
+          if (data.booking && data.experience) {
+            setBooking(data.booking);
+            setExperience(data.experience);
+            localStorage.removeItem("pending_booking_id");
+          } else if (bookingId) {
+            return fetchBooking(bookingId);
+          }
         })
         .catch(() => {
-        console.log("Capture failed");
-        });
-    }, [sessionId, token]);
-    
+          if (bookingId) return fetchBooking(bookingId);
+          setError("Could not load your booking details.");
+        })
+        .finally(() => setLoading(false));
+    } else if (bookingId) {
+      fetchBooking(bookingId).finally(() => setLoading(false));
+    }
+  }, [sessionId, token]);
+
+  const coverImage = getCountryImage(experience?.country);
+  const now = new Date();
+  const eventDate = experience?.date_time ? new Date(experience.date_time) : null;
+  const hoursUntilEvent = eventDate ? (eventDate - now) / 36e5 : null;
+  const joinEnabled = hoursUntilEvent !== null && hoursUntilEvent <= 2;
+
   return (
     <div className="paymentsuccess-page">
 
       <nav className="navbar">
-            <button
-                    type="button"
-                    className="detail-back-btn"
-                    onClick={() => navigate("/MainPage")}
-                    aria-label="Back"
-                  >
-                    <img src={backIcon} alt="Back" className="detail-back-icon" />
-                  </button>
-
-          <div className="nav-links">
-              <Link to="/help" className="nav-link">Helping centre</Link>
-              <Link to="/booking" className="nav-link">My booking</Link>
-               {isLoggedIn ? (
-                  <button className="nav-link nav-btn-link" onClick={handleLogout}>
-                    Logout
-                  </button>
-                ) : (
-                  <Link to="/login" className="nav-link">Login</Link>
-                )}
-            </div>
-        </nav>
+        <button
+          type="button"
+          className="detail-back-btn"
+          onClick={() => navigate("/MainPage")}
+          aria-label="Back"
+        >
+          <img src={backIcon} alt="Back" className="detail-back-icon" />
+        </button>
+        <div className="nav-links">
+          <Link to="/help" className="nav-link">Helping centre</Link>
+          <Link to="/Mybooking" className="nav-link">My booking</Link>
+          {isLoggedIn ? (
+            <button className="nav-link nav-btn-link" onClick={handleLogout}>Logout</button>
+          ) : (
+            <Link to="/login" className="nav-link">Login</Link>
+          )}
+        </div>
+      </nav>
 
       {/* Success Section */}
       <div className="success-section">
         <div className="success-icon">
-            <img src={success} className="icontick" />
+          <img src={success} className="icontick" />
         </div>
         <h2>Payment success!</h2>
         <p>Hope you enjoy the time with us!</p>
@@ -89,54 +125,65 @@ export const PaymentSuccessPage = () => {
       <div className="booking-card">
         <h3>Here is your booking detail</h3>
 
-        <div className="booking-content">
-          <img src={thailandImg} className="booking-img" />
+        {loading && <p className="booking-loading">Loading your booking...</p>}
+        {error && <p className="booking-error">{error}</p>}
 
-          <div className="booking-info">
-            <h4>Thailand Religious Tourism</h4>
+        {!loading && !error && booking && experience && (
+          <div className="booking-content">
+            <img src={coverImage} className="booking-img" alt={experience.title} />
 
-            <div className="schedual">
-            <p>Stream start at 20/ 4/ 2025 14:00</p>
-                <button className="calendar-btn">
-                    save to calendar
-                </button>
+            <div className="booking-info">
+              <h4>{experience.title}</h4>
+
+              <div className="schedual">
+                <p>Stream start at {formatDate(experience.date_time)}</p>
+                <button className="calendar-btn">Save to calendar</button>
               </div>
 
-            <div className="booking-actions">
-              <button className="primary-btn">
-                Click here to join the event
-              </button>
-            </div>
+              {booking.contact_name && (
+                <p className="booking-meta">Booked for: <strong>{booking.contact_name}</strong></p>
+              )}
+              <p className="booking-meta">Amount paid: <strong>£{Number(booking.amount_paid).toFixed(2)}</strong></p>
 
-            <span className="hint">
-              Link can be accessed 2 hour before the stream start
-            </span>
+              <div className="booking-actions">
+                {booking.meeting_link ? (
+                  <a
+                    href={joinEnabled ? booking.meeting_link : undefined}
+                    className={`primary-btn${joinEnabled ? '' : ' primary-btn--disabled'}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    onClick={!joinEnabled ? (e) => e.preventDefault() : undefined}
+                  >
+                    Click here to join the event
+                  </a>
+                ) : (
+                  <button className="primary-btn primary-btn--disabled" disabled>
+                    Meeting link not yet available
+                  </button>
+                )}
+              </div>
+
+              <span className="hint">
+                Link can be accessed 2 hours before the stream start
+              </span>
+            </div>
           </div>
-        </div>
+        )}
 
         {/* How to join */}
         <div className="how-section">
           <h4>How to join the stream?</h4>
-
           <div className="steps">
             <div className="step">
-              <div className="step-icon">
-                <img src={link2Icon} className="iconsize"/>
-              </div>
+              <div className="step-icon"><img src={link2Icon} className="iconsize"/></div>
               <p>Join the link from the booking detail page</p>
             </div>
-
             <div className="step">
-              <div className="step-icon">
-                <img src={approveIcon} className="iconsize"/>
-              </div>
+              <div className="step-icon"><img src={approveIcon} className="iconsize"/></div>
               <p>Our assistance will approve your join request</p>
             </div>
-
             <div className="step">
-              <div className="step-icon">
-                <img src={enjoyIcon} className="iconsize2"/>
-              </div>
+              <div className="step-icon"><img src={enjoyIcon} className="iconsize2"/></div>
               <p>Enjoy the event with us!</p>
             </div>
           </div>
@@ -145,74 +192,51 @@ export const PaymentSuccessPage = () => {
         {/* Refund */}
         <div className="refund-section">
           <h4>Check our refund policy</h4>
-
-        <div className="refund">
-            <p>
-                Free cancellation up to 24 hours before live start. If you miss the
-                session, a replay will be available for 24 hours. In case of
-                technical issues, we will provide access to the full recording.
-            </p>
-
+          <div className="refund">
+            <p style={{ whiteSpace: "pre-wrap" }}>{refundPolicy}</p>
             <div className="refund-buttons">
-                <button>Apply for the refund</button>
-                <button>Reschedule</button>
-                <button>Contact customer service</button>
+              <button>Apply for the refund</button>
+              <button>Reschedule</button>
+              <button>Contact customer service</button>
             </div>
           </div>
-
         </div>
-        
+
       </div>
 
       <section className="detail-newsletter">
-
         <div className="newsletter-overlay"></div>
-
         <div className="newsletter-content">
           <h2>Get Your Travel Inspiration</h2>
           <p>Straight to Your Inbox</p>
-
           <div className="newsletter-form">
             <input type="email" placeholder="Email address"/>
             <button>Subscribe</button>
           </div>
         </div>
-
       </section>
 
       <footer className="footer">
-
         <div className="footer-container">
-
           <div className="footer-brand">
             <h3>e-Tourism</h3>
             <p>Follow us</p>
           </div>
-
           <div className="footer-column">
             <h4>About us</h4>
-            <p>Company</p>
-            <p>Careers</p>
-            <p>Blog</p>
+            <p>Company</p><p>Careers</p><p>Blog</p>
           </div>
-
           <div className="footer-column">
             <h4>Travel</h4>
-            <p>Destinations</p>
-            <p>Tours</p>
-            <p>Guides</p>
+            <p>Destinations</p><p>Tours</p><p>Guides</p>
           </div>
-
           <div className="footer-column">
             <h4>Support</h4>
-            <p>Help Center</p>
-            <p>Contact</p>
-            <p>Terms</p>
+            <p>Help Center</p><p>Contact</p><p>Terms</p>
           </div>
-
         </div>
-
       </footer>
+
     </div>
   );
 };

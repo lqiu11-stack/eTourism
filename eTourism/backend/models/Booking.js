@@ -69,7 +69,7 @@ const Booking = {
 
   async findByVisitor(visitor_id) {
     const { rows } = await pool.query(
-      `SELECT b.*, e.title, e.date_time, e.cover_image
+      `SELECT b.*, e.title, e.date_time, e.cover_image, e.country
        FROM bookings b
        JOIN experiences e ON b.experience_id = e.id
        WHERE b.visitor_id = $1

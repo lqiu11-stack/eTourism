@@ -73,10 +73,11 @@
 
 /* image */
 .Mybooking-card-img {
-  width: 130px;
-  height: 130px;
+  width: 200px;
+  height: 200px;
   border-radius: 20px;
   object-fit: cover;
+  flex-shrink: 0;
 }
 
 /* info */
@@ -150,4 +151,34 @@
     font-size: 18px;
     font-weight: 300;
     margin-top: 10px;
+}
+
+.Mybooking-main-btn--disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.Mybooking-main-btn--disabled:hover {
+  background: #cfa8a0;
+}
+
+.Mybooking-amount {
+  font-size: 14px;
+  color: #666;
+  margin: 4px 0 6px 5px;
+}
+
+.Mybooking-status-tag {
+  display: inline-block;
+  padding: 6px 14px;
+  border-radius: 20px;
+  background: #e0e0e0;
+  font-size: 13px;
+  color: #555;
+  text-transform: capitalize;
+}
+
+.Mybooking-msg {
+  color: #666;
+  font-size: 16px;
 }
