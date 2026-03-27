@@ -4,6 +4,20 @@ import { useNavigate, Link } from "react-router-dom";
 import { useState, useEffect } from "react";
 import axios from "axios";
 import { getCountryImage } from "../../utils/countryImages";
+import { useLocation } from "react-router-dom";
+
+export const BookingDetail = () => {
+  const location = useLocation();
+  const queryParams = new URLSearchParams(location.search);
+  const id = queryParams.get("id");
+
+  return (
+    <div>
+      <h1>Booking Detail</h1>
+      <p>Booking ID: {id}</p>
+    </div>
+  );
+};
 
 const API_BASE = import.meta.env.VITE_API_URL;
 
@@ -115,7 +129,12 @@ export const MyBooking = () => {
         )}
 
         {bookings.map((b) => (
-          <div className="Mybooking-card" key={b.id}>
+          <div
+            className="Mybooking-card"
+            key={b.id}
+            onClick={() => navigate(`/MyBookingDetail?id=${b.id}`)}
+            style={{ cursor: "pointer" }}
+            >
             <img src={getCountryImage(b.country)} className="Mybooking-card-img" alt={b.title} />
 
             <div className="Mybooking-card-info">

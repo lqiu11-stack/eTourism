@@ -11,6 +11,7 @@ import { PaymentPage } from "./Pages/PaymentPage/PaymentPage.jsx";
 import { Dashboard } from "./Pages/AdminDashboard/AdminDashboard.jsx";
 import { PaymentSuccessPage } from "./Pages/PaymentSuccess/PaymentSuccess.jsx";
 import { MyBooking } from "./Pages/MyBooking/MyBooking.jsx";
+import { MyBookingDetail } from "./Pages/BookingDetail/BookingDetail.jsx";
 
 
 
@@ -32,6 +33,7 @@ function App() {
         <Route path="/Dashboard" element={<Dashboard  />} />
         <Route path="/payment-success" element={<PaymentSuccessPage />} />
         <Route path="/MyBooking" element={<MyBooking />} />
+         <Route path="/MyBookingDetail" element={<MyBookingDetail />} />
       </Routes>
   );
 }
