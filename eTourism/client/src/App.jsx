@@ -9,6 +9,11 @@ import { MainPage } from "./Pages/MainPage/MainPage.jsx";
 import { DetailPage } from "./Pages/DetailPage/DetailPage.jsx";
 import { PaymentPage } from "./Pages/PaymentPage/PaymentPage.jsx";
 import { Dashboard } from "./Pages/AdminDashboard/AdminDashboard.jsx";
+import { PaymentSuccessPage } from "./Pages/PaymentSuccess/PaymentSuccess.jsx";
+import { MyBooking } from "./Pages/MyBooking/MyBooking.jsx";
+
+
+
 
 function App() {
   return (
@@ -25,6 +30,8 @@ function App() {
         <Route path="/DetailPage" element={<DetailPage />} />
         <Route path="/PaymentPage" element={<PaymentPage />} />
         <Route path="/Dashboard" element={<Dashboard  />} />
+        <Route path="/payment-success" element={<PaymentSuccessPage />} />
+        <Route path="/MyBooking" element={<MyBooking />} />
       </Routes>
   );
 }

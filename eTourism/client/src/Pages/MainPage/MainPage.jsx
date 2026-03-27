@@ -124,7 +124,9 @@ export const MainPage = () => {
 
             <div className="nav-links">
               <Link to="/help" className="nav-link">Helping centre</Link>
-              <Link to="/booking" className="nav-link">My booking</Link>
+              <Link to="/MyBooking" className="nav-link" onClick={() => window.scrollTo(0, 0)}>
+                My booking
+              </Link>
               {isLoggedIn ? (
                 <button className="nav-link nav-btn-link" onClick={handleLogout}>
                   Logout
