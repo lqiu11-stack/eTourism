@@ -10,30 +10,12 @@ import customerSrevice from "../icon/customer-service.png"
 import customerReview from "../icon/customer-review.png"
 import LiveIcon from "../icon/live.png"
 import translate from "../icon/language.png"
-import london from "../icon/London.png";
-import iceland from "../icon/plane.png";
-import paris from "../icon/paris.png";
-import japan from "../icon/japan.png";
-import china from "../icon/china.png";
-import Philippine from "../icon/Philippine.png";
-import korea from "../icon/korea.png";
-import singapore from "../icon/Singapore.png";
+import { getCountryImage } from "../../utils/countryImages";
 import { useNavigate, Link } from "react-router-dom";
 
 const API_BASE = import.meta.env.VITE_API_URL;
 
-const countryImageMap = {
-  'United Kingdom': london,
-  'Iceland': iceland,
-  'France': paris,
-  'Japan': japan,
-  'China': china,
-  'Philippines': Philippine,
-  'South Korea': korea,
-  'Singapore': singapore,
-};
-
-const getImage = (exp) => countryImageMap[exp.country] || london;
+const getImage = (exp) => getCountryImage(exp.country);
 
 const formatDate = (dt) => {
   if (!dt) return 'Date TBC';
