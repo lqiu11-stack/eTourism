@@ -56,44 +56,59 @@ export const MyBooking = () => {
   const renderActions = (b) => {
     const eventDate = b.date_time ? new Date(b.date_time) : null;
     const isPast = eventDate && eventDate < now;
+    const hoursUntil = eventDate ? (eventDate - now) / 36e5 : null;
+    const isWithin2h = hoursUntil !== null && hoursUntil <= 2;
 
+    const stop = (e) => e.stopPropagation();
 
     if (b.status === 'cancelled' || b.status === 'refunded') {
       return <span className="Mybooking-status-tag">{b.status}</span>;
     }
 
+    // Refund in progress
+    if (b.status === 'refund_pending') {
+      return (
+        <div className="Mybooking-card-actions" onClick={stop}>
+          <button className="Mybooking-small-btn">Check the refund process</button>
+          <button className="Mybooking-small-btn">Customer service</button>
+        </div>
+      );
+    }
+
+    // Past event
+    if (isPast) {
+      return (
+        <div className="Mybooking-card-actions" onClick={stop}>
+          <button className="Mybooking-small-btn">Tell us your feedback</button>
+          <button className="Mybooking-small-btn">Customer service</button>
+        </div>
+      );
+    }
+
+    // Future — join button depends on how close the event is
+    const joinBtn = (isWithin2h && b.meeting_link)
+      ? (
+        <a href={b.meeting_link} className="Mybooking-main-btn" target="_blank" rel="noreferrer" onClick={stop}>
+          Join the stream
+        </a>
+      ) : (
+        <button className="Mybooking-main-btn Mybooking-main-btn--disabled" disabled onClick={stop}>
+          {isWithin2h ? 'Link not yet available' : 'Not started yet'}
+        </button>
+      );
+
     return (
       <>
-        {b.meeting_link ? (
-          <a
-            href={b.meeting_link}
-            className="Mybooking-main-btn"
-            target="_blank"
-            rel="noreferrer"
-          >
-            Join the stream
-          </a>
-        ) : (
-          <button className="Mybooking-main-btn Mybooking-main-btn--disabled" disabled>
-            Link not yet available
+        {joinBtn}
+        <div className="Mybooking-card-actions" onClick={stop}>
+          <button className="Mybooking-small-btn" onClick={(e) => { stop(e); navigate(`/booking/${b.id}/refund`); }}>
+            Refund this activity
           </button>
-        )}
-        <div className="Mybooking-card-actions">
-          {isPast ? (
-            <button className="Mybooking-small-btn">Tell us your feedback</button>
-          ) : (
-            <>
-              <button className="Mybooking-small-btn"
-                onClick={() => navigate(`/booking/${b.id}/refund`)}>
-                Refund this activity
-              </button>
-              <button className="Mybooking-small-btn"
-                onClick={() => navigate(`/booking/${b.id}/reschedule`)}>
-                Reschedule
-              </button>
-            </>
-          )}
-          <button className="Mybooking-small-btn">Customer service</button>
+          <button className="Mybooking-small-btn" onClick={(e) => { stop(e); navigate(`/booking/${b.id}/reschedule`); }}>
+            Reschedule
+          </button>
+          <button className="Mybooking-small-btn" onClick={stop}>Customer service</button>
+          <button className="Mybooking-calendar-btn" onClick={stop}>Save to calendar</button>
         </div>
       </>
     );
@@ -132,7 +147,7 @@ export const MyBooking = () => {
           <div
             className="Mybooking-card"
             key={b.id}
-            onClick={() => navigate(`/MyBookingDetail?id=${b.id}`)}
+            onClick={() => navigate(`/MyBookingDetail?id=${b.id}`, { state: { booking: b } })}
             style={{ cursor: "pointer" }}
             >
             <img src={getCountryImage(b.country)} className="Mybooking-card-img" alt={b.title} />
@@ -141,7 +156,6 @@ export const MyBooking = () => {
               <h2>{b.title}</h2>
               <p className="Mybooking-time">
                 {formatDate(b.date_time)}
-                <button className="Mybooking-calendar-btn">Save to calendar</button>
               </p>
               <p className="Mybooking-amount">£{Number(b.amount_paid).toFixed(2)} paid</p>
               <div className="help"><p>Need any help?</p></div>

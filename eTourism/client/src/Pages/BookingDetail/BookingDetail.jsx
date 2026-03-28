@@ -1,6 +1,6 @@
 import "./BookingDetail.css";
 import { useEffect, useState } from "react";
-import { useSearchParams, Link, useNavigate } from "react-router-dom";
+import { useSearchParams, Link, useNavigate, useLocation } from "react-router-dom";
 import axios from "axios";
 import backIcon from "../icon/back.png";
 import link2Icon from "../icon/link-2.png";
@@ -18,6 +18,7 @@ const formatDate = (dt) => {
 
 export const MyBookingDetail = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const token = localStorage.getItem("token");
   const isLoggedIn = !!token;
 
@@ -29,11 +30,15 @@ export const MyBookingDetail = () => {
 
   const [searchParams] = useSearchParams();
   const sessionId = searchParams.get("session_id");
+  const bookingIdParam = searchParams.get("id");
 
-  const [booking, setBooking] = useState(null);
+  // Booking passed directly via router state (from MyBooking card click)
+  const stateBooking = location.state?.booking ?? null;
+
+  const [booking, setBooking] = useState(stateBooking);
   const [experience, setExperience] = useState(null);
-  const [loading, setLoading] = useState(!!sessionId);
-  const [error, setError] = useState(sessionId ? "" : "No session found.");
+  const [loading, setLoading] = useState(!stateBooking);
+  const [error, setError] = useState("");
   const [refundPolicy, setRefundPolicy] = useState("");
 
   useEffect(() => {
@@ -44,7 +49,7 @@ export const MyBookingDetail = () => {
   }, []);
 
   useEffect(() => {
-    const bookingId = localStorage.getItem("pending_booking_id");
+    const pendingId = localStorage.getItem("pending_booking_id");
 
     const fetchBooking = (id) =>
       axios.get(`${API_BASE}/visitor/bookings/${id}`, {
@@ -57,7 +62,26 @@ export const MyBookingDetail = () => {
         localStorage.removeItem("pending_booking_id");
       });
 
-    if (sessionId) {
+    // Case 0: booking passed via router state — findByVisitor already includes
+    // experience fields (title, date_time, country, cover_image), so use them directly
+    if (stateBooking) {
+      setExperience({
+        id: stateBooking.experience_id,
+        title: stateBooking.title,
+        date_time: stateBooking.date_time,
+        country: stateBooking.country,
+        cover_image: stateBooking.cover_image,
+      });
+      setLoading(false);
+
+    // Case 1: navigated from MyBooking card (?id=XX)
+    } else if (bookingIdParam) {
+      fetchBooking(bookingIdParam)
+        .catch(() => setError("Could not load booking details."))
+        .finally(() => setLoading(false));
+
+    // Case 2: came back from Stripe (?session_id=XX)
+    } else if (sessionId) {
       axios.post(
         `${API_BASE}/visitor/payments/capture-stripe`,
         { session_id: sessionId },
@@ -68,25 +92,34 @@ export const MyBookingDetail = () => {
             setBooking(data.booking);
             setExperience(data.experience);
             localStorage.removeItem("pending_booking_id");
-          } else if (bookingId) {
-            return fetchBooking(bookingId);
+          } else if (pendingId) {
+            return fetchBooking(pendingId);
           }
         })
         .catch(() => {
-          if (bookingId) return fetchBooking(bookingId);
+          if (pendingId) return fetchBooking(pendingId);
           setError("Could not load your booking details.");
         })
         .finally(() => setLoading(false));
-    } else if (bookingId) {
-      fetchBooking(bookingId).finally(() => setLoading(false));
-    }
-  }, [sessionId, token]);
 
-  const coverImage = getCountryImage(experience?.country);
+    // Case 3: pending_booking_id in localStorage (fallback)
+    } else if (pendingId) {
+      fetchBooking(pendingId)
+        .catch(() => setError("Could not load booking details."))
+        .finally(() => setLoading(false));
+
+    } else {
+      setError("No booking found.");
+      setLoading(false);
+    }
+  }, [stateBooking, bookingIdParam, sessionId, token]);
+
+  const coverImage = getCountryImage(experience?.country ?? booking?.country);
   const now = new Date();
   const eventDate = experience?.date_time ? new Date(experience.date_time) : null;
-  const hoursUntilEvent = eventDate ? (eventDate - now) / 36e5 : null;
-  const joinEnabled = hoursUntilEvent !== null && hoursUntilEvent <= 2;
+  const isPast = eventDate && eventDate < now;
+  const hoursUntil = eventDate ? (eventDate - now) / 36e5 : null;
+  const isWithin2h = hoursUntil !== null && hoursUntil <= 2;
 
   return (
     <div className="paymentsuccess-page">
@@ -141,26 +174,27 @@ export const MyBookingDetail = () => {
               <p className="booking-meta">Amount paid: <strong>£{Number(booking.amount_paid).toFixed(2)}</strong></p>
 
               <div className="booking-actions">
-                {booking.meeting_link ? (
+                {isPast ? null : isWithin2h && booking.meeting_link ? (
                   <a
-                    href={joinEnabled ? booking.meeting_link : undefined}
-                    className={`primary-btn${joinEnabled ? '' : ' primary-btn--disabled'}`}
+                    href={booking.meeting_link}
+                    className="primary-btn"
                     target="_blank"
                     rel="noreferrer"
-                    onClick={!joinEnabled ? (e) => e.preventDefault() : undefined}
                   >
-                    Click here to join the event
+                    Join the stream
                   </a>
                 ) : (
                   <button className="primary-btn primary-btn--disabled" disabled>
-                    Meeting link not yet available
+                    {isWithin2h ? 'Link not yet available' : 'Not started yet'}
                   </button>
                 )}
               </div>
 
-              <span className="hint">
-                Link can be accessed 2 hours before the stream start
-              </span>
+              {!isPast && (
+                <span className="hint">
+                  Link can be accessed 2 hours before the stream start
+                </span>
+              )}
             </div>
           </div>
         )}
