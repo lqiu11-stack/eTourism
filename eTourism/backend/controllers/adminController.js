@@ -326,7 +326,10 @@ const reportNetworkIssue = async (req, res) => {
     }
 
     const query = `
-      
+      INSERT INTO network_logs 
+      (user_id, experience_id, connection_quality, ip_address, error_detail) 
+      VALUES ($1, $2, $3, $4, $5) 
+      RETURNING *
     `;
     
     const { rows } = await pool.query(query, [
