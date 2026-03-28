@@ -8,6 +8,7 @@ import approveIcon from "../icon/approve.png";
 import enjoyIcon from "../icon/enjoy.png";
 import { getCountryImage } from "../../utils/countryImages";
 
+
 const API_BASE = import.meta.env.VITE_API_URL;
 
 const formatDate = (dt) => {
@@ -17,6 +18,7 @@ const formatDate = (dt) => {
 };
 
 export const MyBookingDetail = () => {
+  const [rating, setRating] = useState(0);
   const navigate = useNavigate();
   const location = useLocation();
   const token = localStorage.getItem("token");
@@ -120,6 +122,12 @@ export const MyBookingDetail = () => {
   const isPast = eventDate && eventDate < now;
   const hoursUntil = eventDate ? (eventDate - now) / 36e5 : null;
   const isWithin2h = hoursUntil !== null && hoursUntil <= 2;
+  const isRefundBlocked =
+    !booking ||
+    isPast ||
+    booking?.status === "refund_pending" ||
+    booking?.status === "cancelled" ||
+    booking?.status === "refunded";
 
   return (
     <div className="paymentsuccess-page">
@@ -165,7 +173,14 @@ export const MyBookingDetail = () => {
 
               <div className="schedual">
                 <p>Stream start at {formatDate(experience.date_time)}</p>
-                <button className="calendar-btn">Save to calendar</button>
+
+                {!isPast &&
+                booking.status !== "refund_pending" &&
+                booking.status !== "cancelled" &&
+                booking.status !== "refunded" && (
+                  <button className="calendar-btn">Save to calendar</button>
+                )}
+
               </div>
 
               {booking.contact_name && (
@@ -174,20 +189,32 @@ export const MyBookingDetail = () => {
               <p className="booking-meta">Amount paid: <strong>£{Number(booking.amount_paid).toFixed(2)}</strong></p>
 
               <div className="booking-actions">
-                {isPast ? null : isWithin2h && booking.meeting_link ? (
-                  <a
-                    href={booking.meeting_link}
-                    className="primary-btn"
-                    target="_blank"
-                    rel="noreferrer"
-                  >
-                    Join the stream
-                  </a>
+
+                {(booking.status === "cancelled" || booking.status === "refunded") ? (
+                  <span>{booking.status}</span>
                 ) : (
-                  <button className="primary-btn primary-btn--disabled" disabled>
-                    {isWithin2h ? 'Link not yet available' : 'Not started yet'}
-                  </button>
+                  isPast ? (
+                    <button className="primary-btn">
+                      Contact customer service
+                    </button>
+                  ) : isWithin2h && booking.meeting_link ? (
+                    <a
+                      href={booking.meeting_link}
+                      className="primary-btn"
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      Join the stream
+                    </a>
+                  ) : (
+                    <button className="primary-btn primary-btn--disabled" disabled>
+                      {isWithin2h ? 'Link not yet available' : 'Not started yet'}
+                    </button>
+                  )
+
                 )}
+
+
               </div>
 
               {!isPast && (
@@ -200,6 +227,7 @@ export const MyBookingDetail = () => {
         )}
 
         {/* How to join */}
+        {!isPast && (
         <div className="how-section">
           <h4>How to join the stream?</h4>
           <div className="steps">
@@ -217,20 +245,76 @@ export const MyBookingDetail = () => {
             </div>
           </div>
         </div>
+        )}
 
         {/* Refund */}
+        {!isPast && (
         <div className="refund-section">
           <h4>Check our refund policy</h4>
           <div className="refund">
             <p style={{ whiteSpace: "pre-wrap" }}>{refundPolicy}</p>
             <div className="refund-buttons">
-              <button>Apply for the refund</button>
-              <button>Reschedule</button>
+              {!isRefundBlocked && (
+                <button>Apply for the refund</button>
+              )}
+              {!isRefundBlocked && (
+                <button>Reschedule</button>
+              )}
               <button>Contact customer service</button>
             </div>
           </div>
         </div>
+        )}
+      {/* feedback */}
+      {isPast && (
+      <div className="review-section">
+        <h4 className="review-title">Tell us how you feel?</h4>
 
+        <div className="review-card">
+
+          {/* Q1 */}
+          <p className="review-question">
+            How would you rate your overall experience?
+          </p>
+
+          <div className="stars">
+            {[1, 2, 3, 4, 5].map((star) => (
+              <span
+                key={star}
+                onClick={() => setRating(star)}
+                className="star"
+              >
+                {star <= rating ? "★" : "☆"}
+              </span>
+            ))}
+          </div>
+
+          {/* Q2 */}
+          <p className="review-question">
+            How would you rate the quality of the tour and explanation?
+          </p>
+
+          <input
+            className="review-input"
+            placeholder=""
+          />
+
+          {/* Q3 */}
+          <p className="review-question">
+            Any additional comments?
+          </p>
+
+          <textarea className="review-textarea" />
+
+          <div className="review-submit-wrapper">
+            <button className="review-submit-btn">
+              Submit a review
+            </button>
+          </div>
+
+        </div>
+      </div>
+      )}
       </div>
       </div>
 
