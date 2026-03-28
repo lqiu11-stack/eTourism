@@ -315,6 +315,41 @@ const getNetworkIssueStats = async (req, res) => {
   }
 };
 
+const reportNetworkIssue = async (req, res) => {
+  try {
+    
+    const userId = req.user ? req.user.id : req.userId;
+    const { experience_id, connection_quality, ip_address, error_detail } = req.body;
+
+    if (!connection_quality) {
+      return res.status(400).json({ success: false, message: 'Must provide connection_quality (connection quality)' });
+    }
+
+    const query = `
+      
+    `;
+    
+    const { rows } = await pool.query(query, [
+      userId, 
+      experience_id || null, 
+      connection_quality, 
+      ip_address || null, 
+      error_detail || null
+    ]);
+
+    res.status(201).json({ 
+      success: true, 
+      message: 'Network issue reported successfully',
+      data: rows[0] 
+    });
+  } catch (error) {
+    console.error("Failed to report network issue:", error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Internal server error, failed to report network issue' 
+    });
+  }
+};
 
 module.exports = {
   getExperiences,
