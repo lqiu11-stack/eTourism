@@ -282,6 +282,29 @@ const getNetworkLogs = async (req, res) => {
   }
 };
 
+const getNetworkIssueStats = async (req, res) => {
+  try {
+    // Count the number of network issues for each experience (location), ordered by count in descending order
+    const query = `
+      //select
+    `;
+    
+    const { rows } = await pool.query(query);
+    
+    res.status(200).json({ 
+      success: true, 
+      data: rows 
+    });
+  } catch (error) {
+    console.error("Failed to fetch network issue statistics:", error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Internal server error, failed to fetch network issue statistics' 
+    });
+  }
+};
+
+
 module.exports = {
   getExperiences,
   approveExperience,
