@@ -246,6 +246,41 @@ const deleteUser = async (req, res) => {
   }
 };
 
+const getNetworkLogs = async (req, res) => {
+  try {
+    // Use LEFT JOIN to join the user table and the experience table, so that administrators can see exactly who is experiencing the lag and in which project.
+    const query = `
+      SELECT 
+        nl.id, 
+        nl.connection_quality, 
+        nl.ip_address, 
+        nl.error_detail, 
+        nl.logged_at,
+        u.id AS user_id,
+        u.first_name, 
+        u.last_name,
+        e.id AS experience_id,
+        e.location_name
+      FROM network_logs nl
+      LEFT JOIN users u ON nl.user_id = u.id
+      LEFT JOIN experiences e ON nl.experience_id = e.id
+      ORDER BY nl.logged_at DESC
+    `;
+    
+    const { rows } = await pool.query(query);
+    
+    res.status(200).json({ 
+      success: true, 
+      data: rows 
+    });
+  } catch (error) {
+    console.error("Failed to fetch network logs:", error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Internal server error, failed to fetch network logs' 
+    });
+  }
+};
 
 module.exports = {
   getExperiences,
