@@ -370,4 +370,7 @@ module.exports = {
   updateUserStatus,
   updateUserRole,
   deleteUser,
+  getNetworkLogs,
+  getNetworkIssueStats,
+  reportNetworkIssue
 };
