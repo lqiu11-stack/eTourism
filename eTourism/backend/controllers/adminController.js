@@ -286,7 +286,18 @@ const getNetworkIssueStats = async (req, res) => {
   try {
     // Count the number of network issues for each experience (location), ordered by count in descending order
     const query = `
-      //select
+      SELECT 
+        e.id AS experience_id,
+        e.location_name,
+        u.first_name AS host_first_name,
+        u.last_name AS host_last_name,
+        COUNT(nl.id) AS issue_count
+      FROM network_logs nl
+      JOIN experiences e ON nl.experience_id = e.id
+      JOIN users u ON e.ehost_id = u.id
+      GROUP BY e.id, e.location_name, u.first_name, u.last_name
+      ORDER BY issue_count DESC
+      LIMIT 10
     `;
     
     const { rows } = await pool.query(query);
