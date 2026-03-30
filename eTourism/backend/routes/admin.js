@@ -16,6 +16,9 @@ const {
   updateUserStatus,
   updateUserRole,
   deleteUser,
+  getNetworkLogs,
+  getNetworkIssueStats,
+  reportNetworkIssue,
 } = require('../controllers/adminController');
 
 // GET /api/admin/applications?status=pending
