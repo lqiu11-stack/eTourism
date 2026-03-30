@@ -51,6 +51,9 @@ const {
   getApplications,
   approveApplication,
   rejectApplication,
+  getNetworkLogs,
+  getNetworkIssueStats,
+  reportNetworkIssue,
 } = require('../controllers/adminController');
 
 function makeRes() {
@@ -532,5 +535,33 @@ describe('rejectApplication()', () => {
     await rejectApplication(req, res);
 
     assert.equal(res.status.mock.calls[0].arguments[0], 500);
+  });
+});
+
+describe('getNetworkLogs()', () => {
+  beforeEach(resetMocks);
+
+  it('200 : returns network logs successfully', async () => {
+    const mockRows = [{ id: 1, connection_quality: 'Poor', user_id: 2, location_name: 'Stonehenge' }];
+    fakePool.query.mock.mockImplementation(async () => ({ rows: mockRows }));
+
+    const req = makeReq();
+    const res = makeRes();
+    await getNetworkLogs(req, res);
+
+    assert.equal(res.status.mock.calls[0].arguments[0], 200);
+    assert.equal(res.json.mock.calls[0].arguments[0].success, true);
+    assert.deepEqual(res.json.mock.calls[0].arguments[0].data, mockRows);
+  });
+
+  it('500 : database error', async () => {
+    fakePool.query.mock.mockImplementation(async () => { throw new Error('DB error'); });
+
+    const req = makeReq();
+    const res = makeRes();
+    await getNetworkLogs(req, res);
+
+    assert.equal(res.status.mock.calls[0].arguments[0], 500);
+    assert.equal(res.json.mock.calls[0].arguments[0].success, false);
   });
 });
