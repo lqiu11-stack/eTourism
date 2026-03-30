@@ -66,4 +66,12 @@ router.patch('/users/:id/role', requireRole('admin'), updateUserRole);
 // DELETE /api/admin/users/:id
 router.delete('/users/:id', requireRole('admin'), deleteUser);
 
+// 1. Retrieve a list of all network logs (viewable only by Admin)
+router.get('/network-logs', requireRole('admin'), getNetworkLogs);
+
+// 2. Retrieve aggregated statistics on network issues (also only for Admin)
+router.get('/network-logs/stats', requireRole('admin'), getNetworkIssueStats);
+
+// 3. Retrieve network issue reports (viewable only by Admin)
+router.post('/network-logs/report', requireAuth, reportNetworkIssue);
 module.exports = router;
