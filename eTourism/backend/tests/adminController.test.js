@@ -492,8 +492,8 @@ describe('rejectApplication()', () => {
     let calls = 0;
     fakePool.query.mock.mockImplementation(() => {
       calls++;
-      if (calls === 1) return Promise.resolve({ rows: [app] }); // find application
-      return Promise.resolve({ rows: [] });                      // update status
+      if (calls === 1) return Promise.resolve({ rows: [app] }); 
+      return Promise.resolve({ rows: [] });                      
     });
 
     const req = makeReq({}, { id: '1' });
@@ -588,7 +588,7 @@ describe('reportNetworkIssue()', () => {
 
   it('201 : inserts network log successfully', async () => {
     const req = makeReq({ experience_id: 10, connection_quality: 'Dropped', ip_address: '192.168.1.1' });
-    req.user = { id: 1 }; // 模拟已登录的用户
+    req.user = { id: 1 }; 
 
     const mockInsertedRow = { id: 100, connection_quality: 'Dropped' };
     fakePool.query.mock.mockImplementation(async () => ({ rows: [mockInsertedRow] }));
@@ -603,7 +603,7 @@ describe('reportNetworkIssue()', () => {
   });
 
   it('400 : missing connection_quality', async () => {
-    const req = makeReq({ experience_id: 10 }); // 故意不传 connection_quality
+    const req = makeReq({ experience_id: 10 }); 
     req.user = { id: 1 };
     
     const res = makeRes();
@@ -612,7 +612,7 @@ describe('reportNetworkIssue()', () => {
     assert.equal(res.status.mock.calls[0].arguments[0], 400);
     assert.equal(res.json.mock.calls[0].arguments[0].success, false);
     assert.match(res.json.mock.calls[0].arguments[0].message, /connection_quality/i);
-    assert.equal(fakePool.query.mock.callCount(), 0); // 确保没有查数据库
+    assert.equal(fakePool.query.mock.callCount(), 0); 
   });
 
   it('500 : database error', async () => {
