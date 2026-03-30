@@ -582,3 +582,48 @@ describe('getNetworkIssueStats()', () => {
     assert.deepEqual(res.json.mock.calls[0].arguments[0].data, mockStats);
   });
 });
+
+describe('reportNetworkIssue()', () => {
+  beforeEach(resetMocks);
+
+  it('201 : inserts network log successfully', async () => {
+    const req = makeReq({ experience_id: 10, connection_quality: 'Dropped', ip_address: '192.168.1.1' });
+    req.user = { id: 1 }; // 模拟已登录的用户
+
+    const mockInsertedRow = { id: 100, connection_quality: 'Dropped' };
+    fakePool.query.mock.mockImplementation(async () => ({ rows: [mockInsertedRow] }));
+
+    const res = makeRes();
+    await reportNetworkIssue(req, res);
+
+    assert.equal(res.status.mock.calls[0].arguments[0], 201);
+    assert.equal(res.json.mock.calls[0].arguments[0].success, true);
+    assert.equal(res.json.mock.calls[0].arguments[0].message, '网络问题已记录');
+    assert.deepEqual(res.json.mock.calls[0].arguments[0].data, mockInsertedRow);
+  });
+
+  it('400 : missing connection_quality', async () => {
+    const req = makeReq({ experience_id: 10 }); // 故意不传 connection_quality
+    req.user = { id: 1 };
+    
+    const res = makeRes();
+    await reportNetworkIssue(req, res);
+
+    assert.equal(res.status.mock.calls[0].arguments[0], 400);
+    assert.equal(res.json.mock.calls[0].arguments[0].success, false);
+    assert.match(res.json.mock.calls[0].arguments[0].message, /connection_quality/i);
+    assert.equal(fakePool.query.mock.callCount(), 0); // 确保没有查数据库
+  });
+
+  it('500 : database error', async () => {
+    const req = makeReq({ connection_quality: 'Dropped' });
+    req.user = { id: 1 };
+    fakePool.query.mock.mockImplementation(async () => { throw new Error('DB error'); });
+    
+    const res = makeRes();
+    await reportNetworkIssue(req, res);
+
+    assert.equal(res.status.mock.calls[0].arguments[0], 500);
+    assert.equal(res.json.mock.calls[0].arguments[0].success, false);
+  });
+});
