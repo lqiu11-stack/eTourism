@@ -565,3 +565,20 @@ describe('getNetworkLogs()', () => {
     assert.equal(res.json.mock.calls[0].arguments[0].success, false);
   });
 });
+
+describe('getNetworkIssueStats()', () => {
+  beforeEach(resetMocks);
+
+  it('200 : returns network issue stats', async () => {
+    const mockStats = [{ experience_id: 1, location_name: 'Machu Picchu', issue_count: '5' }];
+    fakePool.query.mock.mockImplementation(async () => ({ rows: mockStats }));
+
+    const req = makeReq();
+    const res = makeRes();
+    await getNetworkIssueStats(req, res);
+
+    assert.equal(res.status.mock.calls[0].arguments[0], 200);
+    assert.equal(res.json.mock.calls[0].arguments[0].success, true);
+    assert.deepEqual(res.json.mock.calls[0].arguments[0].data, mockStats);
+  });
+});
