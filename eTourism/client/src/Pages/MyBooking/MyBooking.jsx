@@ -5,9 +5,16 @@ import { useState, useEffect } from "react";
 import axios from "axios";
 import { getCountryImage } from "../../utils/countryImages";
 import { useLocation } from "react-router-dom";
+import { useLayoutEffect } from "react";
 
 export const BookingDetail = () => {
   const location = useLocation();
+  useLayoutEffect(() => {
+    requestAnimationFrame(() => {
+      window.scrollTo(0, 0);
+    });
+  }, [location.key]);
+
   const queryParams = new URLSearchParams(location.search);
   const id = queryParams.get("id");
 
@@ -101,7 +108,16 @@ export const MyBooking = () => {
       <>
         {joinBtn}
         <div className="Mybooking-card-actions" onClick={stop}>
-          <button className="Mybooking-small-btn" onClick={(e) => { stop(e); navigate(`/booking/${b.id}/refund`); }}>
+          
+          <button
+            className="Mybooking-small-btn"
+            onClick={(e) => {
+              stop(e);
+              navigate(`/RefundPage?id=${b.id}`, {
+                state: { from: "MyBooking", booking: b }
+              });
+            }}
+          >
             Refund this activity
           </button>
           <button className="Mybooking-small-btn" onClick={(e) => { stop(e); navigate(`/booking/${b.id}/reschedule`); }}>
