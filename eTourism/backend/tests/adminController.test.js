@@ -598,7 +598,7 @@ describe('reportNetworkIssue()', () => {
 
     assert.equal(res.status.mock.calls[0].arguments[0], 201);
     assert.equal(res.json.mock.calls[0].arguments[0].success, true);
-    assert.equal(res.json.mock.calls[0].arguments[0].message, '网络问题已记录');
+    assert.equal(res.json.mock.calls[0].arguments[0].message, 'The network issue has been logged.');
     assert.deepEqual(res.json.mock.calls[0].arguments[0].data, mockInsertedRow);
   });
 
