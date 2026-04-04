@@ -7,6 +7,8 @@ import link2Icon from "../icon/link-2.png";
 import approveIcon from "../icon/approve.png";
 import enjoyIcon from "../icon/enjoy.png";
 import { getCountryImage } from "../../utils/countryImages";
+import { useLayoutEffect } from "react";
+
 
 
 const API_BASE = import.meta.env.VITE_API_URL;
@@ -21,6 +23,12 @@ export const MyBookingDetail = () => {
   const [rating, setRating] = useState(0);
   const navigate = useNavigate();
   const location = useLocation();
+  useLayoutEffect(() => {
+    requestAnimationFrame(() => {
+      window.scrollTo(0, 0);
+    });
+  }, [location.key]);
+
   const token = localStorage.getItem("token");
   const isLoggedIn = !!token;
 
@@ -156,7 +164,7 @@ export const MyBookingDetail = () => {
       <div>
         <div className="Mybooking-hero">
         <h1 className="Myhero-title">Booking detail</h1>
-      </div>
+        </div>
 
       <div className="Detail-booking-card">
         <h3>Here is your booking detail</h3>
@@ -254,12 +262,8 @@ export const MyBookingDetail = () => {
           <div className="refund">
             <p style={{ whiteSpace: "pre-wrap" }}>{refundPolicy}</p>
             <div className="refund-buttons">
-              {!isRefundBlocked && (
-                <button>Apply for the refund</button>
-              )}
-              {!isRefundBlocked && (
-                <button>Reschedule</button>
-              )}
+              <button onClick={() => {navigate(`/RefundPage?id=${booking.id}`); window.scrollTo(0, 0);}}>Apply for refund</button>
+              <button>Reschedule</button>
               <button>Contact customer service</button>
             </div>
           </div>
