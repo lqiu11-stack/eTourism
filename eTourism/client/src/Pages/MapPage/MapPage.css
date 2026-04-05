@@ -1,0 +1,29 @@
+html, body, #root {
+  height: 100%;
+  margin: 0;
+}
+
+.map-layout {
+  display: flex;
+  height: 100vh;
+}
+
+
+.sidebar {
+  width: 300px;
+  background: #ffffff;
+  padding: 20px;
+  border-right: 1px solid #ddd;
+  overflow-y: auto;
+}
+
+.filter-section {
+  margin-bottom: 20px;
+}
+
+
+
+.map-container {
+  flex: 1;
+  height: 100%;
+}

@@ -134,7 +134,7 @@ export const MainPage = () => {
                     <img src={continentIcon} alt="location" className="title-icon" />
                     <span>Country / Location</span>
                   </div>
-                  <button className="map-link" type="button">Search by map</button>
+                  <button className="map-link" type="button" onClick={() => navigate("/MapPage")} >Search by map</button>
                 </div>
                 <div className="search-box">
                   <input
