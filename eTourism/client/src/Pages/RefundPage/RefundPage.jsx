@@ -46,6 +46,7 @@ export const RefundPage = () => {
 
   const [reason, setReason] = useState("");
   const [agreed, setAgreed] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   // const refundStatus = getRefundStatus(experience?.date_time);
 
   const getRefundAmount = () => {
@@ -81,6 +82,27 @@ function getRefundRate(refundStatus) {
 }
 const refundRate = getRefundRate(refundStatus);
 const refundAmount = Number(booking?.amount_paid || 0) * refundRate;
+
+  const handleSubmitRefund = async () => {
+    if (!reason.trim()) {
+      alert("Please enter a reason for your refund.");
+      return;
+    }
+    setSubmitting(true);
+    try {
+      await axios.post(
+        `${API_BASE}/visitor/bookings/${id}/refund`,
+        { reason },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      alert("Refund request submitted successfully!");
+      navigate("/MyBooking");
+    } catch (err) {
+      alert(err.response?.data?.message || "Failed to submit refund request.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
 
   useEffect(() => {
@@ -202,9 +224,10 @@ const refundAmount = Number(booking?.amount_paid || 0) * refundRate;
 
           <button
             className="cancel-btn"
-            disabled={!agreed}
+            disabled={!agreed || submitting}
+            onClick={handleSubmitRefund}
           >
-            Cancel booking
+            {submitting ? "Submitting..." : "Cancel booking"}
           </button>
         </div>
         </div>
