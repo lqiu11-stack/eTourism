@@ -120,6 +120,7 @@ export const PaymentPage = () => {
     setLoading(true);
     try {
       const bookingId = await createBooking();
+      localStorage.setItem("pending_booking_id", bookingId);
       const { data } = await axios.post(
         `${API_BASE}/visitor/payments/paypal/create-order`,
         { booking_id: bookingId },
