@@ -2,6 +2,7 @@ const User = require('../models/User');
 const pool = require('../config/db');
 const bcrypt = require('bcrypt');
 const Experience = require('../models/Experience');
+const Booking = require('../models/Booking');
 
 // GET /api/admin/experiences?status=pending
 
@@ -54,7 +55,13 @@ const deleteExperience = async (req, res) => {
 };
 
 const getBookings = async (req, res) => {
-  // TODO
+  try {
+    const { status } = req.query;
+    const bookings = await Booking.findAll({ status });
+    res.json(bookings);
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: String(err) });
+  }
 };
 
 const getReviews = async (req, res) => {
