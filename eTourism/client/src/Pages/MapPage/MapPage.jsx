@@ -5,16 +5,51 @@ import {
   InfoWindow,
 } from "@react-google-maps/api";
 import { useEffect, useState } from "react";
+// import { Link } from "react-router-dom";
 import axios from "axios";
 import "./MapPage.css";
+import backIcon from "../icon/back.png";
+import { useNavigate, Link } from "react-router-dom";
+
 
 export const MapPage = () => {
-  const [data, setData] = useState([]);
-  const [selected, setSelected] = useState(null);
+  const navigate = useNavigate();
+  const [search, setSearch] = useState("");
+  const [price, setPrice] = useState(7000);
+  const [filters, setFilters] = useState({
+    parking: false,
+    breakfast: false,
+    hotel: false,
+  });
 
-  const center = { lat: 53.3811, lng: -1.4878 }; // Sheffield
+  const token = localStorage.getItem("token");
+  const isLoggedIn = !!token;
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    navigate("/login");
+  };
 
-  // 📍 Sheffield landmarks（地標）
+  const [data, setData] = useState([]);   
+  const [selected, setSelected] = useState(null); 
+
+  const center = { lat: 53.3811, lng: -1.4878 };
+
+  const handleCheckbox = (key) => {
+    setFilters((prev) => ({
+      ...prev,
+      [key]: !prev[key],
+    }));
+  };
+
+  const handleApply = () => {
+    console.log({
+      search,
+      price,
+      filters,
+    });
+  };
+
   const landmarks = [
     {
       id: 101,
@@ -44,12 +79,142 @@ export const MapPage = () => {
   }, []);
 
   return (
+    <div className="map-page-root">
+        <nav className="navbar">
+            <button
+                    type="button"
+                    className="detail-back-btn"
+                    onClick={() => navigate("/MainPage")}
+                    aria-label="Back"
+                  >
+                    <img src={backIcon} alt="Back" className="detail-back-icon" />
+                  </button>
+
+          <div className="nav-links">
+              <Link to="/help" className="nav-link">Helping centre</Link>
+              <Link to="/Mybooking" className="nav-link">My booking</Link>
+               {isLoggedIn ? (
+                  <button className="nav-link nav-btn-link" onClick={handleLogout}>
+                    Logout
+                  </button>
+                ) : (
+                  <Link to="/login" className="nav-link">Login</Link>
+                )}
+            </div>
+        </nav>
     <div className="map-layout">
       
-      {/* left bar */}
+      {/* sidebar */}
       <div className="sidebar">
-        <h2>Explore Sheffield</h2>
-        <p>Select a location on the map</p>
+
+    {/* scroll*/}
+    <div className="sidebar-content">
+        <div className="sidebar-inner">
+
+        <h3>Search</h3>
+        <input
+          className="search-input"
+          placeholder="Search location..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
+
+        <h3>Your budget</h3>
+        <p>0£ - {price}£</p>
+
+        <input
+          type="range"
+          min="0"
+          max="7000"
+          value={price}
+          onChange={(e) => setPrice(e.target.value)}
+          className="slider"
+        />
+
+        <h3>Popular filters</h3>
+
+        <p>Language</p>
+        <label>
+          <input
+            type="checkbox"
+            checked={filters.english}
+            onChange={() => handleCheckbox("English")}
+          />
+          English
+        </label>
+        <label>
+          <input
+            type="checkbox"
+            checked={filters.Mandarin}
+            onChange={() => handleCheckbox("Mandarin")}
+          />
+          Mandarin
+        </label>
+        <label>
+          <input
+            type="checkbox"
+            checked={filters.German}
+            onChange={() => handleCheckbox("German")}
+          />
+          German
+        </label>
+        <label>
+          <input
+            type="checkbox"
+            checked={filters.Korean}
+            onChange={() => handleCheckbox("Korean")}
+          />
+          Korean
+        </label>
+
+        <p>Tourism type</p>
+        <label>
+          <input
+            type="checkbox"
+            checked={filters.History}
+            onChange={() => handleCheckbox("History")}
+          />
+          History
+        </label>
+        <label>
+          <input
+            type="checkbox"
+            checked={filters.Art}
+            onChange={() => handleCheckbox("Art")}
+          />
+          Art
+        </label>
+        <label>
+          <input
+            type="checkbox"
+            checked={filters.Religious}
+            onChange={() => handleCheckbox("Religious")}
+          />
+          Religious
+        </label>
+        <label>
+          <input
+            type="checkbox"
+            checked={filters.City}
+            onChange={() => handleCheckbox("City view")}
+          />
+          City View
+        </label>
+        <label>
+          <input
+            type="checkbox"
+            checked={filters.Wild}
+            onChange={() => handleCheckbox("Wild life")}
+          />
+          Wild life
+        </label>
+        </div>
+    </div>
+        <div className="sidebar-footer">
+            <button className="apply-btn">
+            Find the tourism
+            </button>
+        </div>
       </div>
 
       {/* map */}
@@ -75,7 +240,7 @@ export const MapPage = () => {
                 />
               ))}
 
-            {/*  Landmarks */}
+            {/* Landmarks */}
             {landmarks.map((place) => (
               <Marker
                 key={place.id}
@@ -87,7 +252,7 @@ export const MapPage = () => {
               />
             ))}
 
-            {/* Info window */}
+            {/* InfoWindow */}
             {selected && (
               <InfoWindow
                 position={{
@@ -110,6 +275,7 @@ export const MapPage = () => {
           </GoogleMap>
         </LoadScript>
       </div>
+    </div>
     </div>
   );
 };
