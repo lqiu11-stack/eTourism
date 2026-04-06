@@ -18,7 +18,13 @@ export const LoginPage = () => {
   const [error, setError] = useState("");
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const redirectTo = searchParams.get("redirect") || "/";
+  const redirectTo = searchParams.get("redirect");
+
+  const getRedirectPath = (role) => {
+    if (redirectTo) return redirectTo;
+    if (role === "admin") return "/Dashboard";
+    return "/MainPage";
+  };
 
   const handleGoogleLogin = async () => {
     try {
@@ -33,7 +39,7 @@ export const LoginPage = () => {
       
       localStorage.setItem("token", data.token);
       localStorage.setItem("user", JSON.stringify(data.user));
-      navigate(redirectTo);
+      navigate(getRedirectPath(data.user.role));
 
     } catch (err) {
       console.error("Login failed:", err);
@@ -55,7 +61,7 @@ export const LoginPage = () => {
       
       localStorage.setItem("token", data.token);
       localStorage.setItem("user", JSON.stringify(data.user));
-      navigate(redirectTo);
+      navigate(getRedirectPath(data.user.role));
 
     } catch (err) {
       console.error("Facebook Login failed:", err);
@@ -76,7 +82,7 @@ export const LoginPage = () => {
       const { data } = await axios.post(`${API_BASE}/auth/login`, { email, password });
       localStorage.setItem("token", data.token);
       localStorage.setItem("user", JSON.stringify(data.user));
-      navigate(redirectTo);
+      navigate(getRedirectPath(data.user.role));
     } catch (err) {
       console.error("Login failed:", err);
       const msg = err.response?.data?.message || "Login failed. Please try again.";
