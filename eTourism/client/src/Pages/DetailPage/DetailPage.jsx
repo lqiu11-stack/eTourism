@@ -7,7 +7,7 @@ import head from "../icon/head.png";
 import photo2 from "../icon/london1.jpg";
 import photo3 from "../icon/london2.jpg";
 import photo4 from "../icon/london3.jpg";
-import { useNavigate, useSearchParams, Link } from "react-router-dom";
+import { useNavigate, useSearchParams, Link, useLocation } from "react-router-dom";
 import backIcon from "../icon/back.png";
 import blog from "../icon/blogger.png";
 import { getCountryImage } from "../../utils/countryImages";
@@ -17,6 +17,17 @@ const API_BASE = import.meta.env.VITE_API_URL;
 const renderStars = (rating) => Array(Number(rating)).fill('\u2605').join(' ');
 
 export const DetailPage = () => {
+  const location = useLocation(); 
+  const from = location.state?.from;
+  const handleBack = () => {
+
+  if (from === "map") {
+    navigate("/MapPage");
+  } else {
+    navigate("/MainPage");
+  }
+};
+
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const token = localStorage.getItem("token");
@@ -57,7 +68,7 @@ export const DetailPage = () => {
             <button
                     type="button"
                     className="detail-back-btn"
-                    onClick={() => navigate("/MainPage")}
+                    onClick={handleBack}
                     aria-label="Back"
                   >
                     <img src={backIcon} alt="Back" className="detail-back-icon" />

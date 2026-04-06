@@ -99,3 +99,36 @@ label {
   flex: 1;
   height: 100%;
 }
+
+.map-info-card {
+  width: 180px;
+}
+
+.map-info-img {
+  width: 100%;
+  height: 100px;
+  object-fit: cover;
+  border-radius: 6px;
+}
+
+.map-info-card h4 {
+  margin: 8px 0 4px;
+  font-size: 14px;
+}
+
+.map-info-price {
+  color: #AD2831;
+  font-weight: bold;
+  margin-bottom: 8px;
+}
+
+.map-book-btn {
+  width: 100%;
+  padding: 6px;
+  border: none;
+  background: #AD2831;
+  color: white;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+}

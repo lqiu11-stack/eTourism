@@ -10,6 +10,7 @@ import axios from "axios";
 import "./MapPage.css";
 import backIcon from "../icon/back.png";
 import { useNavigate, Link } from "react-router-dom";
+import { getCountryImage } from "../../utils/countryImages";
 
 
 export const MapPage = () => {
@@ -33,7 +34,7 @@ export const MapPage = () => {
   const [data, setData] = useState([]);   
   const [selected, setSelected] = useState(null); 
 
-  const center = { lat: 53.3811, lng: -1.4878 };
+  const center = { lat: 51.5101, lng: -0.1340, };
 
   const handleCheckbox = (key) => {
     setFilters((prev) => ({
@@ -50,26 +51,6 @@ export const MapPage = () => {
     });
   };
 
-  const landmarks = [
-    {
-      id: 101,
-      name: "University of Sheffield",
-      lat: 53.3810,
-      lng: -1.4880,
-    },
-    {
-      id: 102,
-      name: "Sheffield Cathedral",
-      lat: 53.3838,
-      lng: -1.4677,
-    },
-    {
-      id: 103,
-      name: "Weston Park Museum",
-      lat: 53.3804,
-      lng: -1.4904,
-    },
-  ];
 
   useEffect(() => {
     axios
@@ -240,18 +221,6 @@ export const MapPage = () => {
                 />
               ))}
 
-            {/* Landmarks */}
-            {landmarks.map((place) => (
-              <Marker
-                key={place.id}
-                position={{ lat: place.lat, lng: place.lng }}
-                icon={{
-                  url: "http://maps.google.com/mapfiles/ms/icons/red-dot.png",
-                }}
-                onClick={() => setSelected(place)}
-              />
-            ))}
-
             {/* InfoWindow */}
             {selected && (
               <InfoWindow
@@ -265,9 +234,27 @@ export const MapPage = () => {
                 }}
                 onCloseClick={() => setSelected(null)}
               >
-                <div>
-                  <h4>{selected.title || selected.name}</h4>
-                  <p>{selected.location_name || "Landmark"}</p>
+                <div className="map-info-card">
+                <img
+                    src={getCountryImage(selected?.country)}
+                    alt="tour"
+                    className="map-info-img"
+                />
+
+                <h4>{selected.title || selected.name}</h4>
+
+                <p className="map-info-price">
+                    £{selected.price || 50}
+                </p>
+
+                <button
+                    className="map-book-btn"
+                    onClick={() => navigate(`/DetailPage?id=${selected.id}`, {
+                    state: { from: "map" }
+                    })}
+                >
+                    Book it
+                </button>
                 </div>
               </InfoWindow>
             )}

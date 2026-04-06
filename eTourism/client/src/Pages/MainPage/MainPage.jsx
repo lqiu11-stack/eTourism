@@ -71,7 +71,16 @@ export const MainPage = () => {
   }, {});
 
   const renderCard = (exp) => (
-    <div className="tour-card" key={exp.id} onClick={() => navigate(`/DetailPage?id=${exp.id}`)} style={{cursor:'pointer'}}>
+    <div
+      className="tour-card"
+      key={exp.id}
+      onClick={() =>
+        navigate(`/DetailPage?id=${exp.id}`, {
+          state: { from: "main" },
+        })
+      }
+      style={{ cursor: "pointer" }}
+    >
       <div className="tour-image">
         <img src={getImage(exp)} alt={exp.title} />
         <div className="image-overlay">
