@@ -140,7 +140,7 @@ const getMe = async (req, res) => {
 
 const getExperiences = async (req, res) => {
   try {
-    const experiences = await Experience.findAll({});
+    const experiences = await Experience.findAll({ status: 'approved' });
     return res.status(200).json(experiences);
   } catch (err) {
     return res.status(500).json({ message: 'Server error', error: String(err) });

@@ -79,6 +79,39 @@ const Booking = {
     return rows;
   },
 
+  async findAll({ status } = {}) {
+    const values = [];
+    let where = '';
+    if (status) {
+      values.push(status);
+      where = `WHERE b.status = $1`;
+    }
+    const { rows } = await pool.query(
+      `SELECT
+         b.id, b.status, b.amount_paid, b.qty_normal, b.qty_discounted,
+         b.contact_name, b.contact_email, b.created_at, b.meeting_link,
+         e.id          AS experience_id,
+         e.title       AS experience_title,
+         e.date_time   AS experience_date_time,
+         u.id          AS visitor_id,
+         u.first_name  AS visitor_first_name,
+         u.last_name   AS visitor_last_name,
+         u.email       AS visitor_email,
+         p.method      AS payment_method,
+         r.status      AS refund_status,
+         r.refund_amount
+       FROM bookings b
+       LEFT JOIN experiences e ON e.id = b.experience_id
+       LEFT JOIN users u ON u.id = b.visitor_id
+       LEFT JOIN payments p ON p.booking_id = b.id
+       LEFT JOIN refunds r ON r.booking_id = b.id
+       ${where}
+       ORDER BY b.id DESC`,
+      values
+    );
+    return rows;
+  },
+
   async findByExperience(experience_id) {
     const { rows } = await pool.query(
       `SELECT b.*, u.first_name, u.last_name, u.email

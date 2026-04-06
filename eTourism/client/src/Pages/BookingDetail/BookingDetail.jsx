@@ -93,7 +93,7 @@ export const MyBookingDetail = () => {
     // Case 2: came back from Stripe (?session_id=XX)
     } else if (sessionId) {
       axios.post(
-        `${API_BASE}/visitor/payments/capture-stripe`,
+        `${API_BASE}/visitor/payments/stripe/capture`,
         { session_id: sessionId },
         { headers: { Authorization: `Bearer ${token}` } }
       )

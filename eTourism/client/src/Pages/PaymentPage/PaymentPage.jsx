@@ -55,6 +55,16 @@ export const PaymentPage = () => {
     : 0;
   const total = qtyNormal * normalPrice + qtyDiscounted * discountedPrice;
 
+  const bookingUnavailableReason = experience
+    ? experience.status && experience.status !== 'approved'
+      ? 'This experience is not available for booking yet.'
+      : !experience.date_time
+      ? 'This experience has no scheduled time slot.'
+      : new Date(experience.date_time).getTime() <= Date.now()
+      ? 'Booking is closed — this experience has already started.'
+      : null
+    : null;
+
   const validate = () => {
     if (qtyNormal + qtyDiscounted === 0) {
       setError("Please select at least one ticket.");
@@ -120,6 +130,7 @@ export const PaymentPage = () => {
     setLoading(true);
     try {
       const bookingId = await createBooking();
+      localStorage.setItem("pending_booking_id", bookingId);
       const { data } = await axios.post(
         `${API_BASE}/visitor/payments/paypal/create-order`,
         { booking_id: bookingId },
@@ -246,18 +257,21 @@ export const PaymentPage = () => {
             onChange={(e) => setEmail(e.target.value)}
           />
 
+          {bookingUnavailableReason && (
+            <p className="input-error">{bookingUnavailableReason}</p>
+          )}
           {error && <p className="input-error">{error}</p>}
 
           <div className="pay-btn">
             <img src={paypalIcon} alt="paypal" />
-            <button onClick={handlePayPal} disabled={loading}>
+            <button onClick={handlePayPal} disabled={loading || !!bookingUnavailableReason}>
               {loading ? "Processing..." : "Pay with PayPal"}
             </button>
           </div>
 
           <div className="pay-btn">
             <img src={masterIcon} alt="card" />
-            <button onClick={handleStripe} disabled={loading}>
+            <button onClick={handleStripe} disabled={loading || !!bookingUnavailableReason}>
               {loading ? "Processing..." : "Pay with Card"}
             </button>
           </div>
