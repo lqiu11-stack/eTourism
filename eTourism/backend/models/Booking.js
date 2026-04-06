@@ -36,10 +36,10 @@ const Booking = {
   async reschedule({ booking_id, visitor_id, new_experience_id, new_status, reschedule_date }) {
     const { rows } = await pool.query(
       `UPDATE bookings
-       SET experience_id = $3, status = $4
+       SET experience_id = $3, status = $4, reschedule_date = $5
        WHERE id = $1 AND visitor_id = $2
        RETURNING *`,
-      [booking_id, visitor_id, new_experience_id, new_status]
+      [booking_id, visitor_id, new_experience_id, new_status, reschedule_date]
     );
     return rows[0] || null;
   },
