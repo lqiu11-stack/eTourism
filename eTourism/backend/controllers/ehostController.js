@@ -1,6 +1,7 @@
 const pool = require('../config/db');
+const { CATEGORIES, LANGUAGES, CONTINENTS, GENDER_PREFERENCES } = require('../constants/enums');
 
-const supportedGenderPreferences = ['any', 'female_only', 'male_only', 'no_all_male_groups', 'no_all_female_groups'];
+const supportedGenderPreferences = GENDER_PREFERENCES;
 
 const normalizeGenderPreference = (value) => {
   if (value === undefined || value === null || value === '') {
@@ -19,12 +20,13 @@ const normalizeGenderPreference = (value) => {
     men: 'male_only',
     men_only: 'male_only',
     male_only: 'male_only',
-    no_all_male: 'no_all_male_groups',
-    no_all_male_group: 'no_all_male_groups',
-    no_all_male_groups: 'no_all_male_groups',
-    no_all_female: 'no_all_female_groups',
-    no_all_female_group: 'no_all_female_groups',
-    no_all_female_groups: 'no_all_female_groups',
+    mixed: 'mixed',
+    no_all_male: 'mixed',
+    no_all_male_group: 'mixed',
+    no_all_male_groups: 'mixed',
+    no_all_female: 'mixed',
+    no_all_female_group: 'mixed',
+    no_all_female_groups: 'mixed',
   };
   return aliases[normalized] || null;
 };
@@ -76,15 +78,17 @@ const createExperience = async (req, res) => {
  
 try {
     const ehostId = req.user ? req.user.id : req.userId;
-    const { 
+    const {
         title,
-        location_name, 
-        country, 
-        latitude, 
+        location_name,
+        country,
+        continent,
+        latitude,
         longitude,
-        category, 
-        description, 
-        price, 
+        category,
+        language,
+        description,
+        price,
         duration_minutes,
         max_visitors,
         cover_image,       // frontend image link url (String)
@@ -92,21 +96,42 @@ try {
         allows_piggyback   // Boolean
     } = req.body;
 
-   
+
     if (!title || !location_name || !country || !price || !description) {
-        return res.status(400).json({ 
-            success: false, 
-            message: 'Required fields are missing: Location name, country, price, and description cannot be empty.' 
+        return res.status(400).json({
+            success: false,
+            message: 'Required fields are missing: Location name, country, price, and description cannot be empty.'
         });
     }
   //url validation can be more complex in real scenarios, here we just check if it's a non-empty string for simplicity.
     if (!cover_image || typeof cover_image !== 'string') {
-        return res.status(400).json({ 
-            success: false, 
-            message: 'Please upload a cover image of the experience project.' 
+        return res.status(400).json({
+            success: false,
+            message: 'Please upload a cover image of the experience project.'
         });
     }
-   
+
+    if (category && !CATEGORIES.includes(category)) {
+      return res.status(400).json({
+        success: false,
+        message: `Invalid category. Allowed values: ${CATEGORIES.join(', ')}`,
+      });
+    }
+
+    if (language && !LANGUAGES.includes(language)) {
+      return res.status(400).json({
+        success: false,
+        message: `Invalid language. Allowed values: ${LANGUAGES.join(', ')}`,
+      });
+    }
+
+    if (continent && !CONTINENTS.includes(continent)) {
+      return res.status(400).json({
+        success: false,
+        message: `Invalid continent. Allowed values: ${CONTINENTS.join(', ')}`,
+      });
+    }
+
     const normalizedGenderPreference = normalizeGenderPreference(gender_preference);
     if (!normalizedGenderPreference) {
       return res.status(400).json({
@@ -116,25 +141,27 @@ try {
     }
 
     const { rows } = await pool.query(
-        `INSERT INTO experiences 
-        (title,ehost_id, location_name, country, latitude, longitude, category, description, price, duration_minutes, max_visitors, cover_image, gender_preference, allows_piggyback, status)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, 'pending')
+        `INSERT INTO experiences
+        (title, ehost_id, location_name, country, continent, latitude, longitude, category, language, description, price, duration_minutes, max_visitors, cover_image, gender_preference, allows_piggyback, status)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, 'pending')
         RETURNING *`,
         [
             title,
-            ehostId, 
-            location_name, 
-            country, 
-            latitude || null,     
-            longitude || null, 
-            category, 
-            description, 
-            price, 
-            duration_minutes || 60, 
-            max_visitors || 10,  
-            cover_image,            
+            ehostId,
+            location_name,
+            country,
+            continent || null,
+            latitude || null,
+            longitude || null,
+            category || null,
+            language || 'English',
+            description,
+            price,
+            duration_minutes || 60,
+            max_visitors || 10,
+            cover_image,
             normalizedGenderPreference,
-            allows_piggyback || false  
+            allows_piggyback || false,
         ]
     );
 
@@ -205,7 +232,28 @@ const updateExperience = async (req, res) => {
   try {
     const experienceId = req.params.id;
     const ehostId = req.user ? req.user.id : req.userId;
-    const { location_name, description, category, price, gender_preference, allows_piggyback, max_visitors } = req.body;
+    const { location_name, description, category, language, continent, price, gender_preference, allows_piggyback, max_visitors } = req.body;
+
+    if (category !== undefined && !CATEGORIES.includes(category)) {
+      return res.status(400).json({
+        success: false,
+        message: `Invalid category. Allowed values: ${CATEGORIES.join(', ')}`,
+      });
+    }
+
+    if (language !== undefined && !LANGUAGES.includes(language)) {
+      return res.status(400).json({
+        success: false,
+        message: `Invalid language. Allowed values: ${LANGUAGES.join(', ')}`,
+      });
+    }
+
+    if (continent !== undefined && !CONTINENTS.includes(continent)) {
+      return res.status(400).json({
+        success: false,
+        message: `Invalid continent. Allowed values: ${CONTINENTS.join(', ')}`,
+      });
+    }
 
     const normalizedGenderPreference = gender_preference === undefined
       ? undefined
@@ -228,19 +276,21 @@ const updateExperience = async (req, res) => {
 
 
     const { rows: updateRows } = await pool.query(
-        `UPDATE experiences 
-         SET location_name = COALESCE($1, location_name),
-             description = COALESCE($2, description),
-             category = COALESCE($3, category),
-             price = COALESCE($4, price),
-             gender_preference = COALESCE($5, gender_preference),
-             allows_piggyback = COALESCE($6, allows_piggyback),
-             max_visitors = COALESCE($7, max_visitors),
-             status = 'pending', 
-             rejection_reason = NULL
-         WHERE id = $8 AND ehost_id = $9
+        `UPDATE experiences
+         SET location_name     = COALESCE($1, location_name),
+             description       = COALESCE($2, description),
+             category          = COALESCE($3, category),
+             language          = COALESCE($4, language),
+             continent         = COALESCE($5, continent),
+             price             = COALESCE($6, price),
+             gender_preference = COALESCE($7, gender_preference),
+             allows_piggyback  = COALESCE($8, allows_piggyback),
+             max_visitors      = COALESCE($9, max_visitors),
+             status            = 'pending',
+             rejection_reason  = NULL
+         WHERE id = $10 AND ehost_id = $11
          RETURNING *`,
-        [location_name, description, category, price, normalizedGenderPreference, allows_piggyback, max_visitors, experienceId, ehostId]
+        [location_name, description, category, language, continent, price, normalizedGenderPreference, allows_piggyback, max_visitors, experienceId, ehostId]
     );
     
     res.status(200).json({ success: true, data: updateRows[0] });
