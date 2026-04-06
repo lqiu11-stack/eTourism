@@ -4,6 +4,19 @@ import profileImg from "../icon/head.png";
 import { Link, useNavigate } from "react-router-dom";
 import search from "../icon/search.png";
 import axios from "axios";
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend,
+  ArcElement,
+} from "chart.js";
+import { Bar, Doughnut } from "react-chartjs-2";
+
+ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ArcElement);
 
 const API_BASE = import.meta.env.VITE_API_URL;
 
@@ -222,6 +235,8 @@ export const Dashboard = () => {
     if (activeTab === "user") fetchUsers();
     if (activeTab === "request") fetchExperiences(expStatusFilter);
     if (activeTab === "EhostJoin") fetchApplications(appStatusFilter);
+    if (activeTab === "reports") fetchAnalytics();
+    if (activeTab === "suitability") fetchSuitExps(suitStatusFilter);
   }, [activeTab]);
 
   const chatList = [
@@ -257,6 +272,96 @@ export const Dashboard = () => {
 ];
 
   const [selectedChat, setSelectedChat] = useState(null);
+
+  // ── Analytics / Reports ──────────────────────────────────────────────
+  const [analytics, setAnalytics] = useState(null);
+  const [analyticsLoading, setAnalyticsLoading] = useState(false);
+
+  const fetchAnalytics = useCallback(async () => {
+    setAnalyticsLoading(true);
+    try {
+      const { data } = await axios.get(`${API_BASE}/admin/analytics`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setAnalytics(data);
+    } catch {
+      setAnalytics(null);
+    } finally {
+      setAnalyticsLoading(false);
+    }
+  }, [token]);
+
+  // ── Suitability Review ───────────────────────────────────────────────
+  const [suitExps, setSuitExps] = useState([]);
+  const [suitLoading, setSuitLoading] = useState(false);
+  const [suitStatusFilter, setSuitStatusFilter] = useState("approved");
+  const [showSuitPanel, setShowSuitPanel] = useState(false);
+  const [selectedSuitExp, setSelectedSuitExp] = useState(null);
+  const [suitScores, setSuitScores] = useState([]);
+  const [suitScoresLoading, setSuitScoresLoading] = useState(false);
+  const [suitResult, setSuitResult] = useState("pass");
+  const [suitComment, setSuitComment] = useState("");
+  const [suitSubmitting, setSuitSubmitting] = useState(false);
+
+  const fetchSuitExps = useCallback(async (status) => {
+    setSuitLoading(true);
+    try {
+      const { data } = await axios.get(
+        `${API_BASE}/admin/experiences?status=${status}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setSuitExps(Array.isArray(data) ? data : []);
+    } catch {
+      setSuitExps([]);
+    } finally {
+      setSuitLoading(false);
+    }
+  }, [token]);
+
+  const fetchSuitScores = useCallback(async (id) => {
+    setSuitScoresLoading(true);
+    try {
+      const { data } = await axios.get(
+        `${API_BASE}/admin/experiences/${id}/scores`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setSuitScores(Array.isArray(data) ? data : []);
+    } catch {
+      setSuitScores([]);
+    } finally {
+      setSuitScoresLoading(false);
+    }
+  }, [token]);
+
+  const handleOpenSuitPanel = (exp) => {
+    setSelectedSuitExp(exp);
+    setSuitResult("pass");
+    setSuitComment("");
+    setShowSuitPanel(true);
+    fetchSuitScores(exp.id);
+  };
+
+  const handleScoreExperience = async () => {
+    if (suitResult === "fail" && !suitComment.trim()) {
+      alert("Please enter a reason when marking as unsuitable.");
+      return;
+    }
+    setSuitSubmitting(true);
+    try {
+      await axios.post(
+        `${API_BASE}/admin/experiences/${selectedSuitExp.id}/score`,
+        { result: suitResult, comment: suitComment.trim() },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      alert(`Experience marked as ${suitResult === "pass" ? "suitable" : "unsuitable"}.`);
+      setShowSuitPanel(false);
+      fetchSuitExps(suitStatusFilter);
+    } catch (e) {
+      alert(e.response?.data?.message || "Failed to submit review.");
+    } finally {
+      setSuitSubmitting(false);
+    }
+  };
 
   const MessageBox = () => (
     <div>
@@ -336,9 +441,11 @@ export const Dashboard = () => {
         {[
           { key: "booking", label: "Manage booking" },
           { key: "user", label: "User data" },
-          { key: "message", label: "Message box" },
+          { key: "reports", label: "Reports" },
+          { key: "suitability", label: "Suitability review" },
           { key: "request", label: "E-tourism request" },
           { key: "EhostJoin", label: "New e-host request" },
+          { key: "message", label: "Message box" },
         ].map(({ key, label }) => (
           <button
             key={key}
@@ -405,6 +512,32 @@ export const Dashboard = () => {
             setShowAppModal={setShowAppModal}
             onApprove={handleApproveApplication}
             onReject={handleRejectApplication}
+          />
+        )}
+        {activeTab === "reports" && (
+          <Reports analytics={analytics} loading={analyticsLoading} />
+        )}
+        {activeTab === "suitability" && (
+          <SuitabilityReview
+            experiences={suitExps}
+            loading={suitLoading}
+            statusFilter={suitStatusFilter}
+            setStatusFilter={(s) => { setSuitStatusFilter(s); fetchSuitExps(s); }}
+            showPanel={showSuitPanel}
+            setShowPanel={setShowSuitPanel}
+            selectedExp={selectedSuitExp}
+            scores={suitScores}
+            scoresLoading={suitScoresLoading}
+            result={suitResult}
+            setResult={setSuitResult}
+            comment={suitComment}
+            setComment={setSuitComment}
+            submitting={suitSubmitting}
+            onOpenPanel={handleOpenSuitPanel}
+            onSubmitScore={handleScoreExperience}
+            onApprove={handleApproveExperience}
+            onReject={handleRejectExperience}
+            onAfterAction={() => { setShowSuitPanel(false); fetchSuitExps(suitStatusFilter); }}
           />
         )}
       </div>
@@ -641,6 +774,252 @@ const ExperienceRequests = ({ experiences, loading, statusFilter, setStatusFilte
         </div>
       ))}
     </div>
+  </div>
+);
+
+const CHART_COLORS = [
+  "#a88b8b", "#7b9eb8", "#8bb897", "#c4a05a", "#9b7bb8",
+  "#b87b7b", "#5a8cb8", "#7bb87b", "#b8a05a", "#7b7bb8",
+];
+
+const barOptions = () => ({
+  indexAxis: "y",
+  responsive: true,
+  maintainAspectRatio: false,
+  plugins: {
+    legend: { display: false },
+    title: { display: false },
+    tooltip: { callbacks: { label: (ctx) => ` ${ctx.parsed.x} booking${ctx.parsed.x !== 1 ? "s" : ""}` } },
+  },
+  scales: {
+    x: { beginAtZero: true, ticks: { stepSize: 1, precision: 0 }, grid: { color: "#f0e8e8" } },
+    y: { grid: { display: false }, ticks: { font: { size: 12 } } },
+  },
+});
+
+const Reports = ({ analytics, loading }) => {
+  if (loading) return <p style={{ padding: "16px" }}>Loading reports...</p>;
+  if (!analytics) return <p style={{ padding: "16px" }}>No data available.</p>;
+
+  const expChartData = {
+    labels: analytics.topExperiences.map((e) =>
+      e.title.length > 28 ? e.title.slice(0, 26) + "…" : e.title
+    ),
+    datasets: [{
+      data: analytics.topExperiences.map((e) => Number(e.booking_count)),
+      backgroundColor: "#a88b8b",
+      borderColor: "#8b6b6b",
+      borderWidth: 1,
+      borderRadius: 4,
+    }],
+  };
+
+  const hostChartData = {
+    labels: analytics.topHosts.map((h) => h.name),
+    datasets: [{
+      data: analytics.topHosts.map((h) => Number(h.booking_count)),
+      backgroundColor: "#7b9eb8",
+      borderColor: "#5a7e9b",
+      borderWidth: 1,
+      borderRadius: 4,
+    }],
+  };
+
+  const countryChartData = {
+    labels: analytics.visitorCountries.map((c) => c.country),
+    datasets: [{
+      data: analytics.visitorCountries.map((c) => Number(c.visitor_count)),
+      backgroundColor: "#8bb897",
+      borderColor: "#6a9a78",
+      borderWidth: 1,
+      borderRadius: 4,
+    }],
+  };
+
+  const categoryChartData = {
+    labels: analytics.categoryBreakdown.map((c) => c.category || "Uncategorised"),
+    datasets: [{
+      data: analytics.categoryBreakdown.map((c) => Number(c.booking_count)),
+      backgroundColor: CHART_COLORS.slice(0, analytics.categoryBreakdown.length),
+      borderWidth: 1,
+      borderColor: "#fff",
+    }],
+  };
+
+  const doughnutOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { position: "right", labels: { font: { size: 12 }, padding: 12 } },
+      tooltip: { callbacks: { label: (ctx) => ` ${ctx.label}: ${ctx.parsed} booking${ctx.parsed !== 1 ? "s" : ""}` } },
+    },
+  };
+
+  const CHART_HEIGHT = 300;
+  const expBarHeight = Math.max(CHART_HEIGHT, analytics.topExperiences.length * 36);
+  const hostBarHeight = Math.max(CHART_HEIGHT, analytics.topHosts.length * 36);
+  const countryBarHeight = Math.max(CHART_HEIGHT, analytics.visitorCountries.length * 36);
+
+  return (
+    <div className="reports-wrapper">
+      <div className="report-charts-row">
+        <div className="report-section report-section-wide">
+          <h3 className="report-heading">Most Popular Experiences</h3>
+          {analytics.topExperiences.length === 0 ? (
+            <p className="report-empty">No bookings recorded yet.</p>
+          ) : (
+            <div style={{ height: expBarHeight }}>
+              <Bar data={expChartData} options={barOptions()} />
+            </div>
+          )}
+        </div>
+
+        <div className="report-section report-section-wide">
+          <h3 className="report-heading">Most Popular eHosts</h3>
+          {analytics.topHosts.length === 0 ? (
+            <p className="report-empty">No bookings recorded yet.</p>
+          ) : (
+            <div style={{ height: hostBarHeight }}>
+              <Bar data={hostChartData} options={barOptions()} />
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div className="report-charts-row">
+        <div className="report-section report-section-wide">
+          <h3 className="report-heading">Visitor Countries of Origin</h3>
+          {analytics.visitorCountries.length === 0 ? (
+            <p className="report-empty">No visitor country data yet.</p>
+          ) : (
+            <div style={{ height: countryBarHeight }}>
+              <Bar data={countryChartData} options={barOptions()} />
+            </div>
+          )}
+        </div>
+
+        <div className="report-section report-section-narrow">
+          <h3 className="report-heading">Bookings by Category</h3>
+          {analytics.categoryBreakdown.length === 0 ? (
+            <p className="report-empty">No category data yet.</p>
+          ) : (
+            <div style={{ height: CHART_HEIGHT }}>
+              <Doughnut data={categoryChartData} options={doughnutOptions} />
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const SuitabilityReview = ({
+  experiences, loading, statusFilter, setStatusFilter,
+  showPanel, setShowPanel, selectedExp, scores, scoresLoading,
+  result, setResult, comment, setComment, submitting,
+  onOpenPanel, onSubmitScore, onApprove, onReject, onAfterAction,
+}) => (
+  <div>
+    <div className="booking-top">
+      {["approved", "pending", "rejected"].map((s) => (
+        <button
+          key={s}
+          className="sort-btn"
+          style={statusFilter === s ? { background: "#a88b8b", color: "white" } : {}}
+          onClick={() => setStatusFilter(s)}
+        >
+          {s.charAt(0).toUpperCase() + s.slice(1)}
+        </button>
+      ))}
+    </div>
+
+    <div className="table-box">
+      <div className="suit-table-header">
+        <span>ID</span><span>Title</span><span>Host</span><span>Category</span><span>Country</span><span>Status</span><span>Action</span>
+      </div>
+      {loading && <p style={{ padding: "12px" }}>Loading...</p>}
+      {!loading && experiences.length === 0 && <p style={{ padding: "12px" }}>No experiences found.</p>}
+      {experiences.map((item) => (
+        <div className="suit-table-row" key={item.id}>
+          <span>#{item.id}</span>
+          <span>{item.title}</span>
+          <span>{item.ehost_first_name ? `${item.ehost_first_name} ${item.ehost_last_name}` : "—"}</span>
+          <span>{item.category || "—"}</span>
+          <span>{item.country || "—"}</span>
+          <span>
+            <span style={{ color: item.status === "approved" ? "green" : item.status === "rejected" ? "red" : "#b8860b" }}>
+              {item.status}
+            </span>
+          </span>
+          <span>
+            <button className="sort-btn" onClick={() => onOpenPanel(item)}>Review</button>
+          </span>
+        </div>
+      ))}
+    </div>
+
+    {showPanel && selectedExp && (
+      <div className="refund-overlay">
+        <div className="suit-panel">
+          <button className="close-btn" onClick={() => setShowPanel(false)}>✕</button>
+
+          <div className="suit-panel-left">
+            <h3>{selectedExp.title}</h3>
+            <p><strong>Category:</strong> {selectedExp.category || "—"}</p>
+            <p><strong>Country:</strong> {selectedExp.country || "—"}</p>
+            <p><strong>Language:</strong> {selectedExp.language || "—"}</p>
+            <p><strong>Status:</strong> {selectedExp.status}</p>
+            {selectedExp.description && (
+              <p style={{ marginTop: "8px", fontSize: "13px" }}>{selectedExp.description}</p>
+            )}
+            <div style={{ marginTop: "12px", display: "flex", gap: "8px" }}>
+              {selectedExp.status !== "approved" && (
+                <button className="save-btn" onClick={() => onApprove(selectedExp.id).then(onAfterAction)}>Approve</button>
+              )}
+              {selectedExp.status !== "rejected" && (
+                <button className="action-btn" onClick={() => onReject(selectedExp.id).then(onAfterAction)}>Reject</button>
+              )}
+            </div>
+          </div>
+
+          <div className="suit-panel-right">
+            <h4>Suitability Review</h4>
+            <div className="suit-radio-group">
+              <label className={`suit-radio ${result === "pass" ? "suit-radio-selected" : ""}`}>
+                <input type="radio" value="pass" checked={result === "pass"} onChange={() => setResult("pass")} />
+                Suitable
+              </label>
+              <label className={`suit-radio ${result === "fail" ? "suit-radio-selected" : ""}`}>
+                <input type="radio" value="fail" checked={result === "fail"} onChange={() => setResult("fail")} />
+                Unsuitable
+              </label>
+            </div>
+            <textarea
+              className="suit-textarea"
+              placeholder={result === "fail" ? "Reason for rejection (required)" : "Notes (optional)"}
+              value={comment}
+              onChange={(e) => setComment(e.target.value)}
+            />
+            <button className="save-btn" onClick={onSubmitScore} disabled={submitting}>
+              {submitting ? "Submitting..." : "Submit review"}
+            </button>
+
+            <div className="suit-history">
+              <h5>Review History</h5>
+              {scoresLoading && <p style={{ fontSize: "12px" }}>Loading...</p>}
+              {!scoresLoading && scores.length === 0 && <p style={{ fontSize: "12px", color: "#999" }}>No previous reviews.</p>}
+              {scores.map((s) => (
+                <div key={s.id} className="suit-history-item">
+                  <span className={`result-badge ${s.result}`}>{s.result === "pass" ? "Suitable" : "Unsuitable"}</span>
+                  <span className="suit-history-date">{new Date(s.scored_at).toLocaleDateString()}</span>
+                  {s.comment && <p className="suit-history-comment">{s.comment}</p>}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    )}
   </div>
 );
 
