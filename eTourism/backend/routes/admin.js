@@ -16,6 +16,9 @@ const {
   updateUserStatus,
   updateUserRole,
   deleteUser,
+  getAnalytics,
+  scoreExperience,
+  getExperienceScores,
 } = require('../controllers/adminController');
 
 // GET /api/admin/applications?status=pending
@@ -62,5 +65,14 @@ router.patch('/users/:id/role', requireRole('admin'), updateUserRole);
 
 // DELETE /api/admin/users/:id
 router.delete('/users/:id', requireRole('admin'), deleteUser);
+
+// GET /api/admin/analytics
+router.get('/analytics', requireRole('admin'), getAnalytics);
+
+// POST /api/admin/experiences/:id/score
+router.post('/experiences/:id/score', requireRole('admin'), scoreExperience);
+
+// GET /api/admin/experiences/:id/scores
+router.get('/experiences/:id/scores', requireRole('admin'), getExperienceScores);
 
 module.exports = router;

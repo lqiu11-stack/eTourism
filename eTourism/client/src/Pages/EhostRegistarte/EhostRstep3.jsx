@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { CATEGORIES } from "../../constants/enums";
 import arrowRight from "../icon/arrow-right.png";
 import backIcon from "../icon/back.png";
 import "./style.css";
@@ -9,17 +10,6 @@ import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
 
 export const Eregistrate3 = () => {
   const navigate = useNavigate();
-
-  const options = [
-    "Cultural Tourism",
-    "Historical Tourism",
-    "Art Tourism",
-    "Eco Tourism",
-    "Luxury Tourism",
-    "Culinary Tourism",
-    "Wellness Tourism",
-    "Religious Tourism"
-  ];
 
   const [selectedTags, setSelectedTags] = useState([]);
   const [description, setDescription] = useState("");
@@ -92,7 +82,7 @@ export const Eregistrate3 = () => {
           </label>
 
           <div className="tag-container">
-            {options.map((tag) => (
+            {CATEGORIES.map((tag) => (
               <button
                 key={tag}
                 type="button"
