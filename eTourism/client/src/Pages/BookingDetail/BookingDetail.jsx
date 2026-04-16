@@ -20,6 +20,7 @@ const formatDate = (dt) => {
 };
 
 export const MyBookingDetail = () => {
+  console.log('[BookingDetail] component rendered');
   const [rating, setRating] = useState(0);
   const navigate = useNavigate();
   const location = useLocation();
@@ -46,7 +47,15 @@ export const MyBookingDetail = () => {
   const stateBooking = location.state?.booking ?? null;
 
   const [booking, setBooking] = useState(stateBooking);
-  const [experience, setExperience] = useState(null);
+  const [experience, setExperience] = useState(
+    stateBooking ? {
+      id: stateBooking.experience_id,
+      title: stateBooking.title,
+      date_time: stateBooking.date_time,
+      country: stateBooking.country,
+      cover_image: stateBooking.cover_image,
+    } : null
+  );
   const [loading, setLoading] = useState(!stateBooking);
   const [error, setError] = useState("");
   const [refundPolicy, setRefundPolicy] = useState("");
@@ -65,29 +74,21 @@ export const MyBookingDetail = () => {
       axios.get(`${API_BASE}/visitor/bookings/${id}`, {
         headers: { Authorization: `Bearer ${token}` },
       }).then(({ data }) => {
+        console.log('booking.status:', data.status);
         setBooking(data);
         return axios.get(`${API_BASE}/visitor/experiences/${data.experience_id}`);
       }).then(({ data }) => {
         setExperience(data);
         localStorage.removeItem("pending_booking_id");
       });
+    console.log('[BookingDetail] bookingIdParam:', bookingIdParam, '| token:', token ? 'present' : 'MISSING', '| stateBooking:', !!stateBooking);
 
-    // Case 0: booking passed via router state — findByVisitor already includes
-    // experience fields (title, date_time, country, cover_image), so use them directly
-    if (stateBooking) {
-      setExperience({
-        id: stateBooking.experience_id,
-        title: stateBooking.title,
-        date_time: stateBooking.date_time,
-        country: stateBooking.country,
-        cover_image: stateBooking.cover_image,
-      });
-      setLoading(false);
-
-    // Case 1: navigated from MyBooking card (?id=XX)
-    } else if (bookingIdParam) {
+    if (bookingIdParam) {
       fetchBooking(bookingIdParam)
-        .catch(() => setError("Could not load booking details."))
+        .catch((err) => {
+          console.error('[BookingDetail] fetchBooking failed:', err?.response?.status, err?.response?.data);
+          if (!stateBooking) setError("Could not load booking details.");
+        })
         .finally(() => setLoading(false));
 
     // Case 2: came back from Stripe (?session_id=XX)
@@ -119,8 +120,10 @@ export const MyBookingDetail = () => {
         .finally(() => setLoading(false));
 
     } else {
-      setError("No booking found.");
-      setLoading(false);
+      Promise.resolve().then(() => {
+        setError("No booking found.");
+        setLoading(false);
+      });
     }
   }, [stateBooking, bookingIdParam, sessionId, token]);
 
@@ -196,10 +199,18 @@ export const MyBookingDetail = () => {
               )}
               <p className="booking-meta">Amount paid: <strong>£{Number(booking.amount_paid).toFixed(2)}</strong></p>
 
+              {/* {booking.status === "refund_pending" && (
+                <div className="booking-status-badge booking-status-badge--pending">
+                  Refund pending, awaiting admin approval
+                </div>
+              )} */}
+
               <div className="booking-actions">
 
-                {(booking.status === "cancelled" || booking.status === "refunded") ? (
-                  <span>{booking.status}</span>
+                {(booking.status === "cancelled" || booking.status === "refunded" || booking.status === "refund_pending") ? (
+                  <span className={`booking-status-text booking-status-text--${booking.status.replace('_', '-')}`}>
+                    {booking.status === "refund_pending" ? "Refund Pending" : booking.status.charAt(0).toUpperCase() + booking.status.slice(1)}
+                  </span>
                 ) : (
                   isPast ? (
                     <button className="primary-btn">
@@ -225,9 +236,9 @@ export const MyBookingDetail = () => {
 
               </div>
 
-              {!isPast && (
+              {!isPast && booking.status != "refund_pending" && (
                 <span className="hint">
-                  Link can be accessed 2 hours before the stream start
+                  Link can be accessed 2 hours before the stream st
                 </span>
               )}
             </div>
@@ -262,8 +273,19 @@ export const MyBookingDetail = () => {
           <div className="refund">
             <p style={{ whiteSpace: "pre-wrap" }}>{refundPolicy}</p>
             <div className="refund-buttons">
-              <button onClick={() => {navigate(`/RefundPage?id=${booking.id}`); window.scrollTo(0, 0);}}>Apply for refund</button>
-              <button>Reschedule</button>
+              <button
+                disabled={isRefundBlocked}
+                onClick={() => { navigate(`/RefundPage?id=${booking.id}`); window.scrollTo(0, 0); }}
+              >
+                {booking.status === 'refund_pending'
+                  ? 'Refund requested'
+                  : booking.status === 'refunded'
+                  ? 'Already refunded'
+                  : 'Apply for refund'}
+              </button>
+              <button
+                disabled={['refund_pending', 'refunded'].includes(booking?.status)}
+              >Reschedule</button>
               <button>Contact customer service</button>
             </div>
           </div>

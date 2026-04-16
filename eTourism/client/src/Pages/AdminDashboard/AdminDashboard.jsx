@@ -63,7 +63,7 @@ export const Dashboard = () => {
   };
 
   const handleRefundAction = async () => {
-    if (!action) { alert("Please select Accept or Reject."); return; }
+    if (!action) { alert("Please select Approve or Reject."); return; }
     if (action === "reject" && !rejectReason.trim()) { alert("Please enter a reason for rejection."); return; }
     const refundId = selectedBooking.refund_id;
     if (!refundId) { alert("No refund record found for this booking."); return; }
@@ -642,7 +642,7 @@ const Booking = ({
           </div>
           <div className="refund-right">
             <button className={`action-btn ${action === "approve" ? "active" : ""}`} onClick={() => setAction("approve")}>
-              Accept refund
+              Approve refund
             </button>
             <button className={`action-btn ${action === "reject" ? "active" : ""}`} onClick={() => setAction("reject")}>
               Reject refund
