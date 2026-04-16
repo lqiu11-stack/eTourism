@@ -3,7 +3,7 @@ import "./AdminDashboard.css";
 import profileImg from "../icon/head.png";
 import { Link, useNavigate } from "react-router-dom";
 import search from "../icon/search.png";
-import axios from "axios";
+import axios from "axios"; 
 import {
   Chart as ChartJS,
   CategoryScale,
