@@ -105,9 +105,28 @@ export const DetailPage = () => {
             <p>{experience ? new Date(experience.date_time).toLocaleString() : ""}</p>
             <p>{experience ? `£${experience.price} / per ticket` : ""}</p>
 
-            <button className="detail-book-btn" onClick={() => navigate(`/PaymentPage?id=${searchParams.get("id")}`)}>
-              Book it now!
-            </button>
+            {(() => {
+              const isPast = experience?.date_time && new Date(experience.date_time).getTime() <= Date.now();
+              const notApproved = experience?.status && experience.status !== 'approved';
+              const unavailable = isPast || notApproved;
+              const reason = isPast
+                ? 'Booking is closed — this experience has already started.'
+                : notApproved
+                ? 'This experience is not available for booking.'
+                : null;
+              return (
+                <>
+                  <button
+                    className={`detail-book-btn${unavailable ? ' detail-book-btn--disabled' : ''}`}
+                    disabled={unavailable}
+                    onClick={() => !unavailable && navigate(`/PaymentPage?id=${searchParams.get("id")}`)}
+                  >
+                    Book it now!
+                  </button>
+                  {reason && <p className="detail-book-error">{reason}</p>}
+                </>
+              );
+            })()}
           </div>
 
         </div>

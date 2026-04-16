@@ -208,7 +208,16 @@ export const PaymentSuccessPage = () => {
           <div className="refund">
             <p style={{ whiteSpace: "pre-wrap" }}>{refundPolicy}</p>
             <div className="refund-buttons">
-              <button>Apply for the refund</button>
+              <button
+                disabled={!booking || ['refund_pending', 'refunded', 'cancelled'].includes(booking.status)}
+                onClick={() => navigate(`/RefundPage?id=${booking.id}`, { state: { booking, from: 'PaymentSuccess' } })}
+              >
+                {booking?.status === 'refund_pending'
+                  ? 'Refund requested'
+                  : booking?.status === 'refunded'
+                  ? 'Already refunded'
+                  : 'Apply for the refund'}
+              </button>
               <button>Reschedule</button>
               <button>Contact customer service</button>
             </div>

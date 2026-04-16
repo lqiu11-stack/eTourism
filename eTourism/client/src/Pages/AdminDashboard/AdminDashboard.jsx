@@ -62,6 +62,34 @@ export const Dashboard = () => {
     setRejectReason("");
   };
 
+  const handleRefundAction = async () => {
+    if (!action) { alert("Please select Accept or Reject."); return; }
+    if (action === "reject" && !rejectReason.trim()) { alert("Please enter a reason for rejection."); return; }
+    const refundId = selectedBooking.refund_id;
+    if (!refundId) { alert("No refund record found for this booking."); return; }
+    try {
+      if (action === "approve") {
+        await axios.patch(
+          `${API_BASE}/admin/refunds/${refundId}/approve`,
+          {},
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        alert("Refund approved and payment processed.");
+      } else {
+        await axios.patch(
+          `${API_BASE}/admin/refunds/${refundId}/reject`,
+          { reason: rejectReason },
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        alert("Refund rejected. Booking restored to confirmed.");
+      }
+      setShowRefundPanel(false);
+      fetchBookings();
+    } catch (e) {
+      alert(e.response?.data?.message || "Failed to process refund.");
+    }
+  };
+
   const [users, setUsers] = useState([]);
   const [userLoading, setUserLoading] = useState(false);
   const [showUserModal, setShowUserModal] = useState(false);
@@ -443,8 +471,8 @@ export const Dashboard = () => {
           { key: "user", label: "User data" },
           { key: "reports", label: "Reports" },
           { key: "suitability", label: "Suitability review" },
-          { key: "request", label: "E-tourism request" },
-          { key: "EhostJoin", label: "New e-host request" },
+          { key: "request", label: "Experiences" },
+          { key: "EhostJoin", label: "E-hosts" },
           { key: "message", label: "Message box" },
         ].map(({ key, label }) => (
           <button
@@ -471,6 +499,7 @@ export const Dashboard = () => {
             setAction={setAction}
             setRejectReason={setRejectReason}
             handleRefund={handleRefund}
+            handleRefundAction={handleRefundAction}
           />
         )}
         {activeTab === "user" && (
@@ -549,7 +578,7 @@ export const Dashboard = () => {
 const Booking = ({
   bookings, loading,
   showRefundPanel, selectedBooking, action, rejectReason,
-  setShowRefundPanel, setAction, setRejectReason, handleRefund,
+  setShowRefundPanel, setAction, setRejectReason, handleRefund, handleRefundAction,
 }) => (
   <div>
     <div className="booking-top">
@@ -601,10 +630,15 @@ const Booking = ({
           <button className="close-btn" onClick={() => setShowRefundPanel(false)}>✕</button>
           <div className="refund-left">
             <h3>Booking #{selectedBooking.id}</h3>
-            <p>Contact: {selectedBooking.contact_name}</p>
-            <p>Email: {selectedBooking.contact_email}</p>
-            <p>Amount paid: £{Number(selectedBooking.amount_paid || 0).toFixed(2)}</p>
-            <p>Status: {selectedBooking.status}</p>
+            <p><strong>Experience:</strong> {selectedBooking.experience_title || "—"}</p>
+            <p><strong>Visitor:</strong> {selectedBooking.visitor_first_name} {selectedBooking.visitor_last_name}</p>
+            <p><strong>Email:</strong> {selectedBooking.visitor_email || selectedBooking.contact_email}</p>
+            <p><strong>Amount paid:</strong> £{Number(selectedBooking.amount_paid || 0).toFixed(2)}</p>
+            <p><strong>Payment method:</strong> {selectedBooking.payment_method || "—"}</p>
+            <p><strong>Refund amount:</strong> £{Number(selectedBooking.refund_amount || 0).toFixed(2)}</p>
+            {selectedBooking.refund_reason && (
+              <p><strong>Visitor reason:</strong> {selectedBooking.refund_reason}</p>
+            )}
           </div>
           <div className="refund-right">
             <button className={`action-btn ${action === "approve" ? "active" : ""}`} onClick={() => setAction("approve")}>
@@ -619,14 +653,7 @@ const Booking = ({
               onChange={(e) => setRejectReason(e.target.value)}
               disabled={action !== "reject"}
             />
-            <button
-              className="save-btn"
-              onClick={() => {
-                if (action === "reject" && !rejectReason) { alert("Please enter a reject reason"); return; }
-                alert(`Saved: ${action}`);
-                setShowRefundPanel(false);
-              }}
-            >
+            <button className="save-btn" onClick={handleRefundAction}>
               Save
             </button>
           </div>

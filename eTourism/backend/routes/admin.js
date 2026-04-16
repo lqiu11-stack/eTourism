@@ -19,6 +19,9 @@ const {
   getAnalytics,
   scoreExperience,
   getExperienceScores,
+  getRefunds,
+  approveRefund,
+  rejectRefund,
 } = require('../controllers/adminController');
 
 // GET /api/admin/applications?status=pending
@@ -68,6 +71,15 @@ router.delete('/users/:id', requireRole('admin'), deleteUser);
 
 // GET /api/admin/analytics
 router.get('/analytics', requireRole('admin'), getAnalytics);
+
+// GET /api/admin/refunds?status=pending
+router.get('/refunds', requireRole('admin'), getRefunds);
+
+// PATCH /api/admin/refunds/:id/approve
+router.patch('/refunds/:id/approve', requireRole('admin'), approveRefund);
+
+// PATCH /api/admin/refunds/:id/reject
+router.patch('/refunds/:id/reject', requireRole('admin'), rejectRefund);
 
 // POST /api/admin/experiences/:id/score
 router.post('/experiences/:id/score', requireRole('admin'), scoreExperience);
