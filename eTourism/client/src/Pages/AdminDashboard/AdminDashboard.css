@@ -522,3 +522,275 @@
   border: none;
   font-size: 14px;
 }
+
+/* ===== Reports Tab ===== */
+.reports-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  padding: 8px 0;
+}
+
+.report-charts-row {
+  display: flex;
+  gap: 24px;
+  align-items: flex-start;
+}
+
+.report-section {
+  background: #fff;
+  border-radius: 8px;
+  padding: 16px 20px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+}
+
+.report-section-wide,
+.report-section-narrow {
+  flex: 1;
+  min-width: 0;
+}
+
+.report-heading {
+  font-size: 15px;
+  font-weight: 700;
+  color: #2d1f1f;
+  margin: 0 0 12px 0;
+  border-bottom: 1px solid #e8dada;
+  padding-bottom: 8px;
+}
+
+.report-empty {
+  font-size: 13px;
+  color: #999;
+}
+
+.report-table {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.report-header {
+  display: grid;
+  grid-template-columns: 0.3fr 2fr 1.5fr 1.5fr 2fr;
+  font-weight: 700;
+  font-size: 12px;
+  color: #666;
+  border-bottom: 1px solid #e8dada;
+  padding-bottom: 6px;
+  margin-bottom: 2px;
+}
+
+.report-header:has(span:nth-child(3):last-child) {
+  grid-template-columns: 0.3fr 2fr 2fr;
+}
+
+.report-header:has(span:nth-child(2):last-child) {
+  grid-template-columns: 2fr 2fr;
+}
+
+.report-row {
+  display: grid;
+  grid-template-columns: 0.3fr 2fr 1.5fr 1.5fr 2fr;
+  align-items: center;
+  padding: 7px 0;
+  border-bottom: 1px solid #f5eeee;
+  font-size: 13px;
+}
+
+.report-row:last-child {
+  border-bottom: none;
+}
+
+.bar-cell {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.bar-label {
+  min-width: 24px;
+  font-size: 12px;
+  color: #555;
+  font-weight: 600;
+}
+
+.bar-track {
+  flex: 1;
+  height: 8px;
+  background: #e8dada;
+  border-radius: 4px;
+  overflow: hidden;
+  max-width: 160px;
+}
+
+.bar-fill {
+  display: block;
+  height: 100%;
+  background: #a88b8b;
+  border-radius: 4px;
+  min-width: 4px;
+  transition: width 0.3s ease;
+}
+
+/* ===== Suitability Review Tab ===== */
+.suit-table-header {
+  display: grid;
+  grid-template-columns: 0.5fr 2fr 1.5fr 1.2fr 1fr 0.8fr 1fr;
+  font-weight: 700;
+  font-size: 13px;
+  border-bottom: 1px solid black;
+  padding-bottom: 10px;
+  margin-bottom: 2px;
+}
+
+.suit-table-row {
+  display: grid;
+  grid-template-columns: 0.5fr 2fr 1.5fr 1.2fr 1fr 0.8fr 1fr;
+  align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px solid #eee;
+  font-size: 13px;
+}
+
+.suit-panel {
+  background: white;
+  width: 780px;
+  max-width: 95vw;
+  max-height: 88vh;
+  border-radius: 12px;
+  padding: 28px;
+  display: flex;
+  gap: 24px;
+  position: relative;
+  overflow-y: auto;
+}
+
+.suit-panel-left {
+  flex: 1.1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.suit-panel-left h3 {
+  margin: 0 0 8px 0;
+  font-size: 16px;
+  color: #2d1f1f;
+}
+
+.suit-panel-left p {
+  font-size: 13px;
+  margin: 0;
+  line-height: 1.5;
+}
+
+.suit-panel-right {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  border-left: 1px solid #e8dada;
+  padding-left: 20px;
+}
+
+.suit-panel-right h4 {
+  margin: 0 0 4px 0;
+  font-size: 14px;
+  color: #2d1f1f;
+}
+
+.suit-radio-group {
+  display: flex;
+  gap: 12px;
+}
+
+.suit-radio {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  cursor: pointer;
+  padding: 6px 12px;
+  border-radius: 20px;
+  border: 1px solid #ccc;
+  transition: background 0.15s;
+}
+
+.suit-radio-selected {
+  background: #f5eeee;
+  border-color: #a88b8b;
+  color: #2d1f1f;
+  font-weight: 600;
+}
+
+.suit-textarea {
+  width: 100%;
+  min-height: 80px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 13px;
+  resize: vertical;
+  font-family: inherit;
+  box-sizing: border-box;
+}
+
+.suit-history {
+  margin-top: 4px;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.suit-history h5 {
+  font-size: 13px;
+  font-weight: 700;
+  color: #666;
+  margin: 0 0 8px 0;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.suit-history-item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 0;
+  border-bottom: 1px solid #f5eeee;
+  font-size: 12px;
+}
+
+.suit-history-item:last-child {
+  border-bottom: none;
+}
+
+.suit-history-date {
+  color: #999;
+}
+
+.suit-history-comment {
+  width: 100%;
+  margin: 2px 0 0 0;
+  color: #555;
+  font-size: 12px;
+}
+
+.result-badge {
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.result-badge.pass {
+  background: #e6f4ea;
+  color: #2e7d32;
+}
+
+.result-badge.fail {
+  background: #fdecea;
+  color: #c62828;
+}

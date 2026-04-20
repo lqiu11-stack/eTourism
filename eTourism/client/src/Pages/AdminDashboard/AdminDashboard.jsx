@@ -1,68 +1,244 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import "./AdminDashboard.css";
 import profileImg from "../icon/head.png";
-import { Link } from "react-router-dom";
-import search from "../icon/search.png"
+import { Link, useNavigate } from "react-router-dom";
+import search from "../icon/search.png";
+import axios from "axios";
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend,
+  ArcElement,
+} from "chart.js";
+import { Bar, Doughnut } from "react-chartjs-2";
+
+ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ArcElement);
+
+const API_BASE = import.meta.env.VITE_API_URL;
+
 export const Dashboard = () => {
+  const navigate = useNavigate();
+  const token = localStorage.getItem("token");
+  const user = JSON.parse(localStorage.getItem("user") || "{}");
+  const isLoggedIn = !!token;
 
-  /* fake detail for manage booking */
-  const managebooking =[
-    {
-    bookingCode: "ABC123",
-    username: "Amy",
-    eventName: "London city trip",
-    status: "ongoing",
-    link: "http://abc.com",
-  },
-  {
-    bookingCode: "DEF456",
-    username: "Ben",
-    eventName: "Paris museum tour",
-    status: "finish",
-    link: "http://def.com",
-  },
-  {
-    bookingCode: "GHI789",
-    username: "Cindy",
-    eventName: "Tokyo food trip",
-    status: "refund pending",
-    link: "http://ghi.com",
-    eventDate: "2025/12/08",
-    bookingDate: "2025/01/08",
-    refundDate: "2025/10/08",
-    refundReason: "Don't have the time to join the stream",
-  },
-  ]
- const [bookings, setBookings] = useState(managebooking);
- const [showRefundPanel, setShowRefundPanel] = useState(false);
- const [selectedBooking, setSelectedBooking] = useState(null);
- const [action, setAction] = useState(""); // "approve" or "reject"
- const [rejectReason, setRejectReason] = useState("");
-const handleRefund = (item) => {
-  setSelectedBooking(item);
-  setShowRefundPanel(true);
-  setAction("");
-  setRejectReason("");
-};
+  const [activeTab, setActiveTab] = useState("booking");
 
-  /* fake detail for userdata */
-    const [userData, setUserData] = useState([
-      {
-        email: "amy@gmail.com",
-        password: "12345678",
-        role: "admin",
-        first_name: "Amy",
-        last_name: "AA",
-        date_of_birth: "2022-03-10",
-        country: "UK",
-        language: "English",
-      }
-    ]);
-  const [isEditingUser, setIsEditingUser] = useState(false);
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    navigate("/login");
+  };
+
+  const [bookings, setBookings] = useState([]);
+  const [bookingLoading, setBookingLoading] = useState(false);
+  const [showRefundPanel, setShowRefundPanel] = useState(false);
+  const [selectedBooking, setSelectedBooking] = useState(null);
+  const [action, setAction] = useState("");
+  const [rejectReason, setRejectReason] = useState("");
+
+  const fetchBookings = useCallback(async () => {
+    setBookingLoading(true);
+    try {
+      const { data } = await axios.get(`${API_BASE}/admin/bookings`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setBookings(Array.isArray(data) ? data : []);
+    } catch {
+      setBookings([]);
+    } finally {
+      setBookingLoading(false);
+    }
+  }, [token]);
+
+  const handleRefund = (item) => {
+    setSelectedBooking(item);
+    setShowRefundPanel(true);
+    setAction("");
+    setRejectReason("");
+  };
+
+  const [users, setUsers] = useState([]);
+  const [userLoading, setUserLoading] = useState(false);
   const [showUserModal, setShowUserModal] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
+  const [userSearch, setUserSearch] = useState("");
 
-  /* fake detail for chat box (can delete after) */
+  const fetchUsers = useCallback(async () => {
+    setUserLoading(true);
+    try {
+      const { data } = await axios.get(`${API_BASE}/admin/users`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setUsers(Array.isArray(data) ? data : []);
+    } catch {
+      setUsers([]);
+    } finally {
+      setUserLoading(false);
+    }
+  }, [token]);
+
+  const handleUpdateUserStatus = async (id, status) => {
+    try {
+      await axios.patch(
+        `${API_BASE}/admin/users/${id}/status`,
+        { status },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      fetchUsers();
+    } catch (e) {
+      alert(e.response?.data?.message || "Failed to update status.");
+    }
+  };
+
+  const handleUpdateUserRole = async (id, role) => {
+    try {
+      await axios.patch(
+        `${API_BASE}/admin/users/${id}/role`,
+        { role },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      fetchUsers();
+      setShowUserModal(false);
+    } catch (e) {
+      alert(e.response?.data?.message || "Failed to update role.");
+    }
+  };
+
+  const handleDeleteUser = async (id) => {
+    if (!window.confirm("Delete this user? This cannot be undone.")) return;
+    try {
+      await axios.delete(`${API_BASE}/admin/users/${id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      fetchUsers();
+      setShowUserModal(false);
+    } catch (e) {
+      alert(e.response?.data?.message || "Failed to delete user.");
+    }
+  };
+
+  const [experiences, setExperiences] = useState([]);
+  const [expLoading, setExpLoading] = useState(false);
+  const [expStatusFilter, setExpStatusFilter] = useState("pending");
+
+  const fetchExperiences = useCallback(async (status) => {
+    setExpLoading(true);
+    try {
+      const { data } = await axios.get(
+        `${API_BASE}/admin/experiences?status=${status}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setExperiences(Array.isArray(data) ? data : []);
+    } catch {
+      setExperiences([]);
+    } finally {
+      setExpLoading(false);
+    }
+  }, [token]);
+
+  const handleApproveExperience = async (id) => {
+    try {
+      await axios.patch(
+        `${API_BASE}/admin/experiences/${id}/approve`,
+        {},
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      fetchExperiences(expStatusFilter);
+    } catch (e) {
+      alert(e.response?.data?.message || "Failed to approve.");
+    }
+  };
+
+  const handleRejectExperience = async (id) => {
+    try {
+      await axios.patch(
+        `${API_BASE}/admin/experiences/${id}/reject`,
+        {},
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      fetchExperiences(expStatusFilter);
+    } catch (e) {
+      alert(e.response?.data?.message || "Failed to reject.");
+    }
+  };
+
+  const handleDeleteExperience = async (id) => {
+    if (!window.confirm("Delete this experience?")) return;
+    try {
+      await axios.delete(`${API_BASE}/admin/experiences/${id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      fetchExperiences(expStatusFilter);
+    } catch (e) {
+      alert(e.response?.data?.message || "Failed to delete.");
+    }
+  };
+
+  const [applications, setApplications] = useState([]);
+  const [appLoading, setAppLoading] = useState(false);
+  const [appStatusFilter, setAppStatusFilter] = useState("pending");
+  const [selectedApp, setSelectedApp] = useState(null);
+  const [showAppModal, setShowAppModal] = useState(false);
+
+  const fetchApplications = useCallback(async (status) => {
+    setAppLoading(true);
+    try {
+      const { data } = await axios.get(
+        `${API_BASE}/admin/applications?status=${status}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setApplications(Array.isArray(data) ? data : []);
+    } catch {
+      setApplications([]);
+    } finally {
+      setAppLoading(false);
+    }
+  }, [token]);
+
+  const handleApproveApplication = async (id) => {
+    try {
+      const { data } = await axios.patch(
+        `${API_BASE}/admin/applications/${id}/approve`,
+        {},
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      alert(`Application approved!\nTemporary password: ${data.temp_password}\nPlease share this with the new ehost.`);
+      fetchApplications(appStatusFilter);
+      setShowAppModal(false);
+    } catch (e) {
+      alert(e.response?.data?.message || "Failed to approve.");
+    }
+  };
+
+  const handleRejectApplication = async (id) => {
+    if (!window.confirm("Reject this application?")) return;
+    try {
+      await axios.patch(
+        `${API_BASE}/admin/applications/${id}/reject`,
+        {},
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      fetchApplications(appStatusFilter);
+      setShowAppModal(false);
+    } catch (e) {
+      alert(e.response?.data?.message || "Failed to reject.");
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab === "booking") fetchBookings();
+    if (activeTab === "user") fetchUsers();
+    if (activeTab === "request") fetchExperiences(expStatusFilter);
+    if (activeTab === "EhostJoin") fetchApplications(appStatusFilter);
+    if (activeTab === "reports") fetchAnalytics();
+    if (activeTab === "suitability") fetchSuitExps(suitStatusFilter);
+  }, [activeTab]);
+
   const chatList = [
   {
     id: 1,
@@ -97,155 +273,132 @@ const handleRefund = (item) => {
 
   const [selectedChat, setSelectedChat] = useState(null);
 
-  /* fakee data for the request */
-  const tourism =[
-    {
-    eventCode: "asdv12",
-    eventName: "Afica animal tourism",
-    status: "Pending",
-    btn: "12/06/2026",
-  },
-  ]
-  const [selectedrequest, setRequest] = useState(tourism);
+  // ── Analytics / Reports ──────────────────────────────────────────────
+  const [analytics, setAnalytics] = useState(null);
+  const [analyticsLoading, setAnalyticsLoading] = useState(false);
 
-  /*fake data for new ehost*/
-  const ehostRequestData = [
-  {
-    applyCode: "EH001",
-    hostName: "Sophia Lee",
-    state: "Padding",
-    detail: "View",
-    approved: "12/03/2003",
-  },
-  {
-    applyCode: "EH002",
-    hostName: "Daniel Wang",
-    state: "Approved",
-    detail: "View",
-    approved: "12/04/2003",
-  },
-  {
-    applyCode: "EH003",
-    hostName: "Emily Chen",
-    state: "Padding",
-    detail: "View",
-    approved:"12/03/2007",
-  },
-  {
-    applyCode: "EH004",
-    hostName: "Jason Lin",
-    state: "Approved",
-    detail: "View",
-    approved: "12/03/2006",
-  },
-  {
-    applyCode: "EH005",
-    hostName: "Olivia Brown",
-    state: "Padding",
-    detail: "View",
-    approved:"12/03/2012",
-  },
-];
-const [selectedRequest, setSelectedRequest] = useState(ehostRequestData);
+  const fetchAnalytics = useCallback(async () => {
+    setAnalyticsLoading(true);
+    try {
+      const { data } = await axios.get(`${API_BASE}/admin/analytics`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setAnalytics(data);
+    } catch {
+      setAnalytics(null);
+    } finally {
+      setAnalyticsLoading(false);
+    }
+  }, [token]);
 
-/* fake report*/
-const reportData = [
-    {
-      reportCode: "RP001",
-      username: "Amy",
-      state: "Unsolved",
-      detail: "View",
-    },
-    {
-      reportCode: "RP002",
-      username: "John",
-      state: "Solved",
-      detail: "View",
-    },
-    {
-      reportCode: "RP003",
-      username: "Emily",
-      state: "Unsolved",
-      detail: "View",
-    },
-    {
-      reportCode: "RP004",
-      username: "Daniel",
-      state: "Solved",
-      detail: "View",
-    },
-  ];
-  const [reports, setReports] = useState(reportData);
+  // ── Suitability Review ───────────────────────────────────────────────
+  const [suitExps, setSuitExps] = useState([]);
+  const [suitLoading, setSuitLoading] = useState(false);
+  const [suitStatusFilter, setSuitStatusFilter] = useState("approved");
+  const [showSuitPanel, setShowSuitPanel] = useState(false);
+  const [selectedSuitExp, setSelectedSuitExp] = useState(null);
+  const [suitScores, setSuitScores] = useState([]);
+  const [suitScoresLoading, setSuitScoresLoading] = useState(false);
+  const [suitResult, setSuitResult] = useState("pass");
+  const [suitComment, setSuitComment] = useState("");
+  const [suitSubmitting, setSuitSubmitting] = useState(false);
 
-  const token = localStorage.getItem("token");
-  const isLoggedIn = !!token;
-  
-  const [activeTab, setActiveTab] = useState("booking");
+  const fetchSuitExps = useCallback(async (status) => {
+    setSuitLoading(true);
+    try {
+      const { data } = await axios.get(
+        `${API_BASE}/admin/experiences?status=${status}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setSuitExps(Array.isArray(data) ? data : []);
+    } catch {
+      setSuitExps([]);
+    } finally {
+      setSuitLoading(false);
+    }
+  }, [token]);
 
-    const MessageBox = () => {
-  return (
+  const fetchSuitScores = useCallback(async (id) => {
+    setSuitScoresLoading(true);
+    try {
+      const { data } = await axios.get(
+        `${API_BASE}/admin/experiences/${id}/scores`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setSuitScores(Array.isArray(data) ? data : []);
+    } catch {
+      setSuitScores([]);
+    } finally {
+      setSuitScoresLoading(false);
+    }
+  }, [token]);
+
+  const handleOpenSuitPanel = (exp) => {
+    setSelectedSuitExp(exp);
+    setSuitResult("pass");
+    setSuitComment("");
+    setShowSuitPanel(true);
+    fetchSuitScores(exp.id);
+  };
+
+  const handleScoreExperience = async () => {
+    if (suitResult === "fail" && !suitComment.trim()) {
+      alert("Please enter a reason when marking as unsuitable.");
+      return;
+    }
+    setSuitSubmitting(true);
+    try {
+      await axios.post(
+        `${API_BASE}/admin/experiences/${selectedSuitExp.id}/score`,
+        { result: suitResult, comment: suitComment.trim() },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      alert(`Experience marked as ${suitResult === "pass" ? "suitable" : "unsuitable"}.`);
+      setShowSuitPanel(false);
+      fetchSuitExps(suitStatusFilter);
+    } catch (e) {
+      alert(e.response?.data?.message || "Failed to submit review.");
+    } finally {
+      setSuitSubmitting(false);
+    }
+  };
+
+  const MessageBox = () => (
     <div>
-
-      {/* Top search */}
       <div className="booking-top">
         <div className="search-wrapper">
-          <input
-            className="admin-search-bar"
-            placeholder="Search chatbox by username"
-          />
-          <button className="admin-search-btn">
-            <img src={search} className="admin-search-icon" />
-          </button>
+          <input className="admin-search-bar" placeholder="Search chatbox by username" />
+          <button className="admin-search-btn"><img src={search} className="admin-search-icon" /></button>
         </div>
       </div>
-
-      {/* Chat layout */}
       <div className="chat-layout">
-
-        {/* list */}
         <div className="chat-list">
           {chatList.map((chat) => (
             <div
               key={chat.id}
-              className={`chat-item ${
-                chat.status === "completed"
-                  ? "completed-chat"
-                  : "ongoing-chat"
-              }`}
-              onClick={() => setSelectedChat(chat)} 
+              className={`chat-item ${chat.status === "completed" ? "completed-chat" : "ongoing-chat"}`}
+              onClick={() => setSelectedChat(chat)}
             >
               <div className="chat-item-top">
                 <span className="chat-username">{chat.username}</span>
                 <span className="chat-time">{chat.time}</span>
               </div>
-
               <div className="chat-preview-row">
                 <span className="chat-preview">{chat.lastMessage}</span>
-
-                {chat.unread > 0 && (
-                  <span className="chat-unread">{chat.unread}</span>
-                )}
+                {chat.unread > 0 && <span className="chat-unread">{chat.unread}</span>}
               </div>
             </div>
           ))}
         </div>
-
-        {/* chat window */}
         <div className="chat-window">
           {selectedChat ? (
             <>
-              <div className="chat-header">
-                {selectedChat.username}
-              </div>
-
+              <div className="chat-header">{selectedChat.username}</div>
               <div className="chat-messages">
-                {selectedChat.messages.map((msg, index) => (
-                  <div key={index} className={`msg ${msg.sender}`}>
-                    {msg.text}
-                  </div>
+                {(selectedChat.messages || []).map((msg, i) => (
+                  <div key={i} className={`msg ${msg.sender}`}>{msg.text}</div>
                 ))}
               </div>
-
               <div className="chat-input">
                 <input placeholder="Type a message..." />
                 <button className="sort-btn">Send</button>
@@ -255,444 +408,321 @@ const reportData = [
             <div className="no-chat">Select a chat</div>
           )}
         </div>
-
       </div>
-
     </div>
   );
-};
-    const Request = () => {
-      return (
-    <div>
-
-      {/* Top search + buttons */}
-      <div className="booking-top">
-
-        <div className="search-wrapper">
-          <input
-            className="admin-search-bar"
-            placeholder="Search by event apply code"
-          />
-          <button className="admin-search-btn">
-             <img src ={search} className="admin-search-icon"></img>
-          </button>
-         
-        </div>
-
-        <button className="sort-btn">Approved</button>
-        <button className="sort-btn">Pending</button>
-      </div>
-
-      {/* Table */}
-      <div className="table-box">
-        <div className="table-header">
-          <span>Event code</span>
-          <span>Event name</span>
-          <span>State</span>
-          <span>Approve date</span>
-        </div>
-        <div>
-      {selectedrequest.map((item) => (
-        <div key={item.eventCode} className="table-row">
-          <div>{item.eventCode}</div>
-          <div>{item.eventName}</div>
-          <div>
-            <button className="sort-btn">
-              {item.status}
-            </button>
-          </div>
-          <div>{item.btn}</div>
-        </div>
-      ))}
-    </div>
-      </div>
-
-    </div>
-  );
-    };
-
-
-  const EhostJoin = () => {
-      return (
-    <div>
-
-      {/* Top search + buttons */}
-      <div className="booking-top">
-
-        <div className="search-wrapper">
-          <input
-            className="admin-search-bar"
-            placeholder="Search by event apply code"
-          />
-          <button className="admin-search-btn">
-             <img src ={search} className="admin-search-icon"></img>
-          </button>
-         
-        </div>
-
-        <button className="sort-btn">Approved</button>
-        <button className="sort-btn">Padding</button>
-      </div>
-
-      {/* Table */}
-      <div className="table-box">
-        <div className="table-header">
-          <span>Apply form code</span>
-          <span>E-host name</span>
-          <span>State</span>
-          <span>View detail</span>
-          <span>Approved</span>
-        </div>
-        {selectedRequest.map((item) => (
-        <div className="request-row" key={item.applyCode}>
-          <div>{item.applyCode}</div>
-          <div>{item.hostName}</div>
-
-          <div>
-            <button
-              className="sort-btn"                                                                                     
-              onClick={() => handleApprove(item.applyCode)}
-              disabled={item.state === "Approved"}
-            >
-              {item.state}
-            </button>
-          </div>
-
-          <div>
-            <button className="sort-btn">
-              {item.detail}
-            </button>
-          </div>
-
-          <div>{item.approved}</div>
-        </div>
-      ))}
-      </div>
-
-    </div>
-  );
-    };
-
-    const Report = () => {
-      return (
-    <div>
-
-      {/* Top search + buttons */}
-      <div className="booking-top">
-
-        <div className="search-wrapper">
-          <input
-            className="admin-search-bar"
-            placeholder="Search by event apply code"
-          />
-          <button className="admin-search-btn">
-             <img src ={search} className="admin-search-icon"></img>
-          </button>
-         
-        </div>
-
-        <button className="sort-btn">Solved</button>
-        <button className="sort-btn">Unsolved</button>
-      </div>
-
-      {/* Table */}
-      <div className="table-box">
-        <div className="report-header">
-          <span>Report code</span>
-          <span>Username</span>
-          <span>State</span>
-          <span>View detail</span>
-        </div>
-        {reports.map((item) => (
-        <div className="report-row" key={item.reportCode}>
-          <div>{item.reportCode}</div>
-          <div>{item.username}</div>
-
-          <div>
-            <button
-              className="sort-btn"
-              onClick={() => handleSolve(item.reportCode)}
-              disabled={item.state === "Solved"}
-            >
-              {item.state}
-            </button>
-          </div>
-
-          <div>
-            <button className="sort-btn">
-              {item.detail}
-            </button>
-          </div>
-        </div>
-      ))}
-      </div>
-
-    </div>
-  );
-    };
 
   return (
     <div className="admin-container">
 
       {/* ===== Top Navbar ===== */}
       <nav className="admin-navbar">
-            <div className="admin-nav-links">
-              <a>Admin dashboard</a>
-              </div>
-
-            <div className="admin-nav-links">
-               {isLoggedIn ? (
-                  <button className="admin-nav-link admin-nav-btn-link" onClick={handleLogout}>
-                    Logout
-                  </button>
-                ) : (
-                  <Link to="/login" className="admin-nav-link">Logout</Link>
-                )}
-            </div>
-          </nav>
+        <div className="admin-nav-links">
+          <a>Admin dashboard</a>
+        </div>
+        <div className="admin-nav-links">
+          {isLoggedIn ? (
+            <button className="admin-nav-link admin-nav-btn-link" onClick={handleLogout}>Logout</button>
+          ) : (
+            <Link to="/login" className="admin-nav-link">Login</Link>
+          )}
+        </div>
+      </nav>
 
       {/* ===== Profile Section ===== */}
       <div className="profile-section">
         <img src={profileImg} alt="profile" className="profile-img" />
-        <h2>Angela</h2>
-
-        <button className="profile-btn">
-          Profile and setting
-        </button>
+        <h2>{user.first_name || "Admin"}</h2>
+        <button className="profile-btn">Profile and setting</button>
       </div>
 
       {/* ===== Tabs ===== */}
       <div className="tabs">
-        <button
-          className={activeTab === "booking" ? "tab active" : "tab"}
-          onClick={() => setActiveTab("booking")}
-        >
-          Manage booking
-        </button>
-
-        <button
-          className={activeTab === "user" ? "tab active" : "tab"}
-          onClick={() => setActiveTab("user")}
-        >
-          User data
-        </button>
-
-        <button
-          className={activeTab === "message" ? "tab active" : "tab"}
-          onClick={() => setActiveTab("message")}
-        >
-          Message box
-        </button>
-
-        <button
-          className={activeTab === "request" ? "tab active" : "tab"}
-          onClick={() => setActiveTab("request")}
-        >
-          E-tourism request
-        </button>
-
-        <button
-          className={activeTab === "EhostJoin" ? "tab active" : "tab"}
-          onClick={() => setActiveTab("EhostJoin")}
-        >
-          New e-host request
-        </button>
-
-        <button
-          className={activeTab === "Report" ? "tab active" : "tab"}
-          onClick={() => setActiveTab("Report")}
-        >
-          Report
-        </button>
+        {[
+          { key: "booking", label: "Manage booking" },
+          { key: "user", label: "User data" },
+          { key: "reports", label: "Reports" },
+          { key: "suitability", label: "Suitability review" },
+          { key: "request", label: "E-tourism request" },
+          { key: "EhostJoin", label: "New e-host request" },
+          { key: "message", label: "Message box" },
+        ].map(({ key, label }) => (
+          <button
+            key={key}
+            className={activeTab === key ? "tab active" : "tab"}
+            onClick={() => setActiveTab(key)}
+          >
+            {label}
+          </button>
+        ))}
       </div>
 
       {/* ===== Content ===== */}
       <div className="content-box">
         {activeTab === "booking" && (
-        <Booking
-          bookings={bookings}
-          showRefundPanel={showRefundPanel}
-          selectedBooking={selectedBooking}
-          action={action}
-          rejectReason={rejectReason}
-          setShowRefundPanel={setShowRefundPanel}
-          setAction={setAction}
-          setRejectReason={setRejectReason}
-          handleRefund={handleRefund}
-        />
-      )}
+          <Booking
+            bookings={bookings}
+            loading={bookingLoading}
+            showRefundPanel={showRefundPanel}
+            selectedBooking={selectedBooking}
+            action={action}
+            rejectReason={rejectReason}
+            setShowRefundPanel={setShowRefundPanel}
+            setAction={setAction}
+            setRejectReason={setRejectReason}
+            handleRefund={handleRefund}
+          />
+        )}
         {activeTab === "user" && (
           <UserData
-          userData={userData}
-          setUserData={setUserData}
-          showUserModal={showUserModal}
-          setShowUserModal={setShowUserModal}
-          selectedUser={selectedUser}
-          setSelectedUser={setSelectedUser}
-        />
+            users={users}
+            loading={userLoading}
+            userSearch={userSearch}
+            setUserSearch={setUserSearch}
+            showUserModal={showUserModal}
+            setShowUserModal={setShowUserModal}
+            selectedUser={selectedUser}
+            setSelectedUser={setSelectedUser}
+            onUpdateRole={handleUpdateUserRole}
+            onUpdateStatus={handleUpdateUserStatus}
+            onDelete={handleDeleteUser}
+          />
         )}
         {activeTab === "message" && <MessageBox />}
-        {activeTab === "request" && <Request />}
-        {activeTab === "profile" && <Profile />}
-        {activeTab === "EhostJoin" && <EhostJoin />}
-         {activeTab === "Report" && <Report />}
+        {activeTab === "request" && (
+          <ExperienceRequests
+            experiences={experiences}
+            loading={expLoading}
+            statusFilter={expStatusFilter}
+            setStatusFilter={(s) => { setExpStatusFilter(s); fetchExperiences(s); }}
+            onApprove={handleApproveExperience}
+            onReject={handleRejectExperience}
+            onDelete={handleDeleteExperience}
+          />
+        )}
+        {activeTab === "EhostJoin" && (
+          <EhostApplications
+            applications={applications}
+            loading={appLoading}
+            statusFilter={appStatusFilter}
+            setStatusFilter={(s) => { setAppStatusFilter(s); fetchApplications(s); }}
+            selectedApp={selectedApp}
+            setSelectedApp={setSelectedApp}
+            showAppModal={showAppModal}
+            setShowAppModal={setShowAppModal}
+            onApprove={handleApproveApplication}
+            onReject={handleRejectApplication}
+          />
+        )}
+        {activeTab === "reports" && (
+          <Reports analytics={analytics} loading={analyticsLoading} />
+        )}
+        {activeTab === "suitability" && (
+          <SuitabilityReview
+            experiences={suitExps}
+            loading={suitLoading}
+            statusFilter={suitStatusFilter}
+            setStatusFilter={(s) => { setSuitStatusFilter(s); fetchSuitExps(s); }}
+            showPanel={showSuitPanel}
+            setShowPanel={setShowSuitPanel}
+            selectedExp={selectedSuitExp}
+            scores={suitScores}
+            scoresLoading={suitScoresLoading}
+            result={suitResult}
+            setResult={setSuitResult}
+            comment={suitComment}
+            setComment={setSuitComment}
+            submitting={suitSubmitting}
+            onOpenPanel={handleOpenSuitPanel}
+            onSubmitScore={handleScoreExperience}
+            onApprove={handleApproveExperience}
+            onReject={handleRejectExperience}
+            onAfterAction={() => { setShowSuitPanel(false); fetchSuitExps(suitStatusFilter); }}
+          />
+        )}
       </div>
 
     </div>
   );
-  
 };
 
 const Booking = ({
-    bookings,
-    showRefundPanel,
-    selectedBooking,
-    action,
-    rejectReason,
-    setShowRefundPanel,
-    setAction,
-    setRejectReason,
-    handleRefund,
-  }) => {
-  return (
-    <div>
-
-      {/* Top search + buttons */}
-      <div className="booking-top">
-
-        <div className="search-wrapper">
-          <input
-            className="admin-search-bar"
-            placeholder="Search by booking code"
-          />
-          <button className="admin-search-btn">
-             <img src ={search} className="admin-search-icon"></img>
-          </button>
-         
-        </div>
-
-        <button className="sort-btn">Sort by date</button>
-        <button className="sort-btn">Sort by event name</button>
-        {/* <button
-          className="sort-btn"
-          disabled={item.status !== "refund pending"}
-          onClick={() => {
-            setSelectedBooking(item);
-            setShowRefundPanel(true);
-          }}
-        >
-          {item.status}
-        </button> */}
+  bookings, loading,
+  showRefundPanel, selectedBooking, action, rejectReason,
+  setShowRefundPanel, setAction, setRejectReason, handleRefund,
+}) => (
+  <div>
+    <div className="booking-top">
+      <div className="search-wrapper">
+        <input className="admin-search-bar" placeholder="Search by booking code" />
+        <button className="admin-search-btn"><img src={search} className="admin-search-icon" /></button>
       </div>
-
-      {/* Table */}
-      <div className="table-box">
-        <div className="table-header">
-          <span>Booking code</span>
-          <span>Username</span>
-          <span>Event name</span>
-          <span>State</span>
-          <span>Link to Stream</span>
-        </div>
-          {bookings.map((item) => (
-          <div className="table-row" key={item.bookingCode}>
-            <div>{item.bookingCode}</div>
-            <div>{item.username}</div>
-            <div>{item.eventName}</div>
-            <div>
-              {item.status === "refund pending" ? (
-                <button
-                  className="sort-btn"
-                  onClick={() => handleRefund(item)}
-                >
-                  {item.status}
-                </button>
-              ) : (
-                <button className="sort-btn" disabled>
-                  {item.status}
-                </button>
-              )}
-            </div>
-
-            {/* <div>{item.status}</div> */}
-            <div>
-              <a href={item.link} target="_blank" rel="noreferrer">
-                <button className="sort-btn">
-                  View Stream
-                </button>
-              </a>
-            </div>
+    </div>
+    <div className="table-box">
+      <div className="table-header" style={{ gridTemplateColumns: "0.5fr 1fr 1.2fr 1.5fr 1.5fr 1fr 1fr 1fr 0.8fr" }}>
+        <span>ID</span>
+        <span>Contact name</span>
+        <span>Visitor name</span>
+        <span>Visitor email</span>
+        <span>Experience</span>
+        <span>Event date</span>
+        <span>Payment</span>
+        <span>Status</span>
+        <span>Amount</span>
+      </div>
+      {loading && <p style={{ padding: "12px" }}>Loading...</p>}
+      {!loading && bookings.length === 0 && <p style={{ padding: "12px" }}>No bookings found.</p>}
+      {bookings.map((item) => (
+        <div className="table-row" key={item.id} style={{ gridTemplateColumns: "0.5fr 1fr 1.2fr 1.5fr 1.5fr 1fr 1fr 1fr 0.8fr" }}>
+          <div>#{item.id}</div>
+          <div>{item.contact_name || "—"}</div>
+          <div>{item.visitor_first_name} {item.visitor_last_name}</div>
+          <div style={{ fontSize: "13px" }}>{item.visitor_email || "—"}</div>
+          <div>{item.experience_title || "—"}</div>
+          <div style={{ fontSize: "13px" }}>
+            {item.experience_date_time ? new Date(item.experience_date_time).toLocaleDateString() : "TBC"}
           </div>
-        ))}
-      </div>
-      {showRefundPanel && selectedBooking && (
-        <div className="refund-overlay">
-          <div className="refund-panel">
+          <div style={{ fontSize: "13px" }}>{item.payment_method || "—"}</div>
+          <div>
+            {item.status === "refund_pending" ? (
+              <button className="sort-btn" onClick={() => handleRefund(item)}>{item.status}</button>
+            ) : (
+              <button className="sort-btn" disabled>{item.status}</button>
+            )}
+          </div>
+          <div>£{Number(item.amount_paid || 0).toFixed(2)}</div>
+        </div>
+      ))}
+    </div>
 
-            {/* Close */}
-            <button
-              className="close-btn"
-              onClick={() => setShowRefundPanel(false)}
-            >
-              ✕
+    {showRefundPanel && selectedBooking && (
+      <div className="refund-overlay">
+        <div className="refund-panel">
+          <button className="close-btn" onClick={() => setShowRefundPanel(false)}>✕</button>
+          <div className="refund-left">
+            <h3>Booking #{selectedBooking.id}</h3>
+            <p>Contact: {selectedBooking.contact_name}</p>
+            <p>Email: {selectedBooking.contact_email}</p>
+            <p>Amount paid: £{Number(selectedBooking.amount_paid || 0).toFixed(2)}</p>
+            <p>Status: {selectedBooking.status}</p>
+          </div>
+          <div className="refund-right">
+            <button className={`action-btn ${action === "approve" ? "active" : ""}`} onClick={() => setAction("approve")}>
+              Accept refund
             </button>
-
-            {/* Left */}
-            <div className="refund-left">
-              <h3>Manage booking ID: {selectedBooking.bookingCode}</h3>
-
-              <p>booking username: {selectedBooking.username}</p>
-              <p>Event name: {selectedBooking.eventName}</p>
-              <p>Event date: {selectedBooking.eventDate}</p>
-              <p>Booking date: {selectedBooking.bookingDate}</p>
-              <p>Refund apply date: {selectedBooking.refundDate}</p>
-              <p>Refund reason: {selectedBooking.refundReason}</p>
-
-              <p className="refund-state">
-                Refund policy: two days before the event, refund 80%
-              </p>
-            </div>
-
-            {/* Right */}
-            <div className="refund-right">
-
-              <button
-                className={`action-btn ${action === "approve" ? "active" : ""}`}
-                onClick={() => setAction("approve")}
-              >
-                Accept refund
-              </button>
-
-              <button
-                className={`action-btn ${action === "reject" ? "active" : ""}`}
-                onClick={() => setAction("reject")}
-              >
-                Refund rejected
-              </button>
-
-              <textarea
-              placeholder="Type in the reject reason"
+            <button className={`action-btn ${action === "reject" ? "active" : ""}`} onClick={() => setAction("reject")}>
+              Reject refund
+            </button>
+            <textarea
+              placeholder="Type reject reason"
               value={rejectReason}
               onChange={(e) => setRejectReason(e.target.value)}
               disabled={action !== "reject"}
             />
+            <button
+              className="save-btn"
+              onClick={() => {
+                if (action === "reject" && !rejectReason) { alert("Please enter a reject reason"); return; }
+                alert(`Saved: ${action}`);
+                setShowRefundPanel(false);
+              }}
+            >
+              Save
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+  </div>
+);
+const UserData = ({
+  users, loading, userSearch, setUserSearch,
+  showUserModal, setShowUserModal, selectedUser, setSelectedUser,
+  onUpdateRole, onUpdateStatus, onDelete,
+}) => {
+  const filtered = users.filter((u) =>
+    `${u.first_name} ${u.last_name} ${u.email}`.toLowerCase().includes(userSearch.toLowerCase())
+  );
 
+  return (
+    <div>
+      <div className="booking-top">
+        <div className="search-wrapper">
+          <input
+            className="admin-search-bar"
+            placeholder="Search by name or email"
+            value={userSearch}
+            onChange={(e) => setUserSearch(e.target.value)}
+          />
+          <button className="admin-search-btn"><img src={search} className="admin-search-icon" /></button>
+        </div>
+      </div>
+
+      <div className="table-box">
+        <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr", fontWeight: "bold", borderBottom: "1px solid black", paddingBottom: "10px" }}>
+          <span>Email</span>
+          <span>Role</span>
+          <span>Status</span>
+          <span>Actions</span>
+        </div>
+        {loading && <p style={{ padding: "12px" }}>Loading...</p>}
+        {!loading && filtered.length === 0 && <p style={{ padding: "12px" }}>No users found.</p>}
+        {filtered.map((item) => (
+          <div key={item.id} style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr", alignItems: "center", padding: "10px 0", borderBottom: "1px solid #eee" }}>
+            <div>{item.email}</div>
+            <div>{item.role}</div>
+            <div>
+              <span style={{ color: item.status === "suspended" ? "red" : "green" }}>{item.status}</span>
+            </div>
+            <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
+              <button className="sort-btn" onClick={() => { setSelectedUser({ ...item }); setShowUserModal(true); }}>
+                Edit
+              </button>
               <button
-                className="save-btn"
-                onClick={() => {
-                  if (action === "reject" && !rejectReason) {
-                    alert("Please enter reject reason");
-                    return;
-                  }
-
-                  alert(`Saved: ${action}`);
-                  setShowRefundPanel(false);
-                }}
+                className="sort-btn"
+                onClick={() => onUpdateStatus(item.id, item.status === "active" ? "suspended" : "active")}
               >
-                Save the change
+                {item.status === "active" ? "Suspend" : "Activate"}
               </button>
             </div>
+          </div>
+        ))}
+      </div>
 
+      {showUserModal && selectedUser && (
+        <div className="refund-overlay">
+          <div className="refund-panel">
+            <button className="close-btn" onClick={() => setShowUserModal(false)}>✕</button>
+            <div className="refund-left">
+              <h3>Edit User</h3>
+              <p>Email: <strong>{selectedUser.email}</strong></p>
+              <p>Name: {selectedUser.first_name} {selectedUser.last_name}</p>
+              <p>DOB: {selectedUser.date_of_birth}</p>
+              <p>Country: {selectedUser.country}</p>
+              <p>Status: {selectedUser.status}</p>
+            </div>
+            <div className="refund-right">
+              <p>Change role:</p>
+              <select
+                className="userdata-typein"
+                value={selectedUser.role}
+                onChange={(e) => setSelectedUser({ ...selectedUser, role: e.target.value })}
+              >
+                <option value="visitor">visitor</option>
+                <option value="ehost">ehost</option>
+                <option value="admin">admin</option>
+              </select>
+              <button className="save-btn" onClick={() => onUpdateRole(selectedUser.id, selectedUser.role)}>
+                Save role
+              </button>
+              <button
+                className="action-btn"
+                style={{ marginTop: "10px", background: "#e57373", color: "white" }}
+                onClick={() => onDelete(selectedUser.id)}
+              >
+                Delete user
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -700,182 +730,378 @@ const Booking = ({
   );
 };
 
-const UserData = ({
-  userData,
-  setUserData,
-  showUserModal,
-  setShowUserModal,
-  selectedUser,
-  setSelectedUser,
-}) => {return (
-    <div>
+const ExperienceRequests = ({ experiences, loading, statusFilter, setStatusFilter, onApprove, onReject, onDelete }) => (
+  <div>
+    <div className="booking-top">
+      <div className="search-wrapper">
+        <input className="admin-search-bar" placeholder="Search by experience title" />
+        <button className="admin-search-btn"><img src={search} className="admin-search-icon" /></button>
+      </div>
+      {["pending", "approved", "rejected"].map((s) => (
+        <button key={s} className="sort-btn" style={statusFilter === s ? { background: "#a88b8b", color: "white" } : {}} onClick={() => setStatusFilter(s)}>
+          {s.charAt(0).toUpperCase() + s.slice(1)}
+        </button>
+      ))}
+    </div>
 
-      {/* Top search + buttons */}
-      <div className="booking-top">
+    <div className="table-box">
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 2fr 1fr 2fr", fontWeight: "bold", borderBottom: "1px solid black", paddingBottom: "10px" }}>
+        <span>ID</span>
+        <span>Title</span>
+        <span>Status</span>
+        <span>Actions</span>
+      </div>
+      {loading && <p style={{ padding: "12px" }}>Loading...</p>}
+      {!loading && experiences.length === 0 && <p style={{ padding: "12px" }}>No experiences found.</p>}
+      {experiences.map((item) => (
+        <div key={item.id} style={{ display: "grid", gridTemplateColumns: "1fr 2fr 1fr 2fr", alignItems: "center", padding: "10px 0", borderBottom: "1px solid #eee" }}>
+          <div>#{item.id}</div>
+          <div>{item.title}</div>
+          <div>
+            <span style={{ color: item.status === "approved" ? "green" : item.status === "rejected" ? "red" : "#b8860b" }}>
+              {item.status}
+            </span>
+          </div>
+          <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
+            {item.status === "pending" && (
+              <>
+                <button className="sort-btn" onClick={() => onApprove(item.id)}>Approve</button>
+                <button className="sort-btn" onClick={() => onReject(item.id)}>Reject</button>
+              </>
+            )}
+            <button className="sort-btn" style={{ background: "#e57373", color: "white" }} onClick={() => onDelete(item.id)}>Delete</button>
+          </div>
+        </div>
+      ))}
+    </div>
+  </div>
+);
 
-        <div className="search-wrapper">
-          <input
-            className="admin-search-bar"
-            placeholder="Search by username"
-          />
-          <button className="admin-search-btn">
-             <img src ={search} className="admin-search-icon"></img>
-          </button>
-         
+const CHART_COLORS = [
+  "#a88b8b", "#7b9eb8", "#8bb897", "#c4a05a", "#9b7bb8",
+  "#b87b7b", "#5a8cb8", "#7bb87b", "#b8a05a", "#7b7bb8",
+];
+
+const barOptions = () => ({
+  indexAxis: "y",
+  responsive: true,
+  maintainAspectRatio: false,
+  plugins: {
+    legend: { display: false },
+    title: { display: false },
+    tooltip: { callbacks: { label: (ctx) => ` ${ctx.parsed.x} booking${ctx.parsed.x !== 1 ? "s" : ""}` } },
+  },
+  scales: {
+    x: { beginAtZero: true, ticks: { stepSize: 1, precision: 0 }, grid: { color: "#f0e8e8" } },
+    y: { grid: { display: false }, ticks: { font: { size: 12 } } },
+  },
+});
+
+const Reports = ({ analytics, loading }) => {
+  if (loading) return <p style={{ padding: "16px" }}>Loading reports...</p>;
+  if (!analytics) return <p style={{ padding: "16px" }}>No data available.</p>;
+
+  const expChartData = {
+    labels: analytics.topExperiences.map((e) =>
+      e.title.length > 28 ? e.title.slice(0, 26) + "…" : e.title
+    ),
+    datasets: [{
+      data: analytics.topExperiences.map((e) => Number(e.booking_count)),
+      backgroundColor: "#a88b8b",
+      borderColor: "#8b6b6b",
+      borderWidth: 1,
+      borderRadius: 4,
+    }],
+  };
+
+  const hostChartData = {
+    labels: analytics.topHosts.map((h) => h.name),
+    datasets: [{
+      data: analytics.topHosts.map((h) => Number(h.booking_count)),
+      backgroundColor: "#7b9eb8",
+      borderColor: "#5a7e9b",
+      borderWidth: 1,
+      borderRadius: 4,
+    }],
+  };
+
+  const countryChartData = {
+    labels: analytics.visitorCountries.map((c) => c.country),
+    datasets: [{
+      data: analytics.visitorCountries.map((c) => Number(c.visitor_count)),
+      backgroundColor: "#8bb897",
+      borderColor: "#6a9a78",
+      borderWidth: 1,
+      borderRadius: 4,
+    }],
+  };
+
+  const categoryChartData = {
+    labels: analytics.categoryBreakdown.map((c) => c.category || "Uncategorised"),
+    datasets: [{
+      data: analytics.categoryBreakdown.map((c) => Number(c.booking_count)),
+      backgroundColor: CHART_COLORS.slice(0, analytics.categoryBreakdown.length),
+      borderWidth: 1,
+      borderColor: "#fff",
+    }],
+  };
+
+  const doughnutOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { position: "right", labels: { font: { size: 12 }, padding: 12 } },
+      tooltip: { callbacks: { label: (ctx) => ` ${ctx.label}: ${ctx.parsed} booking${ctx.parsed !== 1 ? "s" : ""}` } },
+    },
+  };
+
+  const CHART_HEIGHT = 300;
+  const expBarHeight = Math.max(CHART_HEIGHT, analytics.topExperiences.length * 36);
+  const hostBarHeight = Math.max(CHART_HEIGHT, analytics.topHosts.length * 36);
+  const countryBarHeight = Math.max(CHART_HEIGHT, analytics.visitorCountries.length * 36);
+
+  return (
+    <div className="reports-wrapper">
+      <div className="report-charts-row">
+        <div className="report-section report-section-wide">
+          <h3 className="report-heading">Most Popular Experiences</h3>
+          {analytics.topExperiences.length === 0 ? (
+            <p className="report-empty">No bookings recorded yet.</p>
+          ) : (
+            <div style={{ height: expBarHeight }}>
+              <Bar data={expChartData} options={barOptions()} />
+            </div>
+          )}
         </div>
 
-        <button className="sort-btn">Sort by alphabet</button>
-        {/* <button className="sort-btn">Sort by event name</button> */}
-      </div>
-
-      {/* Table */}
-      <div className="table-box">
-        <div className="user-table-header">
-          <span>Username</span>
-          <span>Registration date</span>
-          <span>Edit user file</span>
+        <div className="report-section report-section-wide">
+          <h3 className="report-heading">Most Popular eHosts</h3>
+          {analytics.topHosts.length === 0 ? (
+            <p className="report-empty">No bookings recorded yet.</p>
+          ) : (
+            <div style={{ height: hostBarHeight }}>
+              <Bar data={hostChartData} options={barOptions()} />
+            </div>
+          )}
         </div>
-        {userData.map((item, index) => (
-          <div className="user-table-row" key={index}>
-            <div>{item.email}</div>
-            <div>{item.role}</div>
-            <div>
-              <button
-                className="sort-btn"
-                onClick={() => {
-                  setSelectedUser(item);
-                  setShowUserModal(true);
-                }}
-              >
-                Edit user profile
-              </button>
-            </div>
-          </div>
-        ))}
       </div>
-      {showUserModal && selectedUser && (
-          <div className="refund-overlay">
-            <div className="refund-panel">
 
-              <button
-                className="close-btn"
-                onClick={() => setShowUserModal(false)}
-              >
-                ✕
-              </button>
-              {/*        
-              email: "amy@gmail.com",
-              password: "12345678",
-              role: "admin",
-              first_name: "Amy",
-              last_name: "AA",
-              date_of_birth: "2022-03-10",
-              country: "UK",
-              language: "English", */}
-
-              <div className="refund-left">
-                <h3>Edit User</h3>
-
-                <p>Email:</p>
-                
-                <input
-                 className="userdata-typein-email"
-                  value={selectedUser.email}/>
-
-                <p>Role:</p>
-                <input
-                 className="userdata-typein"
-                  value={selectedUser.role}
-                  onChange={(e) =>
-                    setSelectedUser({
-                      ...selectedUser,
-                      role: e.target.value,
-                    })
-                  }
-                />
-
-                <p>First Name:</p>
-                <input
-                 className="userdata-typein"
-                  value={selectedUser.first_name}
-                  onChange={(e) =>
-                    setSelectedUser({
-                      ...selectedUser,
-                      first_name: e.target.value,
-                    })
-                  }
-                />
-
-                <p>Last Name:</p>
-                <input
-                 className="userdata-typein"
-                  value={selectedUser.last_name}
-                  onChange={(e) =>
-                    setSelectedUser({
-                      ...selectedUser,
-                      last_name: e.target.value,
-                    })
-                  }
-                />
-
-
-              </div>
-
-              <div className="refund-right">
-                <p>Date of birth:</p>
-                <input
-                  className="userdata-typein"
-                  value={selectedUser.date_of_birth}
-                  onChange={(e) =>
-                    setSelectedUser({
-                      ...selectedUser,
-                      date_of_birth: e.target.value,
-                    })
-                  }
-                />
-
-                <p>Location:</p>
-                <input
-                 className="userdata-typein"
-                  value={selectedUser.country}
-                  onChange={(e) =>
-                    setSelectedUser({
-                      ...selectedUser,
-                      country: e.target.value,
-                    })
-                  }
-                />
-
-                <p>Language:</p>
-                <input
-                 className="userdata-typein"
-                  value={selectedUser.language}
-                  onChange={(e) =>
-                    setSelectedUser({
-                      ...selectedUser,
-                      language: e.target.value,
-                    })
-                  }
-                />
-                
-                <button
-                  className="save-btn"
-                  onClick={() => {
-                    setUserData((prev) =>
-                      prev.map((u) =>
-                        u.email === selectedUser.email ? selectedUser : u
-                      )
-                    );
-                    setShowUserModal(false);
-                  }}
-                >
-                  Save
-                </button>
-              </div>
-
+      <div className="report-charts-row">
+        <div className="report-section report-section-wide">
+          <h3 className="report-heading">Visitor Countries of Origin</h3>
+          {analytics.visitorCountries.length === 0 ? (
+            <p className="report-empty">No visitor country data yet.</p>
+          ) : (
+            <div style={{ height: countryBarHeight }}>
+              <Bar data={countryChartData} options={barOptions()} />
             </div>
-          </div>
-        )}
+          )}
+        </div>
+
+        <div className="report-section report-section-narrow">
+          <h3 className="report-heading">Bookings by Category</h3>
+          {analytics.categoryBreakdown.length === 0 ? (
+            <p className="report-empty">No category data yet.</p>
+          ) : (
+            <div style={{ height: CHART_HEIGHT }}>
+              <Doughnut data={categoryChartData} options={doughnutOptions} />
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
-}
+};
+
+const SuitabilityReview = ({
+  experiences, loading, statusFilter, setStatusFilter,
+  showPanel, setShowPanel, selectedExp, scores, scoresLoading,
+  result, setResult, comment, setComment, submitting,
+  onOpenPanel, onSubmitScore, onApprove, onReject, onAfterAction,
+}) => (
+  <div>
+    <div className="booking-top">
+      {["approved", "pending", "rejected"].map((s) => (
+        <button
+          key={s}
+          className="sort-btn"
+          style={statusFilter === s ? { background: "#a88b8b", color: "white" } : {}}
+          onClick={() => setStatusFilter(s)}
+        >
+          {s.charAt(0).toUpperCase() + s.slice(1)}
+        </button>
+      ))}
+    </div>
+
+    <div className="table-box">
+      <div className="suit-table-header">
+        <span>ID</span><span>Title</span><span>Host</span><span>Category</span><span>Country</span><span>Status</span><span>Action</span>
+      </div>
+      {loading && <p style={{ padding: "12px" }}>Loading...</p>}
+      {!loading && experiences.length === 0 && <p style={{ padding: "12px" }}>No experiences found.</p>}
+      {experiences.map((item) => (
+        <div className="suit-table-row" key={item.id}>
+          <span>#{item.id}</span>
+          <span>{item.title}</span>
+          <span>{item.ehost_first_name ? `${item.ehost_first_name} ${item.ehost_last_name}` : "—"}</span>
+          <span>{item.category || "—"}</span>
+          <span>{item.country || "—"}</span>
+          <span>
+            <span style={{ color: item.status === "approved" ? "green" : item.status === "rejected" ? "red" : "#b8860b" }}>
+              {item.status}
+            </span>
+          </span>
+          <span>
+            <button className="sort-btn" onClick={() => onOpenPanel(item)}>Review</button>
+          </span>
+        </div>
+      ))}
+    </div>
+
+    {showPanel && selectedExp && (
+      <div className="refund-overlay">
+        <div className="suit-panel">
+          <button className="close-btn" onClick={() => setShowPanel(false)}>✕</button>
+
+          <div className="suit-panel-left">
+            <h3>{selectedExp.title}</h3>
+            <p><strong>Category:</strong> {selectedExp.category || "—"}</p>
+            <p><strong>Country:</strong> {selectedExp.country || "—"}</p>
+            <p><strong>Language:</strong> {selectedExp.language || "—"}</p>
+            <p><strong>Status:</strong> {selectedExp.status}</p>
+            {selectedExp.description && (
+              <p style={{ marginTop: "8px", fontSize: "13px" }}>{selectedExp.description}</p>
+            )}
+            <div style={{ marginTop: "12px", display: "flex", gap: "8px" }}>
+              {selectedExp.status !== "approved" && (
+                <button className="save-btn" onClick={() => onApprove(selectedExp.id).then(onAfterAction)}>Approve</button>
+              )}
+              {selectedExp.status !== "rejected" && (
+                <button className="action-btn" onClick={() => onReject(selectedExp.id).then(onAfterAction)}>Reject</button>
+              )}
+            </div>
+          </div>
+
+          <div className="suit-panel-right">
+            <h4>Suitability Review</h4>
+            <div className="suit-radio-group">
+              <label className={`suit-radio ${result === "pass" ? "suit-radio-selected" : ""}`}>
+                <input type="radio" value="pass" checked={result === "pass"} onChange={() => setResult("pass")} />
+                Suitable
+              </label>
+              <label className={`suit-radio ${result === "fail" ? "suit-radio-selected" : ""}`}>
+                <input type="radio" value="fail" checked={result === "fail"} onChange={() => setResult("fail")} />
+                Unsuitable
+              </label>
+            </div>
+            <textarea
+              className="suit-textarea"
+              placeholder={result === "fail" ? "Reason for rejection (required)" : "Notes (optional)"}
+              value={comment}
+              onChange={(e) => setComment(e.target.value)}
+            />
+            <button className="save-btn" onClick={onSubmitScore} disabled={submitting}>
+              {submitting ? "Submitting..." : "Submit review"}
+            </button>
+
+            <div className="suit-history">
+              <h5>Review History</h5>
+              {scoresLoading && <p style={{ fontSize: "12px" }}>Loading...</p>}
+              {!scoresLoading && scores.length === 0 && <p style={{ fontSize: "12px", color: "#999" }}>No previous reviews.</p>}
+              {scores.map((s) => (
+                <div key={s.id} className="suit-history-item">
+                  <span className={`result-badge ${s.result}`}>{s.result === "pass" ? "Suitable" : "Unsuitable"}</span>
+                  <span className="suit-history-date">{new Date(s.scored_at).toLocaleDateString()}</span>
+                  {s.comment && <p className="suit-history-comment">{s.comment}</p>}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    )}
+  </div>
+);
+
+const EhostApplications = ({
+  applications, loading, statusFilter, setStatusFilter,
+  selectedApp, setSelectedApp, showAppModal, setShowAppModal,
+  onApprove, onReject,
+}) => (
+  <div>
+    <div className="booking-top">
+      <div className="search-wrapper">
+        <input className="admin-search-bar" placeholder="Search by name or email" />
+        <button className="admin-search-btn"><img src={search} className="admin-search-icon" /></button>
+      </div>
+      {["pending", "approved", "rejected"].map((s) => (
+        <button key={s} className="sort-btn" style={statusFilter === s ? { background: "#a88b8b", color: "white" } : {}} onClick={() => setStatusFilter(s)}>
+          {s.charAt(0).toUpperCase() + s.slice(1)}
+        </button>
+      ))}
+    </div>
+
+    <div className="table-box">
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 2fr 2fr 1fr 2fr", fontWeight: "bold", borderBottom: "1px solid black", paddingBottom: "10px" }}>
+        <span>ID</span>
+        <span>Name</span>
+        <span>Email</span>
+        <span>Status</span>
+        <span>Actions</span>
+      </div>
+      {loading && <p style={{ padding: "12px" }}>Loading...</p>}
+      {!loading && applications.length === 0 && <p style={{ padding: "12px" }}>No applications found.</p>}
+      {applications.map((item) => (
+        <div key={item.id} style={{ display: "grid", gridTemplateColumns: "1fr 2fr 2fr 1fr 2fr", alignItems: "center", padding: "10px 0", borderBottom: "1px solid #eee" }}>
+          <div>#{item.id}</div>
+          <div>{item.name}</div>
+          <div>{item.email}</div>
+          <div>
+            <span style={{ color: item.status === "approved" ? "green" : item.status === "rejected" ? "red" : "#b8860b" }}>
+              {item.status}
+            </span>
+          </div>
+          <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
+            <button className="sort-btn" onClick={() => { setSelectedApp(item); setShowAppModal(true); }}>
+              View
+            </button>
+            {item.status === "pending" && (
+              <>
+                <button className="sort-btn" onClick={() => onApprove(item.id)}>Approve</button>
+                <button className="sort-btn" onClick={() => onReject(item.id)}>Reject</button>
+              </>
+            )}
+          </div>
+        </div>
+      ))}
+    </div>
+
+    {showAppModal && selectedApp && (
+      <div className="refund-overlay">
+        <div className="refund-panel">
+          <button className="close-btn" onClick={() => setShowAppModal(false)}>✕</button>
+          <div className="refund-left">
+            <h3>Application #{selectedApp.id}</h3>
+            <p><strong>Name:</strong> {selectedApp.name}</p>
+            <p><strong>Email:</strong> {selectedApp.email}</p>
+            <p><strong>Nationality:</strong> {selectedApp.nationality}</p>
+            <p><strong>Preferred country:</strong> {selectedApp.preferred_country}</p>
+            <p><strong>Has experience:</strong> {selectedApp.has_experience ? "Yes" : "No"}</p>
+            {selectedApp.years_of_experience > 0 && <p><strong>Years:</strong> {selectedApp.years_of_experience}</p>}
+            <p><strong>Description:</strong> {selectedApp.description}</p>
+            <p><strong>Video:</strong> <a href={selectedApp.video_link} target="_blank" rel="noreferrer">{selectedApp.video_link}</a></p>
+          </div>
+          <div className="refund-right">
+            <p>Status: <strong>{selectedApp.status}</strong></p>
+            {selectedApp.status === "pending" && (
+              <>
+                <button className="save-btn" onClick={() => onApprove(selectedApp.id)}>Approve</button>
+                <button className="action-btn" style={{ marginTop: "8px" }} onClick={() => onReject(selectedApp.id)}>Reject</button>
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+    )}
+  </div>
+);

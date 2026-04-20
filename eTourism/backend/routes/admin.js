@@ -19,6 +19,9 @@ const {
   getNetworkLogs,
   getNetworkIssueStats,
   reportNetworkIssue,
+  getAnalytics,
+  scoreExperience,
+  getExperienceScores,
 } = require('../controllers/adminController');
 
 // GET /api/admin/applications?status=pending
@@ -73,5 +76,16 @@ router.get('/network-logs', requireRole('admin'), getNetworkLogs);
 router.get('/network-logs/stats', requireRole('admin'), getNetworkIssueStats);
 
 // 3. Retrieve network issue reports (viewable only by Admin)
-router.post('/network-logs/report', requireAuth, reportNetworkIssue);
+router.post('/network-logs/report', requireRole('admin'), reportNetworkIssue);
+
+// GET /api/admin/analytics
+router.get('/analytics', requireRole('admin'), getAnalytics);
+
+// POST /api/admin/experiences/:id/score
+router.post('/experiences/:id/score', requireRole('admin'), scoreExperience);
+
+// GET /api/admin/experiences/:id/scores
+router.get('/experiences/:id/scores', requireRole('admin'), getExperienceScores);
+
+
 module.exports = router;

@@ -30,11 +30,12 @@ export const PaymentSuccessPage = () => {
 
   const [searchParams] = useSearchParams();
   const sessionId = searchParams.get("session_id");
+  const paypalToken = searchParams.get("token"); // PayPal order ID on return
 
   const [booking, setBooking] = useState(null);
   const [experience, setExperience] = useState(null);
-  const [loading, setLoading] = useState(!!sessionId);
-  const [error, setError] = useState(sessionId ? "" : "No session found.");
+  const [loading, setLoading] = useState(!!(sessionId || paypalToken));
+  const [error, setError] = useState((sessionId || paypalToken) ? "" : "No session found.");
   const [refundPolicy, setRefundPolicy] = useState("");
 
   useEffect(() => {
@@ -58,9 +59,21 @@ export const PaymentSuccessPage = () => {
         localStorage.removeItem("pending_booking_id");
       });
 
-    if (sessionId) {
+    if (paypalToken && bookingId) {
       axios.post(
-        `${API_BASE}/visitor/payments/capture-stripe`,
+        `${API_BASE}/visitor/payments/paypal/capture-order`,
+        { orderID: paypalToken, booking_id: parseInt(bookingId) },
+        { headers: { Authorization: `Bearer ${token}` } }
+      )
+        .then(() => fetchBooking(bookingId))
+        .catch(() => {
+          if (bookingId) return fetchBooking(bookingId);
+          setError("PayPal payment capture failed.");
+        })
+        .finally(() => setLoading(false));
+    } else if (sessionId) {
+      axios.post(
+        `${API_BASE}/visitor/payments/stripe/capture`,
         { session_id: sessionId },
         { headers: { Authorization: `Bearer ${token}` } }
       )
@@ -81,7 +94,7 @@ export const PaymentSuccessPage = () => {
     } else if (bookingId) {
       fetchBooking(bookingId).finally(() => setLoading(false));
     }
-  }, [sessionId, token]);
+  }, [sessionId, paypalToken, token]);
 
   const coverImage = getCountryImage(experience?.country);
   const now = new Date();

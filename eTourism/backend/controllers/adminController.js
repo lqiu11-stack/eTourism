@@ -2,6 +2,8 @@ const User = require('../models/User');
 const pool = require('../config/db');
 const bcrypt = require('bcrypt');
 const Experience = require('../models/Experience');
+const Booking = require('../models/Booking');
+const ExperienceScore = require('../models/ExperienceScore');
 
 // GET /api/admin/experiences?status=pending
 
@@ -54,11 +56,115 @@ const deleteExperience = async (req, res) => {
 };
 
 const getBookings = async (req, res) => {
-  // TODO
+  try {
+    const { status } = req.query;
+    const bookings = await Booking.findAll({ status });
+    res.json(bookings);
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: String(err) });
+  }
 };
 
 const getReviews = async (req, res) => {
   // TODO
+};
+
+// GET /api/admin/analytics
+const getAnalytics = async (req, res) => {
+  try {
+    const [topExperiences, topHosts, visitorCountries, categoryBreakdown] = await Promise.all([
+      pool.query(`
+        SELECT e.id, e.title, e.category, e.country,
+               COALESCE(u.first_name || ' ' || u.last_name, 'Unknown') AS host_name,
+               COUNT(b.id) AS booking_count
+        FROM experiences e
+        LEFT JOIN bookings b ON b.experience_id = e.id
+        LEFT JOIN users u ON u.id = e.ehost_id
+        WHERE e.status = 'approved'
+        GROUP BY e.id, e.title, e.category, e.country, u.first_name, u.last_name
+        ORDER BY booking_count DESC LIMIT 10
+      `),
+      pool.query(`
+        SELECT u.id, u.first_name || ' ' || u.last_name AS name,
+               u.country, COUNT(b.id) AS booking_count
+        FROM users u
+        LEFT JOIN experiences e ON e.ehost_id = u.id
+        LEFT JOIN bookings b ON b.experience_id = e.id
+        WHERE u.role = 'ehost'
+        GROUP BY u.id, u.first_name, u.last_name, u.country
+        ORDER BY booking_count DESC LIMIT 10
+      `),
+      pool.query(`
+        SELECT u.country, COUNT(u.id) AS visitor_count
+        FROM users u
+        WHERE u.role = 'visitor' AND u.country IS NOT NULL
+        GROUP BY u.country ORDER BY visitor_count DESC LIMIT 15
+      `),
+      pool.query(`
+        SELECT e.category, COUNT(b.id) AS booking_count
+        FROM experiences e
+        LEFT JOIN bookings b ON b.experience_id = e.id
+        WHERE e.status = 'approved'
+        GROUP BY e.category ORDER BY booking_count DESC
+      `),
+    ]);
+
+    res.json({
+      topExperiences: topExperiences.rows,
+      topHosts: topHosts.rows,
+      visitorCountries: visitorCountries.rows,
+      categoryBreakdown: categoryBreakdown.rows,
+    });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: String(err) });
+  }
+};
+
+// POST /api/admin/experiences/:id/score
+// Body: { result: 'pass'|'fail', comment: string }
+const scoreExperience = async (req, res) => {
+  try {
+    const { result, comment } = req.body;
+    if (!['pass', 'fail'].includes(result)) {
+      return res.status(400).json({ message: 'result must be "pass" or "fail"' });
+    }
+    if (result === 'fail' && !comment?.trim()) {
+      return res.status(400).json({ message: 'A comment is required when marking as fail' });
+    }
+
+    const score = await ExperienceScore.create({
+      experience_id: req.params.id,
+      admin_id: req.user.id,
+      wifi_score: null,
+      safety_score: null,
+      legal_score: null,
+      content_score: null,
+      accessibility_score: null,
+      description_score: null,
+      pricing_score: null,
+      total_score: null,
+      result,
+      comment: comment?.trim() || null,
+    });
+
+    if (result === 'fail') {
+      await Experience.update(req.params.id, { status: 'rejected' });
+    }
+
+    res.json({ message: `Experience marked as ${result}.`, score });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: String(err) });
+  }
+};
+
+// GET /api/admin/experiences/:id/scores
+const getExperienceScores = async (req, res) => {
+  try {
+    const scores = await ExperienceScore.findByExperience(req.params.id);
+    res.json(scores);
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: String(err) });
+  }
 };
 
 // GET /api/admin/applications?status=pending
@@ -372,5 +478,9 @@ module.exports = {
   deleteUser,
   getNetworkLogs,
   getNetworkIssueStats,
-  reportNetworkIssue
+  reportNetworkIssue,
+  getAnalytics,
+  scoreExperience,
+  getExperienceScores,
+
 };
