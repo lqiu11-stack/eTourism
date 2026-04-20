@@ -1,5 +1,5 @@
 const router = require('express').Router();
-const { requireRole } = require('../middleware/auth');
+const { requireRole, requireAuth} = require('../middleware/auth');
 const {
   getExperiences,
   approveExperience,
@@ -16,6 +16,9 @@ const {
   updateUserStatus,
   updateUserRole,
   deleteUser,
+  getNetworkLogs,
+  getNetworkIssueStats,
+  reportNetworkIssue,
   getAnalytics,
   scoreExperience,
   getExperienceScores,
@@ -66,6 +69,15 @@ router.patch('/users/:id/role', requireRole('admin'), updateUserRole);
 // DELETE /api/admin/users/:id
 router.delete('/users/:id', requireRole('admin'), deleteUser);
 
+// 1. Retrieve a list of all network logs (viewable only by Admin)
+router.get('/network-logs', requireRole('admin'), getNetworkLogs);
+
+// 2. Retrieve aggregated statistics on network issues (also only for Admin)
+router.get('/network-logs/stats', requireRole('admin'), getNetworkIssueStats);
+
+// 3. Retrieve network issue reports (viewable only by Admin)
+router.post('/network-logs/report', requireRole('admin'), reportNetworkIssue);
+
 // GET /api/admin/analytics
 router.get('/analytics', requireRole('admin'), getAnalytics);
 
@@ -74,5 +86,6 @@ router.post('/experiences/:id/score', requireRole('admin'), scoreExperience);
 
 // GET /api/admin/experiences/:id/scores
 router.get('/experiences/:id/scores', requireRole('admin'), getExperienceScores);
+
 
 module.exports = router;
