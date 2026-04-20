@@ -51,9 +51,6 @@ const {
   getApplications,
   approveApplication,
   rejectApplication,
-  getNetworkLogs,
-  getNetworkIssueStats,
-  reportNetworkIssue,
 } = require('../controllers/adminController');
 
 function makeRes() {
@@ -492,8 +489,8 @@ describe('rejectApplication()', () => {
     let calls = 0;
     fakePool.query.mock.mockImplementation(() => {
       calls++;
-      if (calls === 1) return Promise.resolve({ rows: [app] }); 
-      return Promise.resolve({ rows: [] });                      
+      if (calls === 1) return Promise.resolve({ rows: [app] }); // find application
+      return Promise.resolve({ rows: [] });                      // update status
     });
 
     const req = makeReq({}, { id: '1' });
@@ -535,95 +532,5 @@ describe('rejectApplication()', () => {
     await rejectApplication(req, res);
 
     assert.equal(res.status.mock.calls[0].arguments[0], 500);
-  });
-});
-
-describe('getNetworkLogs()', () => {
-  beforeEach(resetMocks);
-
-  it('200 : returns network logs successfully', async () => {
-    const mockRows = [{ id: 1, connection_quality: 'Poor', user_id: 2, location_name: 'Stonehenge' }];
-    fakePool.query.mock.mockImplementation(async () => ({ rows: mockRows }));
-
-    const req = makeReq();
-    const res = makeRes();
-    await getNetworkLogs(req, res);
-
-    assert.equal(res.status.mock.calls[0].arguments[0], 200);
-    assert.equal(res.json.mock.calls[0].arguments[0].success, true);
-    assert.deepEqual(res.json.mock.calls[0].arguments[0].data, mockRows);
-  });
-
-  it('500 : database error', async () => {
-    fakePool.query.mock.mockImplementation(async () => { throw new Error('DB error'); });
-
-    const req = makeReq();
-    const res = makeRes();
-    await getNetworkLogs(req, res);
-
-    assert.equal(res.status.mock.calls[0].arguments[0], 500);
-    assert.equal(res.json.mock.calls[0].arguments[0].success, false);
-  });
-});
-
-describe('getNetworkIssueStats()', () => {
-  beforeEach(resetMocks);
-
-  it('200 : returns network issue stats', async () => {
-    const mockStats = [{ experience_id: 1, location_name: 'Machu Picchu', issue_count: '5' }];
-    fakePool.query.mock.mockImplementation(async () => ({ rows: mockStats }));
-
-    const req = makeReq();
-    const res = makeRes();
-    await getNetworkIssueStats(req, res);
-
-    assert.equal(res.status.mock.calls[0].arguments[0], 200);
-    assert.equal(res.json.mock.calls[0].arguments[0].success, true);
-    assert.deepEqual(res.json.mock.calls[0].arguments[0].data, mockStats);
-  });
-});
-
-describe('reportNetworkIssue()', () => {
-  beforeEach(resetMocks);
-
-  it('201 : inserts network log successfully', async () => {
-    const req = makeReq({ experience_id: 10, connection_quality: 'Dropped', ip_address: '192.168.1.1' });
-    req.user = { id: 1 }; 
-
-    const mockInsertedRow = { id: 100, connection_quality: 'Dropped' };
-    fakePool.query.mock.mockImplementation(async () => ({ rows: [mockInsertedRow] }));
-
-    const res = makeRes();
-    await reportNetworkIssue(req, res);
-
-    assert.equal(res.status.mock.calls[0].arguments[0], 201);
-    assert.equal(res.json.mock.calls[0].arguments[0].success, true);
-    assert.equal(res.json.mock.calls[0].arguments[0].message, 'The network issue has been logged.');
-    assert.deepEqual(res.json.mock.calls[0].arguments[0].data, mockInsertedRow);
-  });
-
-  it('400 : missing connection_quality', async () => {
-    const req = makeReq({ experience_id: 10 }); 
-    req.user = { id: 1 };
-    
-    const res = makeRes();
-    await reportNetworkIssue(req, res);
-
-    assert.equal(res.status.mock.calls[0].arguments[0], 400);
-    assert.equal(res.json.mock.calls[0].arguments[0].success, false);
-    assert.match(res.json.mock.calls[0].arguments[0].message, /connection_quality/i);
-    assert.equal(fakePool.query.mock.callCount(), 0); 
-  });
-
-  it('500 : database error', async () => {
-    const req = makeReq({ connection_quality: 'Dropped' });
-    req.user = { id: 1 };
-    fakePool.query.mock.mockImplementation(async () => { throw new Error('DB error'); });
-    
-    const res = makeRes();
-    await reportNetworkIssue(req, res);
-
-    assert.equal(res.status.mock.calls[0].arguments[0], 500);
-    assert.equal(res.json.mock.calls[0].arguments[0].success, false);
   });
 });

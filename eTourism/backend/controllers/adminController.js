@@ -352,113 +352,6 @@ const deleteUser = async (req, res) => {
   }
 };
 
-const getNetworkLogs = async (req, res) => {
-  try {
-    // Use LEFT JOIN to join the user table and the experience table, so that administrators can see exactly who is experiencing the lag and in which project.
-    const query = `
-      SELECT 
-        nl.id, 
-        nl.connection_quality, 
-        nl.ip_address, 
-        nl.error_detail, 
-        nl.logged_at,
-        u.id AS user_id,
-        u.first_name, 
-        u.last_name,
-        e.id AS experience_id,
-        e.location_name
-      FROM network_logs nl
-      LEFT JOIN users u ON nl.user_id = u.id
-      LEFT JOIN experiences e ON nl.experience_id = e.id
-      ORDER BY nl.logged_at DESC
-    `;
-    
-    const { rows } = await pool.query(query);
-    
-    res.status(200).json({ 
-      success: true, 
-      data: rows 
-    });
-  } catch (error) {
-    console.error("Failed to fetch network logs:", error);
-    res.status(500).json({ 
-      success: false, 
-      message: 'Internal server error, failed to fetch network logs' 
-    });
-  }
-};
-
-const getNetworkIssueStats = async (req, res) => {
-  try {
-    // Count the number of network issues for each experience (location), ordered by count in descending order
-    const query = `
-      SELECT 
-        e.id AS experience_id,
-        e.location_name,
-        u.first_name AS host_first_name,
-        u.last_name AS host_last_name,
-        COUNT(nl.id) AS issue_count
-      FROM network_logs nl
-      JOIN experiences e ON nl.experience_id = e.id
-      JOIN users u ON e.ehost_id = u.id
-      GROUP BY e.id, e.location_name, u.first_name, u.last_name
-      ORDER BY issue_count DESC
-      LIMIT 10
-    `;
-    
-    const { rows } = await pool.query(query);
-    
-    res.status(200).json({ 
-      success: true, 
-      data: rows 
-    });
-  } catch (error) {
-    console.error("Failed to fetch network issue statistics:", error);
-    res.status(500).json({ 
-      success: false, 
-      message: 'Internal server error, failed to fetch network issue statistics' 
-    });
-  }
-};
-
-const reportNetworkIssue = async (req, res) => {
-  try {
-    
-    const userId = req.user ? req.user.id : req.userId;
-    const { experience_id, connection_quality, ip_address, error_detail } = req.body;
-
-    if (!connection_quality) {
-      return res.status(400).json({ success: false, message: 'Must provide connection_quality (connection quality)' });
-    }
-
-    const query = `
-      INSERT INTO network_logs 
-      (user_id, experience_id, connection_quality, ip_address, error_detail) 
-      VALUES ($1, $2, $3, $4, $5) 
-      RETURNING *
-    `;
-    
-    const { rows } = await pool.query(query, [
-      userId, 
-      experience_id || null, 
-      connection_quality, 
-      ip_address || null, 
-      error_detail || null
-    ]);
-
-    res.status(201).json({ 
-      success: true, 
-      message: 'Network issue reported successfully',
-      data: rows[0] 
-    });
-  } catch (error) {
-    console.error("Failed to report network issue:", error);
-    res.status(500).json({ 
-      success: false, 
-      message: 'Internal server error, failed to report network issue' 
-    });
-  }
-};
 
 module.exports = {
   getExperiences,
@@ -476,11 +369,7 @@ module.exports = {
   updateUserStatus,
   updateUserRole,
   deleteUser,
-  getNetworkLogs,
-  getNetworkIssueStats,
-  reportNetworkIssue,
   getAnalytics,
   scoreExperience,
   getExperienceScores,
-
 };
