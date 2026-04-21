@@ -67,12 +67,15 @@ const acceptAgreement = async (req, res) => {
   }
 };
 
-const getExperiences = async (req, res) => {
-  // TODO
+const getPayPalClient = () => {
+  const env = new checkoutNodeJssdk.core.SandboxEnvironment(
+    process.env.PAYPAL_CLIENT_ID,
+    process.env.PAYPAL_SECRET
+  );
+  return new checkoutNodeJssdk.core.PayPalHttpClient(env);
 };
 
 // GET /api/admin/experiences?status=pending
-
 const getExperiences = async (req, res) => {
   try {
     const status = req.query.status || 'pending';
