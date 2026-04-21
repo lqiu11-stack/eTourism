@@ -1,0 +1,42 @@
+{
+  "token": {
+    "type": "string",
+    "description": "Invite UUID from reviewTokens.json"
+  },
+  "rating": {
+    "type": "integer",
+    "minimum": 1,
+    "maximum": 5,
+    "description": "Overall rating"
+  },
+  "host_rating": {
+    "type": "integer",
+    "minimum": 1,
+    "maximum": 5,
+    "description": "eHost performance"
+  },
+  "content_rating": {
+    "type": "integer",
+    "minimum": 1,
+    "maximum": 5,
+    "description": "Content quality"
+  },
+  "technical_rating": {
+    "type": "integer",
+    "minimum": 1,
+    "maximum": 5,
+    "description": "Technical quality"
+  },
+  "recommend": {
+    "type": "boolean",
+    "description": "Would recommend"
+  },
+  "comment": {
+    "type": "string",
+    "description": "Free-text comment"
+  },
+  "improvement": {
+    "type": "string",
+    "description": "Improvement suggestions"
+  }
+}

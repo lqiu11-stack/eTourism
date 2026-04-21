@@ -1,6 +1,8 @@
 const router = require('express').Router();
 const { requireRole } = require('../middleware/auth');
 const {
+  getAgreement,
+  acceptAgreement,
   getExperiences,
   approveExperience,
   rejectExperience,
@@ -23,6 +25,9 @@ const {
   approveRefund,
   rejectRefund,
 } = require('../controllers/adminController');
+
+router.get('/agreements', getAgreement);
+router.post('/agreements/accept', acceptAgreement);
 
 // GET /api/admin/applications?status=pending
 router.get('/applications', requireRole('admin'), getApplications);
