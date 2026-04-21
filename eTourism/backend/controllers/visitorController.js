@@ -437,80 +437,32 @@ const refundBooking = async (req, res) => {
         refund_percentage: 0,
         days_before_event,
         status: 'rejected',
-        reason: reason || 'Cancelled fewer than 7 days before the event',
-        processed_at: new Date()
+        reason: 'No refund available — cancellation is fewer than 7 days before the event',
+        processed_at: new Date(),
       });
-
       return res.status(200).json({
         message: 'No refund available because the cancellation is fewer than 7 days before the event',
-        refund: refundRecord
+        refund: refundRecord,
       });
     }
 
-let gatewayRefundId = null;
-
-if (payment.method === 'stripe') {
-
-  if (!payment.transaction_id) {
-    return res.status(400).json({ message: 'Stripe transaction_id is missing' });
-  }
-
-  const stripeRefund = await stripe.refunds.create({
-    payment_intent: payment.transaction_id,
-    amount: Math.round(refund_amount * 100)
-  });
-
-  gatewayRefundId = stripeRefund.id;
-
-} else if (payment.method === 'paypal') {
-
-  if (!payment.transaction_id) {
-    return res.status(400).json({ message: 'PayPal transaction_id is missing' });
-  }
-
-  const client = getPayPalClient();
-
-  const request = new checkoutNodeJssdk.payments.CapturesRefundRequest(
-    payment.transaction_id
-  );
-
-  request.requestBody({
-    amount: {
-      currency_code: 'GBP',
-      value: refund_amount.toFixed(2)
-    }
-  });
-
-  const response = await client.execute(request);
-
-  gatewayRefundId = response.result.id;
-
-} else {
-
-  return res.status(400).json({
-    message: `Unsupported payment method: ${payment.method}`
-  });
-
-}
-
+    // Create a pending refund for admin to review — gateway is NOT charged yet
     const refundRecord = await Refund.create({
       booking_id: bookingId,
       payment_id: payment.id,
       refund_amount,
       refund_percentage,
       days_before_event,
-      status: 'approved',
-      reason: reason || 'Visitor requested refund',
-      processed_at: new Date()
+      status: 'pending',
+      reason: reason.trim(),
+      processed_at: null,
     });
 
-    await Booking.updateStatus(bookingId, 'refunded');
+    await Booking.updateStatus(bookingId, 'refund_pending');
 
     return res.status(200).json({
-      message: 'Refund processed successfully',
+      message: 'Refund request submitted. An admin will review it shortly.',
       refund: refundRecord,
-      payment_method: payment.method,
-      gateway_refund_id: gatewayRefundId
     });
   } catch (err) {
     console.error('Refund Error:', err);

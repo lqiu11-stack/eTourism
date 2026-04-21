@@ -1,9 +1,22 @@
 const User = require('../models/User');
+const Analytics = require('../models/Analytics');
 const pool = require('../config/db');
 const bcrypt = require('bcrypt');
 const Experience = require('../models/Experience');
 const Booking = require('../models/Booking');
 const ExperienceScore = require('../models/ExperienceScore');
+const Refund = require('../models/Refund');
+const Payment = require('../models/Payment');
+const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+const checkoutNodeJssdk = require('@paypal/checkout-server-sdk');
+
+const getPayPalClient = () => {
+  const env = new checkoutNodeJssdk.core.SandboxEnvironment(
+    process.env.PAYPAL_CLIENT_ID,
+    process.env.PAYPAL_SECRET
+  );
+  return new checkoutNodeJssdk.core.PayPalHttpClient(env);
+};
 
 // GET /api/admin/experiences?status=pending
 
@@ -73,48 +86,13 @@ const getReviews = async (req, res) => {
 const getAnalytics = async (req, res) => {
   try {
     const [topExperiences, topHosts, visitorCountries, categoryBreakdown] = await Promise.all([
-      pool.query(`
-        SELECT e.id, e.title, e.category, e.country,
-               COALESCE(u.first_name || ' ' || u.last_name, 'Unknown') AS host_name,
-               COUNT(b.id) AS booking_count
-        FROM experiences e
-        LEFT JOIN bookings b ON b.experience_id = e.id
-        LEFT JOIN users u ON u.id = e.ehost_id
-        WHERE e.status = 'approved'
-        GROUP BY e.id, e.title, e.category, e.country, u.first_name, u.last_name
-        ORDER BY booking_count DESC LIMIT 10
-      `),
-      pool.query(`
-        SELECT u.id, u.first_name || ' ' || u.last_name AS name,
-               u.country, COUNT(b.id) AS booking_count
-        FROM users u
-        LEFT JOIN experiences e ON e.ehost_id = u.id
-        LEFT JOIN bookings b ON b.experience_id = e.id
-        WHERE u.role = 'ehost'
-        GROUP BY u.id, u.first_name, u.last_name, u.country
-        ORDER BY booking_count DESC LIMIT 10
-      `),
-      pool.query(`
-        SELECT u.country, COUNT(u.id) AS visitor_count
-        FROM users u
-        WHERE u.role = 'visitor' AND u.country IS NOT NULL
-        GROUP BY u.country ORDER BY visitor_count DESC LIMIT 15
-      `),
-      pool.query(`
-        SELECT e.category, COUNT(b.id) AS booking_count
-        FROM experiences e
-        LEFT JOIN bookings b ON b.experience_id = e.id
-        WHERE e.status = 'approved'
-        GROUP BY e.category ORDER BY booking_count DESC
-      `),
+      Analytics.getTopExperiences(),
+      Analytics.getTopHosts(),
+      Analytics.getVisitorCountries(),
+      Analytics.getCategoryBreakdown(),
     ]);
 
-    res.json({
-      topExperiences: topExperiences.rows,
-      topHosts: topHosts.rows,
-      visitorCountries: visitorCountries.rows,
-      categoryBreakdown: categoryBreakdown.rows,
-    });
+    res.json({ topExperiences, topHosts, visitorCountries, categoryBreakdown });
   } catch (err) {
     res.status(500).json({ message: 'Server error', error: String(err) });
   }
@@ -353,6 +331,113 @@ const deleteUser = async (req, res) => {
 };
 
 
+// GET /api/admin/refunds?status=pending
+const getRefunds = async (req, res) => {
+  try {
+    const { status } = req.query;
+    let query = `
+      SELECT
+        r.id            AS refund_id,
+        r.status        AS refund_status,
+        r.refund_amount,
+        r.refund_percentage,
+        r.days_before_event,
+        r.reason,
+        r.processed_at,
+        b.id            AS booking_id,
+        b.amount_paid,
+        b.status        AS booking_status,
+        e.title         AS experience_title,
+        e.date_time     AS experience_date_time,
+        u.first_name    AS visitor_first_name,
+        u.last_name     AS visitor_last_name,
+        u.email         AS visitor_email,
+        p.method        AS payment_method,
+        p.transaction_id
+      FROM refunds r
+      JOIN bookings b   ON b.id = r.booking_id
+      LEFT JOIN experiences e ON e.id = b.experience_id
+      LEFT JOIN users u ON u.id = b.visitor_id
+      LEFT JOIN payments p ON p.booking_id = b.id
+    `;
+    const values = [];
+    if (status) {
+      values.push(status);
+      query += ` WHERE r.status = $1`;
+    }
+    query += ' ORDER BY r.id DESC';
+    const { rows } = await pool.query(query, values);
+    res.json(rows);
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: String(err) });
+  }
+};
+
+// PATCH /api/admin/refunds/:id/approve
+const approveRefund = async (req, res) => {
+  try {
+    const refund = await Refund.findById(req.params.id);
+    if (!refund) return res.status(404).json({ message: 'Refund not found' });
+    if (refund.status !== 'pending') {
+      return res.status(400).json({ message: `Refund is already ${refund.status}` });
+    }
+
+    const payments = await Payment.findByBooking(refund.booking_id);
+    const payment = payments && payments[0];
+    if (!payment) return res.status(404).json({ message: 'Payment record not found' });
+
+    // Process the refund through the payment gateway
+    let gatewayRefundId = null;
+    if (payment.method === 'stripe') {
+      if (!payment.transaction_id) {
+        return res.status(400).json({ message: 'Stripe transaction_id is missing' });
+      }
+      const stripeRefund = await stripe.refunds.create({
+        payment_intent: payment.transaction_id,
+        amount: Math.round(Number(refund.refund_amount) * 100),
+      });
+      gatewayRefundId = stripeRefund.id;
+    } else if (payment.method === 'paypal') {
+      if (!payment.transaction_id) {
+        return res.status(400).json({ message: 'PayPal transaction_id is missing' });
+      }
+      const client = getPayPalClient();
+      const request = new checkoutNodeJssdk.payments.CapturesRefundRequest(payment.transaction_id);
+      request.requestBody({
+        amount: { currency_code: 'GBP', value: Number(refund.refund_amount).toFixed(2) },
+      });
+      const response = await client.execute(request);
+      gatewayRefundId = response.result.id;
+    } else {
+      return res.status(400).json({ message: `Unsupported payment method: ${payment.method}` });
+    }
+
+    await Refund.updateStatus(refund.id, 'approved');
+    await Booking.updateStatus(refund.booking_id, 'refunded');
+
+    res.json({ message: 'Refund approved and processed.', gateway_refund_id: gatewayRefundId });
+  } catch (err) {
+    console.error('Approve Refund Error:', err);
+    res.status(500).json({ message: 'Server error', error: String(err) });
+  }
+};
+
+// PATCH /api/admin/refunds/:id/reject
+const rejectRefund = async (req, res) => {
+  try {
+    const refund = await Refund.findById(req.params.id);
+    if (!refund) return res.status(404).json({ message: 'Refund not found' });
+    if (refund.status !== 'pending') {
+      return res.status(400).json({ message: `Refund is already ${refund.status}` });
+    }
+    await Refund.updateStatus(refund.id, 'rejected');
+    await Booking.updateStatus(refund.booking_id, 'confirmed');
+    res.json({ message: 'Refund rejected. Booking restored to confirmed.' });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: String(err) });
+  }
+};
+
 module.exports = {
   getExperiences,
   approveExperience,
@@ -372,4 +457,7 @@ module.exports = {
   getAnalytics,
   scoreExperience,
   getExperienceScores,
+  getRefunds,
+  approveRefund,
+  rejectRefund,
 };

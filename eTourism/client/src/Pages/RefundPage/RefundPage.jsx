@@ -47,6 +47,16 @@ export const RefundPage = () => {
   const [reason, setReason] = useState("");
   const [agreed, setAgreed] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [toast, setToast] = useState(null); // { type: 'success'|'error', message }
+
+  const showToast = (type, message) => {
+    setToast({ type, message });
+    if (type === 'success') {
+      setTimeout(() => navigate("/MyBooking"), 1500);
+    } else {
+      setTimeout(() => setToast(null), 4000);
+    }
+  };
   // const refundStatus = getRefundStatus(experience?.date_time);
 
   const getRefundAmount = () => {
@@ -85,7 +95,7 @@ const refundAmount = Number(booking?.amount_paid || 0) * refundRate;
 
   const handleSubmitRefund = async () => {
     if (!reason.trim()) {
-      alert("Please enter a reason for your refund.");
+      showToast("Please enter a reason for your refund.");
       return;
     }
     setSubmitting(true);
@@ -95,10 +105,9 @@ const refundAmount = Number(booking?.amount_paid || 0) * refundRate;
         { reason },
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      alert("Refund request submitted successfully!");
-      navigate("/MyBooking");
+      showToast('success', 'Refund request submitted successfully!');
     } catch (err) {
-      alert(err.response?.data?.message || "Failed to submit refund request.");
+      showToast('error', err.response?.data?.message || 'Failed to submit refund request.');
     } finally {
       setSubmitting(false);
     }
@@ -128,6 +137,11 @@ const refundAmount = Number(booking?.amount_paid || 0) * refundRate;
 
   return (
     <div className="cancel-page">
+      {toast && (
+        <div className={`refund-toast refund-toast--${toast.type}`}>
+          {toast.type === 'success' ? '✓' : '✕'} {toast.message}
+        </div>
+      )}
         <nav className="navbar">
         <button
           type="button"
@@ -176,60 +190,71 @@ const refundAmount = Number(booking?.amount_paid || 0) * refundRate;
       {/* ===== REFUND SECTION ===== */}
       <div className="refund-box">
 
-
         <h2>Apply for refund</h2>
 
-        <p>Please tell us the refunding reason*</p>
-        <input
-          className="reason-input"
-          value={reason}
-          onChange={(e) => setReason(e.target.value)}
-        />
-
-        <p className="policy-title">Based on our refund policy</p>
-
-        <div className="policy-row">
-          <div className={`policy-card ${refundStatus === "full" ? "active" : ""}`}>
-            <h3>Fully refund</h3>
-            <span>cancel 5+ days before event</span><br></br>
-            <span className="link">Click to check the cancel policy</span>
+        {booking && ['refund_pending', 'refunded', 'cancelled'].includes(booking.status) ? (
+          <div className="refund-already">
+            {booking.status === 'refunded'
+              ? 'This booking has already been refunded.'
+              : booking.status === 'cancelled'
+              ? 'This booking has been cancelled.'
+              : 'You have already submitted a refund request. Our team is reviewing it.'}
           </div>
-
-          <div className={`policy-card ${refundStatus === "half" ? "active" : ""}`}>
-            <h3>Half refund</h3>
-            <span>cancel 24+ hours before event</span><br></br>
-            <span className="link">Click to check the cancel policy</span>
-          </div>
-
-          <div className={`policy-card ${refundStatus === "none" ? "active" : ""}`}>
-            <h3>Not refundable</h3>
-            <span>within 24 hours of the event</span><br></br>
-            <span className="link">Click to check the cancel policy</span>
-          </div>
-        </div>
-
-        <p className="refund-amount">
-          You will get <b>£{refundAmount}</b> refund if you cancel right now.
-        </p>
-
-        <div className="refund-bottom">
-          <label>
+        ) : (
+          <>
+            <p>Please tell us the refunding reason*</p>
             <input
-              type="checkbox"
-              checked={agreed}
-              onChange={() => setAgreed(!agreed)}
+              className="reason-input"
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
             />
-              I agree to the cancel policy and confirm the refund amount
-          </label>
 
-          <button
-            className="cancel-btn"
-            disabled={!agreed || submitting}
-            onClick={handleSubmitRefund}
-          >
-            {submitting ? "Submitting..." : "Cancel booking"}
-          </button>
-        </div>
+            <p className="policy-title">Based on our refund policy</p>
+
+            <div className="policy-row">
+              <div className={`policy-card ${refundStatus === "full" ? "active" : ""}`}>
+                <h3>Fully refund</h3>
+                <span>cancel 5+ days before event</span><br />
+                <span className="link">Click to check the cancel policy</span>
+              </div>
+
+              <div className={`policy-card ${refundStatus === "half" ? "active" : ""}`}>
+                <h3>Half refund</h3>
+                <span>cancel 24+ hours before event</span><br />
+                <span className="link">Click to check the cancel policy</span>
+              </div>
+
+              <div className={`policy-card ${refundStatus === "none" ? "active" : ""}`}>
+                <h3>Not refundable</h3>
+                <span>within 24 hours of the event</span><br />
+                <span className="link">Click to check the cancel policy</span>
+              </div>
+            </div>
+
+            <p className="refund-amount">
+              You will get <b>£{refundAmount}</b> refund if you cancel right now.
+            </p>
+
+            <div className="refund-bottom">
+              <label>
+                <input
+                  type="checkbox"
+                  checked={agreed}
+                  onChange={() => setAgreed(!agreed)}
+                />
+                I agree to the cancel policy and confirm the refund amount
+              </label>
+
+              <button
+                className="cancel-btn"
+                disabled={!agreed || submitting}
+                onClick={handleSubmitRefund}
+              >
+                {submitting ? "Submitting..." : "Cancel booking"}
+              </button>
+            </div>
+          </>
+        )}
         </div>
       </div>
     </div>

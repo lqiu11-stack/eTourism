@@ -98,8 +98,10 @@ const Booking = {
          u.last_name   AS visitor_last_name,
          u.email       AS visitor_email,
          p.method      AS payment_method,
+         r.id          AS refund_id,
          r.status      AS refund_status,
-         r.refund_amount
+         r.refund_amount,
+         r.reason      AS refund_reason
        FROM bookings b
        LEFT JOIN experiences e ON e.id = b.experience_id
        LEFT JOIN users u ON u.id = b.visitor_id
