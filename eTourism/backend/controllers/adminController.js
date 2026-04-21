@@ -2,6 +2,13 @@ const User = require('../models/User');
 const UserAgreement = require('../models/UserAgreement');
 const pool = require('../config/db');
 const bcrypt = require('bcrypt');
+const Experience = require('../models/Experience');
+const Booking = require('../models/Booking');
+const ExperienceScore = require('../models/ExperienceScore');
+const Refund = require('../models/Refund');
+const Payment = require('../models/Payment');
+const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+const checkoutNodeJssdk = require('@paypal/checkout-server-sdk');
 
 const AGREEMENT_TITLE = 'eTourism User Agreement & Terms of Service';
 
@@ -64,16 +71,131 @@ const getExperiences = async (req, res) => {
   // TODO
 };
 
+// GET /api/admin/experiences?status=pending
+
+const getExperiences = async (req, res) => {
+  try {
+    const status = req.query.status || 'pending';
+    const experiences = await Experience.findAll({ status });
+    res.json(experiences);
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: String(err) });
+  }
+};
+
+// PATCH /api/admin/experiences/:id/approve
+const approveExperience = async (req, res) => {
+  try {
+    const experience = await Experience.update(req.params.id, { status: 'approved' });
+    if (!experience) {
+      return res.status(404).json({ message: 'Experience not found' });
+    }
+    res.json({ message: 'Experience approved.', experience });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: String(err) });
+  }
+};
+
+// PATCH /api/admin/experiences/:id/reject
+const rejectExperience = async (req, res) => {
+  try {
+    const experience = await Experience.update(req.params.id, { status: 'rejected' });
+    if (!experience) {
+      return res.status(404).json({ message: 'Experience not found' });
+    }
+    res.json({ message: 'Experience rejected.', experience });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: String(err) });
+  }
+};
+
+
+// DELETE /api/admin/experiences/:id
 const deleteExperience = async (req, res) => {
-  // TODO
+  try {
+    const deleted = await Experience.delete(req.params.id);
+    if (!deleted) return res.status(404).json({ message: 'Experience not found' });
+    res.json({ message: 'Experience deleted successfully' });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: String(err) });
+  }
 };
 
 const getBookings = async (req, res) => {
-  // TODO
+  try {
+    const { status } = req.query;
+    const bookings = await Booking.findAll({ status });
+    res.json(bookings);
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: String(err) });
+  }
 };
 
 const getReviews = async (req, res) => {
   // TODO
+};
+
+// GET /api/admin/analytics
+const getAnalytics = async (req, res) => {
+  try {
+    const [topExperiences, topHosts, visitorCountries, categoryBreakdown] = await Promise.all([
+      Analytics.getTopExperiences(),
+      Analytics.getTopHosts(),
+      Analytics.getVisitorCountries(),
+      Analytics.getCategoryBreakdown(),
+    ]);
+
+    res.json({ topExperiences, topHosts, visitorCountries, categoryBreakdown });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: String(err) });
+  }
+};
+
+// POST /api/admin/experiences/:id/score
+// Body: { result: 'pass'|'fail', comment: string }
+const scoreExperience = async (req, res) => {
+  try {
+    const { result, comment } = req.body;
+    if (!['pass', 'fail'].includes(result)) {
+      return res.status(400).json({ message: 'result must be "pass" or "fail"' });
+    }
+    if (result === 'fail' && !comment?.trim()) {
+      return res.status(400).json({ message: 'A comment is required when marking as fail' });
+    }
+
+    const score = await ExperienceScore.create({
+      experience_id: req.params.id,
+      admin_id: req.user.id,
+      wifi_score: null,
+      safety_score: null,
+      legal_score: null,
+      content_score: null,
+      accessibility_score: null,
+      description_score: null,
+      pricing_score: null,
+      total_score: null,
+      result,
+      comment: comment?.trim() || null,
+    });
+
+    if (result === 'fail') {
+      await Experience.update(req.params.id, { status: 'rejected' });
+    }
+
+    res.json({ message: `Experience marked as ${result}.`, score });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: String(err) });
+  }
+};
+
+// GET /api/admin/experiences/:id/scores
+const getExperienceScores = async (req, res) => {
+  try {
+    const scores = await ExperienceScore.findByExperience(req.params.id);
+    res.json(scores);
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: String(err) });
+  }
 };
 
 // GET /api/admin/applications?status=pending
@@ -261,10 +383,120 @@ const deleteUser = async (req, res) => {
   }
 };
 
+
+// GET /api/admin/refunds?status=pending
+const getRefunds = async (req, res) => {
+  try {
+    const { status } = req.query;
+    let query = `
+      SELECT
+        r.id            AS refund_id,
+        r.status        AS refund_status,
+        r.refund_amount,
+        r.refund_percentage,
+        r.days_before_event,
+        r.reason,
+        r.processed_at,
+        b.id            AS booking_id,
+        b.amount_paid,
+        b.status        AS booking_status,
+        e.title         AS experience_title,
+        e.date_time     AS experience_date_time,
+        u.first_name    AS visitor_first_name,
+        u.last_name     AS visitor_last_name,
+        u.email         AS visitor_email,
+        p.method        AS payment_method,
+        p.transaction_id
+      FROM refunds r
+      JOIN bookings b   ON b.id = r.booking_id
+      LEFT JOIN experiences e ON e.id = b.experience_id
+      LEFT JOIN users u ON u.id = b.visitor_id
+      LEFT JOIN payments p ON p.booking_id = b.id
+    `;
+    const values = [];
+    if (status) {
+      values.push(status);
+      query += ` WHERE r.status = $1`;
+    }
+    query += ' ORDER BY r.id DESC';
+    const { rows } = await pool.query(query, values);
+    res.json(rows);
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: String(err) });
+  }
+};
+
+// PATCH /api/admin/refunds/:id/approve
+const approveRefund = async (req, res) => {
+  try {
+    const refund = await Refund.findById(req.params.id);
+    if (!refund) return res.status(404).json({ message: 'Refund not found' });
+    if (refund.status !== 'pending') {
+      return res.status(400).json({ message: `Refund is already ${refund.status}` });
+    }
+
+    const payments = await Payment.findByBooking(refund.booking_id);
+    const payment = payments && payments[0];
+    if (!payment) return res.status(404).json({ message: 'Payment record not found' });
+
+    // Process the refund through the payment gateway
+    let gatewayRefundId = null;
+    if (payment.method === 'stripe') {
+      if (!payment.transaction_id) {
+        return res.status(400).json({ message: 'Stripe transaction_id is missing' });
+      }
+      const stripeRefund = await stripe.refunds.create({
+        payment_intent: payment.transaction_id,
+        amount: Math.round(Number(refund.refund_amount) * 100),
+      });
+      gatewayRefundId = stripeRefund.id;
+    } else if (payment.method === 'paypal') {
+      if (!payment.transaction_id) {
+        return res.status(400).json({ message: 'PayPal transaction_id is missing' });
+      }
+      const client = getPayPalClient();
+      const request = new checkoutNodeJssdk.payments.CapturesRefundRequest(payment.transaction_id);
+      request.requestBody({
+        amount: { currency_code: 'GBP', value: Number(refund.refund_amount).toFixed(2) },
+      });
+      const response = await client.execute(request);
+      gatewayRefundId = response.result.id;
+    } else {
+      return res.status(400).json({ message: `Unsupported payment method: ${payment.method}` });
+    }
+
+    await Refund.updateStatus(refund.id, 'approved');
+    await Booking.updateStatus(refund.booking_id, 'refunded');
+
+    res.json({ message: 'Refund approved and processed.', gateway_refund_id: gatewayRefundId });
+  } catch (err) {
+    console.error('Approve Refund Error:', err);
+    res.status(500).json({ message: 'Server error', error: String(err) });
+  }
+};
+
+// PATCH /api/admin/refunds/:id/reject
+const rejectRefund = async (req, res) => {
+  try {
+    const refund = await Refund.findById(req.params.id);
+    if (!refund) return res.status(404).json({ message: 'Refund not found' });
+    if (refund.status !== 'pending') {
+      return res.status(400).json({ message: `Refund is already ${refund.status}` });
+    }
+    await Refund.updateStatus(refund.id, 'rejected');
+    await Booking.updateStatus(refund.booking_id, 'confirmed');
+    res.json({ message: 'Refund rejected. Booking restored to confirmed.' });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: String(err) });
+  }
+};
+
 module.exports = {
   getAgreement,
   acceptAgreement,
   getExperiences,
+  approveExperience,
+  rejectExperience,
   deleteExperience,
   getBookings,
   getReviews,
@@ -277,4 +509,10 @@ module.exports = {
   updateUserStatus,
   updateUserRole,
   deleteUser,
+  getAnalytics,
+  scoreExperience,
+  getExperienceScores,
+  getRefunds,
+  approveRefund,
+  rejectRefund,
 };

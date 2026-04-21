@@ -7,20 +7,22 @@ const {
   createBooking,
   getBookings,
   getBookingById,
+  getRefundStatus,
   createReview,
   rescheduleBooking,
   createPaymentSession,
   createPayPalOrder,
   capturePayPalOrder,
   refundBooking,
-  captureStripePayment 
+  captureStripePayment,
+  getReviews
 } = require('../controllers/visitorController');
 
 router.get('/me', requireRole('visitor'), getMe);
 
-router.get('/experiences', requireRole('visitor'), getExperiences);
+router.get('/experiences', getExperiences);
 
-router.get('/experiences/:id', requireRole('visitor'), getExperienceById);
+router.get('/experiences/:id', getExperienceById);
 
 router.post('/bookings', requireRole('visitor'), createBooking);
 
@@ -28,10 +30,13 @@ router.get('/bookings', requireRole('visitor'), getBookings);
 
 router.get('/bookings/:id', requireRole('visitor'), getBookingById);
 
+router.get('/bookings/:id/refund-status', requireRole('visitor'), getRefundStatus);
+
 router.patch('/bookings/:id/reschedule', requireRole('visitor'), rescheduleBooking);
 
 router.post('/bookings/:id/refund', requireRole('visitor'), refundBooking);
 
+router.get('/reviews', getReviews);
 router.post('/reviews', requireRole('visitor'), createReview);
 
 router.post('/payments/create-session', requireRole('visitor'), createPaymentSession);

@@ -90,6 +90,18 @@
   font-size: 19px;
 }
 
+.detail-book-btn--disabled{
+  opacity:0.45;
+  cursor:not-allowed;
+}
+
+.detail-book-error{
+  margin-top:8px;
+  font-size:13px;
+  color:#ffcccc;
+  font-weight:500;
+}
+
 /* VIDEO */
 
 .detail-video-section{
@@ -106,6 +118,12 @@
   width:600px;
   border-radius:10px;
   margin-top: 10px;
+}
+.detail-video-player{
+  width:600px;
+  border-radius:10px;
+  margin-top: 10px;
+  background:#000;
 }
 .detail-video-left{
     padding: 0px 100px 0px 100px;

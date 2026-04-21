@@ -4,6 +4,128 @@ const Booking = require('../models/Booking');
 const Experience = require('../models/Experience');
 const Payment = require('../models/Payment');
 const Refund = require('../models/Refund');
+const Review = require('../models/Review');
+
+const normalizeGenderPreference = (value) => {
+  if (value === undefined || value === null || value === '') {
+    return 'any';
+  }
+  const normalized = String(value).trim().toLowerCase().replace(/[\s-]+/g, '_');
+  const aliases = {
+    any: 'any',
+    all: 'any',
+    everyone: 'any',
+    female: 'female_only',
+    women: 'female_only',
+    women_only: 'female_only',
+    female_only: 'female_only',
+    male: 'male_only',
+    men: 'male_only',
+    men_only: 'male_only',
+    male_only: 'male_only',
+    no_all_male: 'no_all_male_groups',
+    no_all_male_group: 'no_all_male_groups',
+    no_all_male_groups: 'no_all_male_groups',
+    no_all_female: 'no_all_female_groups',
+    no_all_female_group: 'no_all_female_groups',
+    no_all_female_groups: 'no_all_female_groups',
+  };
+  return aliases[normalized] || null;
+};
+
+const normalizeGroupGenderType = (value) => {
+  if (!value) {
+    return null;
+  }
+  const normalized = String(value).trim().toLowerCase().replace(/[\s-]+/g, '_');
+  const aliases = {
+    all_male: 'all_male',
+    male_only: 'all_male',
+    men_only: 'all_male',
+    all_female: 'all_female',
+    female_only: 'all_female',
+    women_only: 'all_female',
+    mixed: 'mixed',
+    mixed_group: 'mixed',
+  };
+  return aliases[normalized] || null;
+};
+
+const resolveGroupGenderType = (payload = {}) => {
+  const fromType = normalizeGroupGenderType(payload.group_gender_type);
+  if (fromType) {
+    return fromType;
+  }
+  const profile = payload.group_gender_profile;
+  if (!profile || typeof profile !== 'object') {
+    return null;
+  }
+  const male = Number(profile.male_count || 0);
+  const female = Number(profile.female_count || 0);
+  const other = Number(profile.other_count || 0);
+  if (![male, female, other].every((count) => Number.isInteger(count) && count >= 0)) {
+    return 'invalid';
+  }
+  const total = male + female + other;
+  if (total <= 0) {
+    return 'invalid';
+  }
+  if (male > 0 && female === 0 && other === 0) {
+    return 'all_male';
+  }
+  if (female > 0 && male === 0 && other === 0) {
+    return 'all_female';
+  }
+  return 'mixed';
+};
+
+const validateBookingPreference = (experience, payload = {}) => {
+  const normalizedPreference = normalizeGenderPreference(experience.gender_preference);
+  if (!normalizedPreference || normalizedPreference === 'any') {
+    return null;
+  }
+  const groupGenderType = resolveGroupGenderType(payload);
+  if (!groupGenderType) {
+    return 'This experience requires group gender information. Please provide group_gender_type or group_gender_profile.';
+  }
+  if (groupGenderType === 'invalid') {
+    return 'Invalid group gender profile. Please provide non-negative integer counts.';
+  }
+  if (normalizedPreference === 'female_only' && groupGenderType !== 'all_female') {
+    return 'This experience accepts female-only groups.';
+  }
+  if (normalizedPreference === 'male_only' && groupGenderType !== 'all_male') {
+    return 'This experience accepts male-only groups.';
+  }
+  if (normalizedPreference === 'no_all_male_groups' && groupGenderType === 'all_male') {
+    return 'All-male groups are not accepted for this experience.';
+  }
+  if (normalizedPreference === 'no_all_female_groups' && groupGenderType === 'all_female') {
+    return 'All-female groups are not accepted for this experience.';
+  }
+  return null;
+};
+
+const toMeetingConfig = (meetingLink) => {
+  if (!meetingLink) {
+    return null;
+  }
+  try {
+    const parsed = JSON.parse(meetingLink);
+    if (parsed && typeof parsed === 'object' && parsed.link) {
+      return {
+        platform: parsed.platform || 'Custom',
+        link: parsed.link,
+        password: parsed.password || null,
+      };
+    }
+  } catch (error) {}
+  return {
+    platform: 'Custom',
+    link: meetingLink,
+    password: null,
+  };
+};
 
 const getPayPalClient = () => {
 
@@ -18,7 +140,7 @@ const getMe = async (req, res) => {
 
 const getExperiences = async (req, res) => {
   try {
-    const experiences = await Experience.findAll({});
+    const experiences = await Experience.findAll({ status: 'approved' });
     return res.status(200).json(experiences);
   } catch (err) {
     return res.status(500).json({ message: 'Server error', error: String(err) });
@@ -27,14 +149,22 @@ const getExperiences = async (req, res) => {
 
 const getExperienceById = async (req, res) => {
   try {
-    const experienceId = req.params.id;
-    const experience = await Experience.findById(experienceId);
-
-    if (!experience) {
-      return res.status(404).json({ message: 'Experience not found' });
-    }
-
+    const experience = await Experience.findByIdWithHost(req.params.id);
+    if (!experience) return res.status(404).json({ message: 'Experience not found' });
     return res.status(200).json(experience);
+  } catch (err) {
+    return res.status(500).json({ message: 'Server error', error: String(err) });
+  }
+};
+
+const getReviews = async (req, res) => {
+  try {
+    const { experience_id } = req.query;
+    if (!experience_id) {
+      return res.status(400).json({ message: 'experience_id query param is required' });
+    }
+    const reviews = await Review.findByExperience(experience_id);
+    return res.status(200).json(reviews);
   } catch (err) {
     return res.status(500).json({ message: 'Server error', error: String(err) });
   }
@@ -49,8 +179,7 @@ const createBooking = async (req, res) => {
       qty_discounted = 0, 
       contact_name, 
       contact_email,
-      agreed_to_terms,
-      meeting_link = '' 
+      agreed_to_terms
     } = req.body;
     
     const visitor_id = req.userId;
@@ -66,10 +195,34 @@ const createBooking = async (req, res) => {
     if (!experience) {
       return res.status(404).json({ message: 'Experience not found' });
     }
+    if (experience.status && experience.status !== 'approved') {
+      return res.status(400).json({ message: 'This time slot is not available for booking.' });
+    }
+    if (!experience.date_time) {
+      return res.status(400).json({ message: 'This experience has no available time slot.' });
+    }
 
-    const totalTickets = qty_normal + qty_discounted;
+    const qtyNormal = Number(qty_normal);
+    const qtyDiscounted = Number(qty_discounted);
+    if (!Number.isInteger(qtyNormal) || !Number.isInteger(qtyDiscounted) || qtyNormal < 0 || qtyDiscounted < 0) {
+      return res.status(400).json({ message: 'qty_normal and qty_discounted must be non-negative integers.' });
+    }
+
+    const totalTickets = qtyNormal + qtyDiscounted;
+    if (totalTickets <= 0) {
+      return res.status(400).json({ message: 'At least one ticket is required.' });
+    }
     if (totalTickets > experience.max_visitors) {
       return res.status(400).json({ message: `Sold out! Only ${experience.max_visitors} spots available.` });
+    }
+
+    if (experience.date_time && new Date(experience.date_time).getTime() <= Date.now()) {
+      return res.status(400).json({ message: 'Booking is closed because the experience has already started.' });
+    }
+
+    const preferenceError = validateBookingPreference(experience, req.body);
+    if (preferenceError) {
+      return res.status(400).json({ message: preferenceError });
     }
 
     const normalPrice = parseFloat(experience.price || 0);
@@ -78,16 +231,16 @@ const createBooking = async (req, res) => {
       ? parseFloat(experience.price_discounted) 
       : Math.max(0, normalPrice - 10);
 
-    let totalAmount = Number(((normalPrice * qty_normal) + (discountedPrice * qty_discounted)).toFixed(2));
+    let totalAmount = Number(((normalPrice * qtyNormal) + (discountedPrice * qtyDiscounted)).toFixed(2));
 
     const newBooking = await Booking.create({
       visitor_id,
       experience_id,
       amount_paid: totalAmount,      
       booking_type: 'online', 
-      meeting_link,
-      qty_normal,            
-      qty_discounted,        
+      meeting_link: '',
+      qty_normal: qtyNormal,
+      qty_discounted: qtyDiscounted,
       contact_name,          
       contact_email          
     });
@@ -107,7 +260,17 @@ const getBookings = async (req, res) => {
   try {
     const visitor_id = req.userId;
     const bookings = await Booking.findByVisitor(visitor_id);
-    return res.status(200).json(bookings);
+    const mappedBookings = bookings.map((booking) => {
+      const meetingConfig = booking.status === 'confirmed'
+        ? toMeetingConfig(booking.meeting_link)
+        : null;
+      return {
+        ...booking,
+        meeting_link: meetingConfig ? meetingConfig.link : null,
+        meeting_config: meetingConfig,
+      };
+    });
+    return res.status(200).json(mappedBookings);
   } catch (err) {
     return res.status(500).json({ message: 'Server error', error: String(err) });
   }
@@ -116,17 +279,88 @@ const getBookings = async (req, res) => {
 const getBookingById = async (req, res) => {
   try {
     const bookingId = req.params.id;
+    const visitor_id = req.userId;
+
     const booking = await Booking.findById(bookingId);
 
     if (!booking) {
       return res.status(404).json({ message: 'Booking not found' });
     }
 
-    if (booking.visitor_id !== req.userId) {
+    if (booking.visitor_id !== visitor_id) {
       return res.status(403).json({ message: 'Forbidden' });
     }
 
-    return res.status(200).json(booking);
+    const refund = await Refund.findByBookingId(bookingId);
+    const payments = await Payment.findByBooking(bookingId);
+    const payment = payments && payments.length > 0 ? payments[0] : null;
+
+    const meetingConfig = booking.status === 'confirmed'
+      ? toMeetingConfig(booking.meeting_link)
+      : null;
+
+    return res.status(200).json({
+      ...booking,
+      meeting_link: meetingConfig ? meetingConfig.link : null,
+      meeting_config: meetingConfig,
+      refund: refund
+        ? {
+            id: refund.id,
+            status: refund.status,
+            refund_amount: refund.refund_amount,
+            refund_percentage: refund.refund_percentage,
+            days_before_event: refund.days_before_event,
+            reason: refund.reason,
+            processed_at: refund.processed_at,
+            payment_method: payment ? payment.method : null
+          }
+        : null
+    });
+  } catch (err) {
+    return res.status(500).json({ message: 'Server error', error: String(err) });
+  }
+};
+
+const getRefundStatus = async (req, res) => {
+  try {
+    const bookingId = req.params.id;
+    const visitor_id = req.userId;
+
+    const booking = await Booking.findById(bookingId);
+
+    if (!booking) {
+      return res.status(404).json({ message: 'Booking not found' });
+    }
+
+    if (booking.visitor_id !== visitor_id) {
+      return res.status(403).json({ message: 'Forbidden' });
+    }
+
+    const refund = await Refund.findByBookingId(bookingId);
+    const payments = await Payment.findByBooking(bookingId);
+    const payment = payments && payments.length > 0 ? payments[0] : null;
+
+    if (!refund) {
+      return res.status(200).json({
+        booking_id: booking.id,
+        booking_status: booking.status,
+        has_refund: false,
+        message: 'No refund record found for this booking'
+      });
+    }
+
+    return res.status(200).json({
+      booking_id: booking.id,
+      booking_status: booking.status,
+      has_refund: true,
+      refund_status: refund.status,
+      refund_amount: refund.refund_amount,
+      refund_percentage: refund.refund_percentage,
+      days_before_event: refund.days_before_event,
+      reason: refund.reason,
+      processed_at: refund.processed_at,
+      payment_method: payment ? payment.method : null
+    });
   } catch (err) {
     return res.status(500).json({ message: 'Server error', error: String(err) });
   }
@@ -137,6 +371,13 @@ const refundBooking = async (req, res) => {
     const bookingId = req.params.id;
     const visitor_id = req.userId;
     const { reason = '' } = req.body;
+
+    if (!visitor_id) {
+      return res.status(401).json({ message: 'Unauthorised' });
+    }
+    if (!reason || !reason.trim()) {
+      return res.status(400).json({ message: 'Reason is required' });
+    }
 
     const booking = await Booking.findById(bookingId);
 
@@ -196,80 +437,32 @@ const refundBooking = async (req, res) => {
         refund_percentage: 0,
         days_before_event,
         status: 'rejected',
-        reason: reason || 'Cancelled fewer than 7 days before the event',
-        processed_at: new Date()
+        reason: 'No refund available — cancellation is fewer than 7 days before the event',
+        processed_at: new Date(),
       });
-
       return res.status(200).json({
         message: 'No refund available because the cancellation is fewer than 7 days before the event',
-        refund: refundRecord
+        refund: refundRecord,
       });
     }
 
-let gatewayRefundId = null;
-
-if (payment.method === 'stripe') {
-
-  if (!payment.transaction_id) {
-    return res.status(400).json({ message: 'Stripe transaction_id is missing' });
-  }
-
-  const stripeRefund = await stripe.refunds.create({
-    payment_intent: payment.transaction_id,
-    amount: Math.round(refund_amount * 100)
-  });
-
-  gatewayRefundId = stripeRefund.id;
-
-} else if (payment.method === 'paypal') {
-
-  if (!payment.transaction_id) {
-    return res.status(400).json({ message: 'PayPal transaction_id is missing' });
-  }
-
-  const client = getPayPalClient();
-
-  const request = new checkoutNodeJssdk.payments.CapturesRefundRequest(
-    payment.transaction_id
-  );
-
-  request.requestBody({
-    amount: {
-      currency_code: 'GBP',
-      value: refund_amount.toFixed(2)
-    }
-  });
-
-  const response = await client.execute(request);
-
-  gatewayRefundId = response.result.id;
-
-} else {
-
-  return res.status(400).json({
-    message: `Unsupported payment method: ${payment.method}`
-  });
-
-}
-
+    // Create a pending refund for admin to review — gateway is NOT charged yet
     const refundRecord = await Refund.create({
       booking_id: bookingId,
       payment_id: payment.id,
       refund_amount,
       refund_percentage,
       days_before_event,
-      status: 'approved',
-      reason: reason || 'Visitor requested refund',
-      processed_at: new Date()
+      status: 'pending',
+      reason: reason.trim(),
+      processed_at: null,
     });
 
-    await Booking.updateStatus(bookingId, 'refunded');
+    await Booking.updateStatus(bookingId, 'refund_pending');
 
     return res.status(200).json({
-      message: 'Refund processed successfully',
+      message: 'Refund request submitted. An admin will review it shortly.',
       refund: refundRecord,
-      payment_method: payment.method,
-      gateway_refund_id: gatewayRefundId
     });
   } catch (err) {
     console.error('Refund Error:', err);
@@ -434,9 +627,11 @@ const captureStripePayment = async (req, res) => {
       const amount = Number((session.amount_total / 100).toFixed(2));
       const transaction_id = session.payment_intent; 
 
-      const existingPayments = await Payment.findByBooking(booking_id); //
+      const existingPayments = await Payment.findByBooking(booking_id);
       if (existingPayments.length > 0) {
-        return res.status(200).json({ message: 'Payment already captured', status: 'success' });
+        const booking = await Booking.findById(booking_id);
+        const experience = await Experience.findById(booking.experience_id);
+        return res.status(200).json({ status: 'success', booking, experience });
       }
 
       await Payment.create({
@@ -449,7 +644,10 @@ const captureStripePayment = async (req, res) => {
 
       await Booking.updateStatus(booking_id, 'confirmed');
 
-      return res.status(200).json({ message: 'Stripe payment successful and recorded', status: 'success' });
+      const booking = await Booking.findById(booking_id);
+      const experience = await Experience.findById(booking.experience_id);
+
+      return res.status(200).json({ status: 'success', booking, experience });
     } else {
       return res.status(400).json({ message: 'Payment not completed yet' });
     }
@@ -498,11 +696,13 @@ module.exports = {
   createBooking,
   getBookings,
   getBookingById,
+  getRefundStatus,
   createReview,
   rescheduleBooking,
   createPaymentSession,
   createPayPalOrder,
   capturePayPalOrder,
   refundBooking,
-  captureStripePayment
+  captureStripePayment,
+  getReviews
 };

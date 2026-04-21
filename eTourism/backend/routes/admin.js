@@ -4,6 +4,8 @@ const {
   getAgreement,
   acceptAgreement,
   getExperiences,
+  approveExperience,
+  rejectExperience,
   deleteExperience,
   getBookings,
   getReviews,
@@ -16,6 +18,12 @@ const {
   updateUserStatus,
   updateUserRole,
   deleteUser,
+  getAnalytics,
+  scoreExperience,
+  getExperienceScores,
+  getRefunds,
+  approveRefund,
+  rejectRefund,
 } = require('../controllers/adminController');
 
 router.get('/agreements', getAgreement);
@@ -32,6 +40,12 @@ router.patch('/applications/:id/reject', requireRole('admin'), rejectApplication
 
 // GET /api/admin/experiences
 router.get('/experiences', requireRole('admin'), getExperiences);
+
+// PATCH /api/admin/experiences/:id/approve
+router.patch('/experiences/:id/approve', requireRole('admin'), approveExperience);
+
+// PATCH /api/admin/experiences/:id/reject
+router.patch('/experiences/:id/reject', requireRole('admin'), rejectExperience);
 
 // DELETE /api/admin/experiences/:id
 router.delete('/experiences/:id', requireRole('admin'), deleteExperience);
@@ -59,5 +73,23 @@ router.patch('/users/:id/role', requireRole('admin'), updateUserRole);
 
 // DELETE /api/admin/users/:id
 router.delete('/users/:id', requireRole('admin'), deleteUser);
+
+// GET /api/admin/analytics
+router.get('/analytics', requireRole('admin'), getAnalytics);
+
+// GET /api/admin/refunds?status=pending
+router.get('/refunds', requireRole('admin'), getRefunds);
+
+// PATCH /api/admin/refunds/:id/approve
+router.patch('/refunds/:id/approve', requireRole('admin'), approveRefund);
+
+// PATCH /api/admin/refunds/:id/reject
+router.patch('/refunds/:id/reject', requireRole('admin'), rejectRefund);
+
+// POST /api/admin/experiences/:id/score
+router.post('/experiences/:id/score', requireRole('admin'), scoreExperience);
+
+// GET /api/admin/experiences/:id/scores
+router.get('/experiences/:id/scores', requireRole('admin'), getExperienceScores);
 
 module.exports = router;
