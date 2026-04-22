@@ -18,9 +18,15 @@ const API_BASE = import.meta.env.VITE_API_URL;
 const getImage = (exp) => getCountryImage(exp.country);
 
 const formatDate = (dt) => {
-  if (!dt) return 'Date TBC';
+  if (!dt) return 'Choose a date...';
   const d = new Date(dt);
-  return `${d.getDate()} / ${d.getMonth() + 1} / ${d.getFullYear()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+
+  const months = [
+    "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+    "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
+  ];
+
+  return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
 };
 
 export const MainPage = () => {
@@ -108,13 +114,13 @@ export const MainPage = () => {
 
           <nav className="navbar">
             <div className="nav-links">
-              <a className="nav-link" style={{cursor:'pointer'}} onClick={() => navigate("/Eregistrate1")}>
-                Join us to become E-host
+              <a className="Text">
+                E-tourism
               </a>
             </div>
 
             <div className="nav-links">
-              <Link to="/help" className="nav-link">Helping centre</Link>
+              <Link to="/Eregistrate1" className="nav-link">Become E-host</Link>
               <Link to="/MyBooking" className="nav-link" onClick={() => window.scrollTo(0, 0)}>
                 My booking
               </Link>
@@ -148,7 +154,7 @@ export const MainPage = () => {
                 <div className="search-box">
                   <input
                     type="text"
-                    placeholder="Today I wanna go..."
+                    placeholder="Search for the location"
                     className="textbox-word"
                     value={searchLocation}
                     onChange={(e) => setSearchLocation(e.target.value)}
@@ -164,10 +170,21 @@ export const MainPage = () => {
                 </div>
                 <div className="search-box">
                   <input
+                    type="text"
+                    className="textbox-word"
+                    value={formatDate(searchDate)}
+                    placeholder="Select date"
+                    readOnly
+                    onClick={() => document.getElementById("real-date-input").showPicker()}
+                  />
+
+                  <input
+                    id="real-date-input"
+                    className="textbox-word"
                     type="date"
-                    className="date-input"
                     value={searchDate}
                     onChange={(e) => setSearchDate(e.target.value)}
+                    style={{ position: "absolute", opacity: 0, pointerEvents: "none" }}
                   />
                 </div>
               </div>
