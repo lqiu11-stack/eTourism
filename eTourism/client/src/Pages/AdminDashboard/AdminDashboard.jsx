@@ -40,11 +40,14 @@ export const Dashboard = () => {
   const [selectedBooking, setSelectedBooking] = useState(null);
   const [action, setAction] = useState("");
   const [rejectReason, setRejectReason] = useState("");
+  const [bookingSearch, setBookingSearch] = useState("");
 
-  const fetchBookings = useCallback(async () => {
+  const fetchBookings = useCallback(async (search = "") => {
     setBookingLoading(true);
     try {
-      const { data } = await axios.get(`${API_BASE}/admin/bookings`, {
+      const params = new URLSearchParams();
+      if (search.trim()) params.set('booking_id', search.trim());
+      const { data } = await axios.get(`${API_BASE}/admin/bookings?${params}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setBookings(Array.isArray(data) ? data : []);
@@ -153,12 +156,15 @@ export const Dashboard = () => {
   const [experiences, setExperiences] = useState([]);
   const [expLoading, setExpLoading] = useState(false);
   const [expStatusFilter, setExpStatusFilter] = useState("pending");
+  const [expSearch, setExpSearch] = useState("");
 
-  const fetchExperiences = useCallback(async (status) => {
+  const fetchExperiences = useCallback(async (status, search = "") => {
     setExpLoading(true);
     try {
+      const params = new URLSearchParams({ status });
+      if (search.trim()) params.set('search', search.trim());
       const { data } = await axios.get(
-        `${API_BASE}/admin/experiences?status=${status}`,
+        `${API_BASE}/admin/experiences?${params}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       setExperiences(Array.isArray(data) ? data : []);
@@ -210,14 +216,17 @@ export const Dashboard = () => {
   const [applications, setApplications] = useState([]);
   const [appLoading, setAppLoading] = useState(false);
   const [appStatusFilter, setAppStatusFilter] = useState("pending");
+  const [appSearch, setAppSearch] = useState("");
   const [selectedApp, setSelectedApp] = useState(null);
   const [showAppModal, setShowAppModal] = useState(false);
 
-  const fetchApplications = useCallback(async (status) => {
+  const fetchApplications = useCallback(async (status, search = "") => {
     setAppLoading(true);
     try {
+      const params = new URLSearchParams({ status });
+      if (search.trim()) params.set('search', search.trim());
       const { data } = await axios.get(
-        `${API_BASE}/admin/applications?status=${status}`,
+        `${API_BASE}/admin/applications?${params}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       setApplications(Array.isArray(data) ? data : []);
@@ -416,6 +425,9 @@ export const Dashboard = () => {
             setRejectReason={setRejectReason}
             handleRefund={handleRefund}
             handleRefundAction={handleRefundAction}
+            bookingSearch={bookingSearch}
+            setBookingSearch={setBookingSearch}
+            onSearch={() => fetchBookings(bookingSearch)}
           />
         )}
         {activeTab === "user" && (
@@ -439,10 +451,13 @@ export const Dashboard = () => {
             experiences={experiences}
             loading={expLoading}
             statusFilter={expStatusFilter}
-            setStatusFilter={(s) => { setExpStatusFilter(s); fetchExperiences(s); }}
+            setStatusFilter={(s) => { setExpStatusFilter(s); setExpSearch(""); fetchExperiences(s, ""); }}
             onApprove={handleApproveExperience}
             onReject={handleRejectExperience}
             onDelete={handleDeleteExperience}
+            expSearch={expSearch}
+            setExpSearch={setExpSearch}
+            onSearch={() => fetchExperiences(expStatusFilter, expSearch)}
           />
         )}
         {activeTab === "EhostJoin" && (
@@ -450,13 +465,16 @@ export const Dashboard = () => {
             applications={applications}
             loading={appLoading}
             statusFilter={appStatusFilter}
-            setStatusFilter={(s) => { setAppStatusFilter(s); fetchApplications(s); }}
+            setStatusFilter={(s) => { setAppStatusFilter(s); setAppSearch(""); fetchApplications(s, ""); }}
             selectedApp={selectedApp}
             setSelectedApp={setSelectedApp}
             showAppModal={showAppModal}
             setShowAppModal={setShowAppModal}
             onApprove={handleApproveApplication}
             onReject={handleRejectApplication}
+            appSearch={appSearch}
+            setAppSearch={setAppSearch}
+            onSearch={() => fetchApplications(appStatusFilter, appSearch)}
           />
         )}
         {activeTab === "reports" && (
@@ -495,12 +513,19 @@ const Booking = ({
   bookings, loading,
   showRefundPanel, selectedBooking, action, rejectReason,
   setShowRefundPanel, setAction, setRejectReason, handleRefund, handleRefundAction,
+  bookingSearch, setBookingSearch, onSearch,
 }) => (
   <div>
     <div className="booking-top">
       <div className="search-wrapper">
-        <input className="admin-search-bar" placeholder="Search by booking code" />
-        <button className="admin-search-btn"><img src={search} className="admin-search-icon" /></button>
+        <input
+          className="admin-search-bar"
+          placeholder="Search by booking code"
+          value={bookingSearch}
+          onChange={(e) => setBookingSearch(e.target.value)}
+          onKeyDown={(e) => e.key === 'Enter' && onSearch()}
+        />
+        <button className="admin-search-btn" onClick={onSearch}><img src={search} className="admin-search-icon" /></button>
       </div>
     </div>
     <div className="table-box">
@@ -673,12 +698,18 @@ const UserData = ({
   );
 };
 
-const ExperienceRequests = ({ experiences, loading, statusFilter, setStatusFilter, onApprove, onReject, onDelete }) => (
+const ExperienceRequests = ({ experiences, loading, statusFilter, setStatusFilter, onApprove, onReject, onDelete, expSearch, setExpSearch, onSearch }) => (
   <div>
     <div className="booking-top">
       <div className="search-wrapper">
-        <input className="admin-search-bar" placeholder="Search by experience title" />
-        <button className="admin-search-btn"><img src={search} className="admin-search-icon" /></button>
+        <input
+          className="admin-search-bar"
+          placeholder="Search by experience title"
+          value={expSearch}
+          onChange={(e) => setExpSearch(e.target.value)}
+          onKeyDown={(e) => e.key === 'Enter' && onSearch()}
+        />
+        <button className="admin-search-btn" onClick={onSearch}><img src={search} className="admin-search-icon" /></button>
       </div>
       {["pending", "approved", "rejected"].map((s) => (
         <button key={s} className="sort-btn" style={statusFilter === s ? { background: "#a88b8b", color: "white" } : {}} onClick={() => setStatusFilter(s)}>
@@ -969,13 +1000,19 @@ const SuitabilityReview = ({
 const EhostApplications = ({
   applications, loading, statusFilter, setStatusFilter,
   selectedApp, setSelectedApp, showAppModal, setShowAppModal,
-  onApprove, onReject,
+  onApprove, onReject, appSearch, setAppSearch, onSearch,
 }) => (
   <div>
     <div className="booking-top">
       <div className="search-wrapper">
-        <input className="admin-search-bar" placeholder="Search by name or email" />
-        <button className="admin-search-btn"><img src={search} className="admin-search-icon" /></button>
+        <input
+          className="admin-search-bar"
+          placeholder="Search by name or email"
+          value={appSearch}
+          onChange={(e) => setAppSearch(e.target.value)}
+          onKeyDown={(e) => e.key === 'Enter' && onSearch()}
+        />
+        <button className="admin-search-btn" onClick={onSearch}><img src={search} className="admin-search-icon" /></button>
       </div>
       {["pending", "approved", "rejected"].map((s) => (
         <button key={s} className="sort-btn" style={statusFilter === s ? { background: "#a88b8b", color: "white" } : {}} onClick={() => setStatusFilter(s)}>
