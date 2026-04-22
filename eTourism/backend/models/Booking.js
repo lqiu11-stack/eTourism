@@ -79,13 +79,18 @@ const Booking = {
     return rows;
   },
 
-  async findAll({ status } = {}) {
+  async findAll({ status, booking_id } = {}) {
     const values = [];
-    let where = '';
+    const conditions = [];
     if (status) {
       values.push(status);
-      where = `WHERE b.status = $1`;
+      conditions.push(`b.status = $${values.length}`);
     }
+    if (booking_id && !isNaN(Number(booking_id))) {
+      values.push(Number(booking_id));
+      conditions.push(`b.id = $${values.length}`);
+    }
+    const where = conditions.length > 0 ? 'WHERE ' + conditions.join(' AND ') : '';
     const { rows } = await pool.query(
       `SELECT
          b.id, b.status, b.amount_paid, b.qty_normal, b.qty_discounted,
