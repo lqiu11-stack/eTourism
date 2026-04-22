@@ -41,6 +41,113 @@ require.cache[require.resolve('bcrypt')] = {
   paths: [],
 };
 
+const mockExperience = { findAll: mock.fn(), update: mock.fn(), delete: mock.fn() };
+require.cache[path.resolve(__dirname, '../models/Experience.js')] = {
+  id: path.resolve(__dirname, '../models/Experience.js'),
+  filename: path.resolve(__dirname, '../models/Experience.js'),
+  loaded: true,
+  exports: mockExperience,
+  children: [],
+  paths: [],
+};
+
+const mockUserAgreement = { findByUser: mock.fn(), create: mock.fn() };
+require.cache[path.resolve(__dirname, '../models/UserAgreement.js')] = {
+  id: path.resolve(__dirname, '../models/UserAgreement.js'),
+  filename: path.resolve(__dirname, '../models/UserAgreement.js'),
+  loaded: true,
+  exports: mockUserAgreement,
+  children: [],
+  paths: [],
+};
+
+const mockBooking = { findAll: mock.fn(), updateStatus: mock.fn() };
+require.cache[path.resolve(__dirname, '../models/Booking.js')] = {
+  id: path.resolve(__dirname, '../models/Booking.js'),
+  filename: path.resolve(__dirname, '../models/Booking.js'),
+  loaded: true,
+  exports: mockBooking,
+  children: [],
+  paths: [],
+};
+
+const mockExperienceScore = { create: mock.fn(), findByExperience: mock.fn() };
+require.cache[path.resolve(__dirname, '../models/ExperienceScore.js')] = {
+  id: path.resolve(__dirname, '../models/ExperienceScore.js'),
+  filename: path.resolve(__dirname, '../models/ExperienceScore.js'),
+  loaded: true,
+  exports: mockExperienceScore,
+  children: [],
+  paths: [],
+};
+
+const mockRefund = { findById: mock.fn(), updateStatus: mock.fn() };
+require.cache[path.resolve(__dirname, '../models/Refund.js')] = {
+  id: path.resolve(__dirname, '../models/Refund.js'),
+  filename: path.resolve(__dirname, '../models/Refund.js'),
+  loaded: true,
+  exports: mockRefund,
+  children: [],
+  paths: [],
+};
+
+const mockPayment = { findByBooking: mock.fn() };
+require.cache[path.resolve(__dirname, '../models/Payment.js')] = {
+  id: path.resolve(__dirname, '../models/Payment.js'),
+  filename: path.resolve(__dirname, '../models/Payment.js'),
+  loaded: true,
+  exports: mockPayment,
+  children: [],
+  paths: [],
+};
+
+const mockAnalytics = {
+  getTopExperiences: mock.fn(),
+  getTopHosts: mock.fn(),
+  getVisitorCountries: mock.fn(),
+  getCategoryBreakdown: mock.fn(),
+};
+require.cache[path.resolve(__dirname, '../models/Analytics.js')] = {
+  id: path.resolve(__dirname, '../models/Analytics.js'),
+  filename: path.resolve(__dirname, '../models/Analytics.js'),
+  loaded: true,
+  exports: mockAnalytics,
+  children: [],
+  paths: [],
+};
+
+// stripe: controller does require('stripe')(key) at load time — mock the module as a factory
+const fakeStripeClient = { refunds: { create: mock.fn() } };
+const fakeStripe = mock.fn(() => fakeStripeClient);
+require.cache[require.resolve('stripe')] = {
+  id: require.resolve('stripe'),
+  filename: require.resolve('stripe'),
+  loaded: true,
+  exports: fakeStripe,
+  children: [],
+  paths: [],
+};
+
+// paypal: mock the SDK so constructor calls work
+const fakePayPalClient = { execute: mock.fn() };
+const fakeCheckoutSDK = {
+  core: {
+    SandboxEnvironment: class {},
+    PayPalHttpClient: function () { return fakePayPalClient; },
+  },
+  payments: {
+    CapturesRefundRequest: class { requestBody() {} },
+  },
+};
+require.cache[require.resolve('@paypal/checkout-server-sdk')] = {
+  id: require.resolve('@paypal/checkout-server-sdk'),
+  filename: require.resolve('@paypal/checkout-server-sdk'),
+  loaded: true,
+  exports: fakeCheckoutSDK,
+  children: [],
+  paths: [],
+};
+
 const {
   createUser,
   getUsers,
@@ -51,6 +158,19 @@ const {
   getApplications,
   approveApplication,
   rejectApplication,
+  getExperiences,
+  getAgreement,
+  acceptAgreement,
+  approveExperience,
+  rejectExperience,
+  deleteExperience,
+  getBookings,
+  getAnalytics,
+  scoreExperience,
+  getExperienceScores,
+  getRefunds,
+  approveRefund,
+  rejectRefund,
 } = require('../controllers/adminController');
 
 function makeRes() {
@@ -60,8 +180,10 @@ function makeRes() {
   return res;
 }
 
-function makeReq(body = {}, params = {}, query = {}) {
-  return { body, params, query };
+function makeReq(body = {}, params = {}, query = {}, user = null) {
+  const req = { body, params, query };
+  if (user) req.user = user;
+  return req;
 }
 
 function resetMocks() {
@@ -71,6 +193,24 @@ function resetMocks() {
   mockUser.findById.mock.resetCalls();
   mockUser.update.mock.resetCalls();
   mockUser.delete.mock.resetCalls();
+  mockExperience.findAll.mock.resetCalls();
+  mockExperience.update.mock.resetCalls();
+  mockExperience.delete.mock.resetCalls();
+  mockUserAgreement.findByUser.mock.resetCalls();
+  mockUserAgreement.create.mock.resetCalls();
+  mockBooking.findAll.mock.resetCalls();
+  mockBooking.updateStatus.mock.resetCalls();
+  mockExperienceScore.create.mock.resetCalls();
+  mockExperienceScore.findByExperience.mock.resetCalls();
+  mockRefund.findById.mock.resetCalls();
+  mockRefund.updateStatus.mock.resetCalls();
+  mockPayment.findByBooking.mock.resetCalls();
+  mockAnalytics.getTopExperiences.mock.resetCalls();
+  mockAnalytics.getTopHosts.mock.resetCalls();
+  mockAnalytics.getVisitorCountries.mock.resetCalls();
+  mockAnalytics.getCategoryBreakdown.mock.resetCalls();
+  fakeStripeClient.refunds.create.mock.resetCalls();
+  fakePayPalClient.execute.mock.resetCalls();
   fakeBcrypt.hash.mock.resetCalls();
   fakePool.query.mock.resetCalls();
   fakePool.query.mock.mockImplementation(() => Promise.resolve({ rows: [] }));
@@ -530,6 +670,573 @@ describe('rejectApplication()', () => {
     const req = makeReq({}, { id: '1' });
     const res = makeRes();
     await rejectApplication(req, res);
+
+    assert.equal(res.status.mock.calls[0].arguments[0], 500);
+  });
+});
+
+describe('getExperiences()', () => {
+  beforeEach(resetMocks);
+
+  it('200 : returns pending experiences by default', async () => {
+    const exps = [{ id: 1, title: 'Trip A', status: 'pending' }];
+    mockExperience.findAll.mock.mockImplementation(async () => exps);
+
+    const req = makeReq({}, {}, {});
+    const res = makeRes();
+    await getExperiences(req, res);
+
+    assert.deepEqual(res.json.mock.calls[0].arguments[0], exps);
+    assert.equal(mockExperience.findAll.mock.calls[0].arguments[0].status, 'pending');
+  });
+
+  it('200 : passes status filter from query', async () => {
+    const exps = [{ id: 2, title: 'Trip B', status: 'approved' }];
+    mockExperience.findAll.mock.mockImplementation(async () => exps);
+
+    const req = makeReq({}, {}, { status: 'approved' });
+    const res = makeRes();
+    await getExperiences(req, res);
+
+    assert.deepEqual(res.json.mock.calls[0].arguments[0], exps);
+    assert.equal(mockExperience.findAll.mock.calls[0].arguments[0].status, 'approved');
+  });
+
+  it('200 : returns empty array when no experiences found', async () => {
+    mockExperience.findAll.mock.mockImplementation(async () => []);
+
+    const req = makeReq({}, {}, { status: 'rejected' });
+    const res = makeRes();
+    await getExperiences(req, res);
+
+    assert.deepEqual(res.json.mock.calls[0].arguments[0], []);
+  });
+
+  it('500 : database error', async () => {
+    mockExperience.findAll.mock.mockImplementation(async () => { throw new Error('DB fail'); });
+
+    const req = makeReq({}, {}, {});
+    const res = makeRes();
+    await getExperiences(req, res);
+
+    assert.equal(res.status.mock.calls[0].arguments[0], 500);
+  });
+});
+
+describe('getAgreement()', () => {
+  beforeEach(resetMocks);
+
+  it('200 : returns agreement title and content', async () => {
+    const req = makeReq();
+    const res = makeRes();
+    await getAgreement(req, res);
+
+    assert.equal(res.status.mock.calls[0].arguments[0], 200);
+    const body = res.json.mock.calls[0].arguments[0];
+    assert.ok(body.title);
+    assert.ok(body.content);
+  });
+});
+
+describe('acceptAgreement()', () => {
+  beforeEach(resetMocks);
+
+  it('400 : missing or invalid userId', async () => {
+    const req = makeReq({ userId: 'not-a-number' });
+    const res = makeRes();
+    await acceptAgreement(req, res);
+
+    assert.equal(res.status.mock.calls[0].arguments[0], 400);
+    assert.match(res.json.mock.calls[0].arguments[0].message, /userId/i);
+  });
+
+  it('400 : user not found', async () => {
+    mockUser.findById.mock.mockImplementation(async () => null);
+
+    const req = makeReq({ userId: 1 });
+    const res = makeRes();
+    await acceptAgreement(req, res);
+
+    assert.equal(res.status.mock.calls[0].arguments[0], 400);
+    assert.match(res.json.mock.calls[0].arguments[0].message, /not found/i);
+  });
+
+  it('200 : agreement already on file', async () => {
+    const existing = { id: 1, user_id: 1 };
+    mockUser.findById.mock.mockImplementation(async () => ({ id: 1 }));
+    mockUserAgreement.findByUser.mock.mockImplementation(async () => existing);
+
+    const req = makeReq({ userId: 1 });
+    const res = makeRes();
+    await acceptAgreement(req, res);
+
+    assert.equal(res.status.mock.calls[0].arguments[0], 200);
+    assert.match(res.json.mock.calls[0].arguments[0].message, /already/i);
+  });
+
+  it('201 : creates new agreement', async () => {
+    const record = { id: 5, user_id: 1 };
+    mockUser.findById.mock.mockImplementation(async () => ({ id: 1 }));
+    mockUserAgreement.findByUser.mock.mockImplementation(async () => null);
+    mockUserAgreement.create.mock.mockImplementation(async () => record);
+
+    const req = makeReq({ userId: 1 });
+    const res = makeRes();
+    await acceptAgreement(req, res);
+
+    assert.equal(res.status.mock.calls[0].arguments[0], 201);
+    assert.match(res.json.mock.calls[0].arguments[0].message, /accepted/i);
+    assert.deepEqual(res.json.mock.calls[0].arguments[0].record, record);
+  });
+
+  it('500 : database error', async () => {
+    mockUser.findById.mock.mockImplementation(async () => { throw new Error('DB fail'); });
+
+    const req = makeReq({ userId: 1 });
+    const res = makeRes();
+    await acceptAgreement(req, res);
+
+    assert.equal(res.status.mock.calls[0].arguments[0], 500);
+  });
+});
+
+describe('approveExperience()', () => {
+  beforeEach(resetMocks);
+
+  it('200 : approves experience', async () => {
+    const exp = { id: 1, status: 'approved' };
+    mockExperience.update.mock.mockImplementation(async () => exp);
+
+    const req = makeReq({}, { id: '1' });
+    const res = makeRes();
+    await approveExperience(req, res);
+
+    const body = res.json.mock.calls[0].arguments[0];
+    assert.match(body.message, /approved/i);
+    assert.deepEqual(body.experience, exp);
+  });
+
+  it('404 : experience not found', async () => {
+    mockExperience.update.mock.mockImplementation(async () => null);
+
+    const req = makeReq({}, { id: '99' });
+    const res = makeRes();
+    await approveExperience(req, res);
+
+    assert.equal(res.status.mock.calls[0].arguments[0], 404);
+    assert.match(res.json.mock.calls[0].arguments[0].message, /not found/i);
+  });
+
+  it('500 : database error', async () => {
+    mockExperience.update.mock.mockImplementation(async () => { throw new Error('DB fail'); });
+
+    const req = makeReq({}, { id: '1' });
+    const res = makeRes();
+    await approveExperience(req, res);
+
+    assert.equal(res.status.mock.calls[0].arguments[0], 500);
+  });
+});
+
+describe('rejectExperience()', () => {
+  beforeEach(resetMocks);
+
+  it('200 : rejects experience', async () => {
+    const exp = { id: 1, status: 'rejected' };
+    mockExperience.update.mock.mockImplementation(async () => exp);
+
+    const req = makeReq({}, { id: '1' });
+    const res = makeRes();
+    await rejectExperience(req, res);
+
+    const body = res.json.mock.calls[0].arguments[0];
+    assert.match(body.message, /rejected/i);
+    assert.deepEqual(body.experience, exp);
+  });
+
+  it('404 : experience not found', async () => {
+    mockExperience.update.mock.mockImplementation(async () => null);
+
+    const req = makeReq({}, { id: '99' });
+    const res = makeRes();
+    await rejectExperience(req, res);
+
+    assert.equal(res.status.mock.calls[0].arguments[0], 404);
+    assert.match(res.json.mock.calls[0].arguments[0].message, /not found/i);
+  });
+
+  it('500 : database error', async () => {
+    mockExperience.update.mock.mockImplementation(async () => { throw new Error('DB fail'); });
+
+    const req = makeReq({}, { id: '1' });
+    const res = makeRes();
+    await rejectExperience(req, res);
+
+    assert.equal(res.status.mock.calls[0].arguments[0], 500);
+  });
+});
+
+describe('deleteExperience()', () => {
+  beforeEach(resetMocks);
+
+  it('200 : deletes experience successfully', async () => {
+    mockExperience.delete.mock.mockImplementation(async () => true);
+
+    const req = makeReq({}, { id: '1' });
+    const res = makeRes();
+    await deleteExperience(req, res);
+
+    assert.match(res.json.mock.calls[0].arguments[0].message, /deleted/i);
+  });
+
+  it('404 : experience not found', async () => {
+    mockExperience.delete.mock.mockImplementation(async () => false);
+
+    const req = makeReq({}, { id: '99' });
+    const res = makeRes();
+    await deleteExperience(req, res);
+
+    assert.equal(res.status.mock.calls[0].arguments[0], 404);
+    assert.match(res.json.mock.calls[0].arguments[0].message, /not found/i);
+  });
+
+  it('500 : database error', async () => {
+    mockExperience.delete.mock.mockImplementation(async () => { throw new Error('DB fail'); });
+
+    const req = makeReq({}, { id: '1' });
+    const res = makeRes();
+    await deleteExperience(req, res);
+
+    assert.equal(res.status.mock.calls[0].arguments[0], 500);
+  });
+});
+
+describe('getBookings()', () => {
+  beforeEach(resetMocks);
+
+  it('200 : returns all bookings without filter', async () => {
+    const bookings = [{ id: 1 }, { id: 2 }];
+    mockBooking.findAll.mock.mockImplementation(async () => bookings);
+
+    const req = makeReq({}, {}, {});
+    const res = makeRes();
+    await getBookings(req, res);
+
+    assert.deepEqual(res.json.mock.calls[0].arguments[0], bookings);
+  });
+
+  it('200 : passes status filter to model', async () => {
+    mockBooking.findAll.mock.mockImplementation(async ({ status }) => {
+      assert.equal(status, 'confirmed');
+      return [];
+    });
+
+    const req = makeReq({}, {}, { status: 'confirmed' });
+    const res = makeRes();
+    await getBookings(req, res);
+
+    assert.equal(res.json.mock.callCount(), 1);
+  });
+
+  it('500 : database error', async () => {
+    mockBooking.findAll.mock.mockImplementation(async () => { throw new Error('DB fail'); });
+
+    const req = makeReq({}, {}, {});
+    const res = makeRes();
+    await getBookings(req, res);
+
+    assert.equal(res.status.mock.calls[0].arguments[0], 500);
+  });
+});
+
+describe('getAnalytics()', () => {
+  beforeEach(resetMocks);
+
+  it('200 : returns all analytics data', async () => {
+    const topExp = [{ id: 1, title: 'Trip A' }];
+    const topHosts = [{ id: 2, name: 'Host B' }];
+    const countries = ['UK', 'Japan'];
+    const categories = [{ name: 'Adventure', count: 5 }];
+    mockAnalytics.getTopExperiences.mock.mockImplementation(async () => topExp);
+    mockAnalytics.getTopHosts.mock.mockImplementation(async () => topHosts);
+    mockAnalytics.getVisitorCountries.mock.mockImplementation(async () => countries);
+    mockAnalytics.getCategoryBreakdown.mock.mockImplementation(async () => categories);
+
+    const req = makeReq();
+    const res = makeRes();
+    await getAnalytics(req, res);
+
+    const body = res.json.mock.calls[0].arguments[0];
+    assert.deepEqual(body.topExperiences, topExp);
+    assert.deepEqual(body.topHosts, topHosts);
+    assert.deepEqual(body.visitorCountries, countries);
+    assert.deepEqual(body.categoryBreakdown, categories);
+  });
+
+  it('500 : database error', async () => {
+    mockAnalytics.getTopExperiences.mock.mockImplementation(async () => { throw new Error('DB fail'); });
+
+    const req = makeReq();
+    const res = makeRes();
+    await getAnalytics(req, res);
+
+    assert.equal(res.status.mock.calls[0].arguments[0], 500);
+  });
+});
+
+describe('scoreExperience()', () => {
+  beforeEach(resetMocks);
+
+  it('400 : invalid result value', async () => {
+    const req = makeReq({ result: 'maybe' }, { id: '1' }, {}, { id: 99 });
+    const res = makeRes();
+    await scoreExperience(req, res);
+
+    assert.equal(res.status.mock.calls[0].arguments[0], 400);
+    assert.match(res.json.mock.calls[0].arguments[0].message, /pass.*fail|fail.*pass/i);
+  });
+
+  it('400 : fail result without comment', async () => {
+    const req = makeReq({ result: 'fail', comment: '  ' }, { id: '1' }, {}, { id: 99 });
+    const res = makeRes();
+    await scoreExperience(req, res);
+
+    assert.equal(res.status.mock.calls[0].arguments[0], 400);
+    assert.match(res.json.mock.calls[0].arguments[0].message, /comment/i);
+  });
+
+  it('200 : pass result creates score only', async () => {
+    const score = { id: 1, result: 'pass' };
+    mockExperienceScore.create.mock.mockImplementation(async () => score);
+
+    const req = makeReq({ result: 'pass' }, { id: '1' }, {}, { id: 99 });
+    const res = makeRes();
+    await scoreExperience(req, res);
+
+    const body = res.json.mock.calls[0].arguments[0];
+    assert.match(body.message, /pass/i);
+    assert.deepEqual(body.score, score);
+    assert.equal(mockExperience.update.mock.callCount(), 0);
+  });
+
+  it('200 : fail result creates score and rejects experience', async () => {
+    const score = { id: 2, result: 'fail' };
+    mockExperienceScore.create.mock.mockImplementation(async () => score);
+    mockExperience.update.mock.mockImplementation(async () => ({ id: 1, status: 'rejected' }));
+
+    const req = makeReq({ result: 'fail', comment: 'Bad content' }, { id: '1' }, {}, { id: 99 });
+    const res = makeRes();
+    await scoreExperience(req, res);
+
+    const body = res.json.mock.calls[0].arguments[0];
+    assert.match(body.message, /fail/i);
+    assert.equal(mockExperience.update.mock.callCount(), 1);
+    assert.equal(mockExperience.update.mock.calls[0].arguments[1].status, 'rejected');
+  });
+
+  it('500 : database error', async () => {
+    mockExperienceScore.create.mock.mockImplementation(async () => { throw new Error('DB fail'); });
+
+    const req = makeReq({ result: 'pass' }, { id: '1' }, {}, { id: 99 });
+    const res = makeRes();
+    await scoreExperience(req, res);
+
+    assert.equal(res.status.mock.calls[0].arguments[0], 500);
+  });
+});
+
+describe('getExperienceScores()', () => {
+  beforeEach(resetMocks);
+
+  it('200 : returns scores for experience', async () => {
+    const scores = [{ id: 1, result: 'pass' }, { id: 2, result: 'fail' }];
+    mockExperienceScore.findByExperience.mock.mockImplementation(async () => scores);
+
+    const req = makeReq({}, { id: '1' });
+    const res = makeRes();
+    await getExperienceScores(req, res);
+
+    assert.deepEqual(res.json.mock.calls[0].arguments[0], scores);
+  });
+
+  it('500 : database error', async () => {
+    mockExperienceScore.findByExperience.mock.mockImplementation(async () => { throw new Error('DB fail'); });
+
+    const req = makeReq({}, { id: '1' });
+    const res = makeRes();
+    await getExperienceScores(req, res);
+
+    assert.equal(res.status.mock.calls[0].arguments[0], 500);
+  });
+});
+
+describe('getRefunds()', () => {
+  beforeEach(resetMocks);
+
+  it('200 : returns all refunds without filter', async () => {
+    const rows = [{ refund_id: 1, refund_status: 'pending' }];
+    fakePool.query.mock.mockImplementation(() => Promise.resolve({ rows }));
+
+    const req = makeReq({}, {}, {});
+    const res = makeRes();
+    await getRefunds(req, res);
+
+    assert.deepEqual(res.json.mock.calls[0].arguments[0], rows);
+    const [sql, vals] = fakePool.query.mock.calls[0].arguments;
+    assert.ok(!sql.includes('WHERE'));
+    assert.deepEqual(vals, []);
+  });
+
+  it('200 : filters by status', async () => {
+    const rows = [{ refund_id: 2, refund_status: 'pending' }];
+    fakePool.query.mock.mockImplementation(() => Promise.resolve({ rows }));
+
+    const req = makeReq({}, {}, { status: 'pending' });
+    const res = makeRes();
+    await getRefunds(req, res);
+
+    const [sql, vals] = fakePool.query.mock.calls[0].arguments;
+    assert.ok(sql.includes('WHERE'));
+    assert.deepEqual(vals, ['pending']);
+  });
+
+  it('500 : database error', async () => {
+    fakePool.query.mock.mockImplementation(() => Promise.reject(new Error('DB fail')));
+
+    const req = makeReq({}, {}, {});
+    const res = makeRes();
+    await getRefunds(req, res);
+
+    assert.equal(res.status.mock.calls[0].arguments[0], 500);
+  });
+});
+
+describe('approveRefund()', () => {
+  beforeEach(resetMocks);
+
+  it('404 : refund not found', async () => {
+    mockRefund.findById.mock.mockImplementation(async () => null);
+
+    const req = makeReq({}, { id: '1' });
+    const res = makeRes();
+    await approveRefund(req, res);
+
+    assert.equal(res.status.mock.calls[0].arguments[0], 404);
+    assert.match(res.json.mock.calls[0].arguments[0].message, /refund not found/i);
+  });
+
+  it('400 : refund already processed', async () => {
+    mockRefund.findById.mock.mockImplementation(async () => ({ id: 1, status: 'approved', booking_id: 1 }));
+
+    const req = makeReq({}, { id: '1' });
+    const res = makeRes();
+    await approveRefund(req, res);
+
+    assert.equal(res.status.mock.calls[0].arguments[0], 400);
+    assert.match(res.json.mock.calls[0].arguments[0].message, /already/i);
+  });
+
+  it('404 : payment record not found', async () => {
+    mockRefund.findById.mock.mockImplementation(async () => ({ id: 1, status: 'pending', booking_id: 1, refund_amount: '10.00' }));
+    mockPayment.findByBooking.mock.mockImplementation(async () => null);
+
+    const req = makeReq({}, { id: '1' });
+    const res = makeRes();
+    await approveRefund(req, res);
+
+    assert.equal(res.status.mock.calls[0].arguments[0], 404);
+    assert.match(res.json.mock.calls[0].arguments[0].message, /payment/i);
+  });
+
+  it('400 : stripe transaction_id missing', async () => {
+    mockRefund.findById.mock.mockImplementation(async () => ({ id: 1, status: 'pending', booking_id: 1, refund_amount: '10.00' }));
+    mockPayment.findByBooking.mock.mockImplementation(async () => [{ method: 'stripe', transaction_id: null }]);
+
+    const req = makeReq({}, { id: '1' });
+    const res = makeRes();
+    await approveRefund(req, res);
+
+    assert.equal(res.status.mock.calls[0].arguments[0], 400);
+    assert.match(res.json.mock.calls[0].arguments[0].message, /transaction_id/i);
+  });
+
+  it('200 : stripe refund processed successfully', async () => {
+    mockRefund.findById.mock.mockImplementation(async () => ({ id: 1, status: 'pending', booking_id: 1, refund_amount: '50.00' }));
+    mockPayment.findByBooking.mock.mockImplementation(async () => [{ method: 'stripe', transaction_id: 'pi_test_123' }]);
+    fakeStripeClient.refunds.create.mock.mockImplementation(async () => ({ id: 're_test_456' }));
+    mockRefund.updateStatus.mock.mockImplementation(async () => {});
+    mockBooking.updateStatus.mock.mockImplementation(async () => {});
+
+    const req = makeReq({}, { id: '1' });
+    const res = makeRes();
+    await approveRefund(req, res);
+
+    const body = res.json.mock.calls[0].arguments[0];
+    assert.match(body.message, /approved/i);
+    assert.equal(body.gateway_refund_id, 're_test_456');
+  });
+
+  it('200 : paypal refund processed successfully', async () => {
+    mockRefund.findById.mock.mockImplementation(async () => ({ id: 2, status: 'pending', booking_id: 2, refund_amount: '25.00' }));
+    mockPayment.findByBooking.mock.mockImplementation(async () => [{ method: 'paypal', transaction_id: 'capture_xyz' }]);
+    fakePayPalClient.execute.mock.mockImplementation(async () => ({ result: { id: 'paypal_refund_id' } }));
+    mockRefund.updateStatus.mock.mockImplementation(async () => {});
+    mockBooking.updateStatus.mock.mockImplementation(async () => {});
+
+    const req = makeReq({}, { id: '2' });
+    const res = makeRes();
+    await approveRefund(req, res);
+
+    const body = res.json.mock.calls[0].arguments[0];
+    assert.match(body.message, /approved/i);
+    assert.equal(body.gateway_refund_id, 'paypal_refund_id');
+  });
+});
+
+describe('rejectRefund()', () => {
+  beforeEach(resetMocks);
+
+  it('200 : rejects refund and restores booking to confirmed', async () => {
+    mockRefund.findById.mock.mockImplementation(async () => ({ id: 1, status: 'pending', booking_id: 1 }));
+    mockRefund.updateStatus.mock.mockImplementation(async () => {});
+    mockBooking.updateStatus.mock.mockImplementation(async () => {});
+
+    const req = makeReq({}, { id: '1' });
+    const res = makeRes();
+    await rejectRefund(req, res);
+
+    assert.match(res.json.mock.calls[0].arguments[0].message, /rejected/i);
+    assert.equal(mockBooking.updateStatus.mock.calls[0].arguments[1], 'confirmed');
+  });
+
+  it('404 : refund not found', async () => {
+    mockRefund.findById.mock.mockImplementation(async () => null);
+
+    const req = makeReq({}, { id: '99' });
+    const res = makeRes();
+    await rejectRefund(req, res);
+
+    assert.equal(res.status.mock.calls[0].arguments[0], 404);
+    assert.match(res.json.mock.calls[0].arguments[0].message, /not found/i);
+  });
+
+  it('400 : refund already processed', async () => {
+    mockRefund.findById.mock.mockImplementation(async () => ({ id: 1, status: 'rejected', booking_id: 1 }));
+
+    const req = makeReq({}, { id: '1' });
+    const res = makeRes();
+    await rejectRefund(req, res);
+
+    assert.equal(res.status.mock.calls[0].arguments[0], 400);
+    assert.match(res.json.mock.calls[0].arguments[0].message, /already/i);
+  });
+
+  it('500 : database error', async () => {
+    mockRefund.findById.mock.mockImplementation(async () => { throw new Error('DB fail'); });
+
+    const req = makeReq({}, { id: '1' });
+    const res = makeRes();
+    await rejectRefund(req, res);
 
     assert.equal(res.status.mock.calls[0].arguments[0], 500);
   });
