@@ -239,6 +239,42 @@
   background:rgba(158,42,44,0.55);
 }
 
+.filter-chip--active{
+  background:rgba(158,42,44,0.85);
+  border:2px solid rgba(158,42,44,1);
+}
+
+.filter-dropdown{
+  position:absolute;
+  top:calc(100% + 6px);
+  left:0;
+  z-index:200;
+  background:#fff;
+  border:1px solid #ddd;
+  border-radius:10px;
+  box-shadow:0 4px 14px rgba(0,0,0,0.13);
+  max-height:220px;
+  overflow-y:auto;
+  min-width:190px;
+  padding:4px 0;
+}
+
+.filter-dropdown button{
+  display:block;
+  width:100%;
+  padding:9px 16px;
+  text-align:left;
+  background:none;
+  border:none;
+  cursor:pointer;
+  font-size:14px;
+  color:#333;
+}
+
+.filter-dropdown button:hover{
+  background:#f5eded;
+}
+
 /* FEATURES */
 
 .features{

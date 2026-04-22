@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import axios from "axios";
 import "./Mainstyle.css";
 import searchIcon from "../icon/search.png";
@@ -39,11 +39,26 @@ export const MainPage = () => {
   const [searchLocation, setSearchLocation] = useState("");
   const [searchDate, setSearchDate] = useState("");
 
-  useEffect(() => {
-    axios.get(`${API_BASE}/visitor/experiences`)
-      .then(({ data }) => { setExperiences(data); setFiltered(data); })
-      .catch(() => {});
-  }, []);
+  const [activeContinent, setActiveContinent] = useState(null);
+  const [activeCategory,  setActiveCategory]  = useState(null);
+  const [activeLanguage,  setActiveLanguage]  = useState(null);
+  const [showRegionMenu,  setShowRegionMenu]  = useState(false);
+  const [showCategoryMenu,setShowCategoryMenu]= useState(false);
+  const [showLanguageMenu,setShowLanguageMenu]= useState(false);
+
+  const fetchExperiences = useCallback(async () => {
+    const params = new URLSearchParams();
+    if (activeContinent) params.set('continent', activeContinent);
+    if (activeCategory)  params.set('category',  activeCategory);
+    if (activeLanguage)  params.set('language',  activeLanguage);
+    try {
+      const { data } = await axios.get(`${API_BASE}/visitor/experiences?${params}`);
+      setExperiences(data);
+      setFiltered(data);
+    } catch {}
+  }, [activeContinent, activeCategory, activeLanguage]);
+
+  useEffect(() => { fetchExperiences(); }, [fetchExperiences]);
 
   const handleSearch = () => {
     let results = experiences;
@@ -202,10 +217,63 @@ export const MainPage = () => {
                 <span>Filter</span>
               </div>
               <div className="filter-list">
-                <button className="filter-chip">+ Region</button>
-                <button className="filter-chip">+ Tour type</button>
-                <button className="filter-chip">+ Tour language</button>
-                <button className="filter-chip">More filter</button>
+                <div style={{ position: 'relative' }}>
+                  <button
+                    className={`filter-chip${activeContinent ? ' filter-chip--active' : ''}`}
+                    onClick={() => { setShowRegionMenu(p => !p); setShowCategoryMenu(false); setShowLanguageMenu(false); }}
+                  >
+                    {activeContinent ? `Region: ${activeContinent}` : '+ Region'}
+                  </button>
+                  {showRegionMenu && (
+                    <div className="filter-dropdown">
+                      <button onClick={() => { setActiveContinent(null); setShowRegionMenu(false); }}>All</button>
+                      {['Africa','Asia','Europe','North America','South America','Oceania'].map(c => (
+                        <button key={c} onClick={() => { setActiveContinent(c); setShowRegionMenu(false); }}>{c}</button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                <div style={{ position: 'relative' }}>
+                  <button
+                    className={`filter-chip${activeCategory ? ' filter-chip--active' : ''}`}
+                    onClick={() => { setShowCategoryMenu(p => !p); setShowRegionMenu(false); setShowLanguageMenu(false); }}
+                  >
+                    {activeCategory ? `Type: ${activeCategory}` : '+ Tour type'}
+                  </button>
+                  {showCategoryMenu && (
+                    <div className="filter-dropdown">
+                      <button onClick={() => { setActiveCategory(null); setShowCategoryMenu(false); }}>All</button>
+                      {['Cultural Tourism','Historical Tourism','Art Tourism','Eco Tourism','Luxury Tourism','Culinary Tourism','Wellness Tourism','Religious Tourism'].map(c => (
+                        <button key={c} onClick={() => { setActiveCategory(c); setShowCategoryMenu(false); }}>{c}</button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                <div style={{ position: 'relative' }}>
+                  <button
+                    className={`filter-chip${activeLanguage ? ' filter-chip--active' : ''}`}
+                    onClick={() => { setShowLanguageMenu(p => !p); setShowRegionMenu(false); setShowCategoryMenu(false); }}
+                  >
+                    {activeLanguage ? `Language: ${activeLanguage}` : '+ Tour language'}
+                  </button>
+                  {showLanguageMenu && (
+                    <div className="filter-dropdown">
+                      <button onClick={() => { setActiveLanguage(null); setShowLanguageMenu(false); }}>All</button>
+                      {['English','Spanish','French','German','Italian','Portuguese','Dutch','Arabic','Chinese','Japanese','Korean','Hindi','Thai','Turkish','Russian'].map(l => (
+                        <button key={l} onClick={() => { setActiveLanguage(l); setShowLanguageMenu(false); }}>{l}</button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                <button
+                  className="filter-chip"
+                  onClick={() => { setActiveContinent(null); setActiveCategory(null); setActiveLanguage(null); setSearchLocation(""); setSearchDate(""); setShowRegionMenu(false); setShowCategoryMenu(false); setShowLanguageMenu(false); }}
+                >
+                  Reset filter
+                </button>
               </div>
             </div>
 
