@@ -76,11 +76,11 @@ const getPayPalClient = () => {
   return new checkoutNodeJssdk.core.PayPalHttpClient(env);
 };
 
-// GET /api/admin/experiences?status=pending
+// GET /api/admin/experiences?status=pending&search=tokyo
 const getExperiences = async (req, res) => {
   try {
-    const status = req.query.status || 'pending';
-    const experiences = await Experience.findAll({ status });
+    const { status = 'pending', search } = req.query;
+    const experiences = await Experience.findAll({ status, search: search || undefined });
     res.json(experiences);
   } catch (err) {
     res.status(500).json({ message: 'Server error', error: String(err) });
@@ -127,8 +127,8 @@ const deleteExperience = async (req, res) => {
 
 const getBookings = async (req, res) => {
   try {
-    const { status } = req.query;
-    const bookings = await Booking.findAll({ status });
+    const { status, booking_id } = req.query;
+    const bookings = await Booking.findAll({ status, booking_id: booking_id || undefined });
     res.json(bookings);
   } catch (err) {
     res.status(500).json({ message: 'Server error', error: String(err) });
@@ -202,16 +202,22 @@ const getExperienceScores = async (req, res) => {
   }
 };
 
-// GET /api/admin/applications?status=pending
+// GET /api/admin/applications?status=pending&search=john
 const getApplications = async (req, res) => {
   try {
-    const { status } = req.query;
+    const { status, search } = req.query;
     let query = 'SELECT * FROM ehost_applications';
     const values = [];
+    const conditions = [];
     if (status) {
       values.push(status);
-      query += ` WHERE status = $1`;
+      conditions.push(`status = $${values.length}`);
     }
+    if (search) {
+      values.push(`%${search.toLowerCase()}%`);
+      conditions.push(`(LOWER(name) LIKE $${values.length} OR LOWER(email) LIKE $${values.length})`);
+    }
+    if (conditions.length) query += ' WHERE ' + conditions.join(' AND ');
     query += ' ORDER BY id DESC';
     const { rows } = await pool.query(query, values);
     res.json(rows);

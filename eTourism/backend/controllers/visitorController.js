@@ -140,7 +140,17 @@ const getMe = async (req, res) => {
 
 const getExperiences = async (req, res) => {
   try {
-    const experiences = await Experience.findAll({ status: 'approved' });
+    const { category, country, continent, language, price_min, price_max, search } = req.query;
+    const experiences = await Experience.findAll({
+      status: 'approved',
+      category:  category  || undefined,
+      country:   country   || undefined,
+      continent: continent || undefined,
+      language:  language  || undefined,
+      price_min: price_min || undefined,
+      price_max: price_max || undefined,
+      search:    search    || undefined,
+    });
     return res.status(200).json(experiences);
   } catch (err) {
     return res.status(500).json({ message: 'Server error', error: String(err) });
