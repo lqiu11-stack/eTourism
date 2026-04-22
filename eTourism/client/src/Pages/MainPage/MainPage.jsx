@@ -154,7 +154,7 @@ export const MainPage = () => {
                 <div className="search-box">
                   <input
                     type="text"
-                    placeholder="Today I wanna go..."
+                    placeholder="Search for the location"
                     className="textbox-word"
                     value={searchLocation}
                     onChange={(e) => setSearchLocation(e.target.value)}
