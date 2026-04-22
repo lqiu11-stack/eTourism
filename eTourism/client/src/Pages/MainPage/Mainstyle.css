@@ -403,6 +403,7 @@
 }
 .textbox-word{
   color: white;
+  -webkit-text-fill-color: white;
 }
 
 .textbox-word::placeholder{

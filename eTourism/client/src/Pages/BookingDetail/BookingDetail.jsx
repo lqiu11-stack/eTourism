@@ -286,7 +286,6 @@ export const MyBookingDetail = () => {
               <button
                 disabled={['refund_pending', 'refunded'].includes(booking?.status)}
               >Reschedule</button>
-              <button>Contact customer service</button>
             </div>
           </div>
         </div>

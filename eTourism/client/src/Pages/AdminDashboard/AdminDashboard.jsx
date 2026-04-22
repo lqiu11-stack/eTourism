@@ -267,40 +267,6 @@ export const Dashboard = () => {
     if (activeTab === "suitability") fetchSuitExps(suitStatusFilter);
   }, [activeTab]);
 
-  const chatList = [
-  {
-    id: 1,
-    username: "Amy",
-    time: "10:30",
-    lastMessage: "I want to check for the refund progress that i appplied from last week.",
-    unread: 1,
-    status: "ongoing",
-    messages: [
-      { sender: "visitor", text: "Hello, I want to ask..." },
-      { sender: "user", text: "Sure, how can I help?" },
-      { sender: "visitor", text: "I want to check for the refund progress that i appplied from last week." }
-    ]
-  },
-  {
-    id: 2,
-    username: "Jason",
-    time: "09:15",
-    lastMessage: "Thank you! I have completed the payment already.",
-    unread: 0,
-    status: "completed",
-  },
-  {
-    id: 3,
-    username: "Sophie",
-    time: "Yesterday",
-    lastMessage: "Can I change my booking date to next Friday?",
-    unread: 1,
-    status: "ongoing",
-  },
-];
-
-  const [selectedChat, setSelectedChat] = useState(null);
-
   // ── Analytics / Reports ──────────────────────────────────────────────
   const [analytics, setAnalytics] = useState(null);
   const [analyticsLoading, setAnalyticsLoading] = useState(false);
@@ -391,55 +357,6 @@ export const Dashboard = () => {
     }
   };
 
-  const MessageBox = () => (
-    <div>
-      <div className="booking-top">
-        <div className="search-wrapper">
-          <input className="admin-search-bar" placeholder="Search chatbox by username" />
-          <button className="admin-search-btn"><img src={search} className="admin-search-icon" /></button>
-        </div>
-      </div>
-      <div className="chat-layout">
-        <div className="chat-list">
-          {chatList.map((chat) => (
-            <div
-              key={chat.id}
-              className={`chat-item ${chat.status === "completed" ? "completed-chat" : "ongoing-chat"}`}
-              onClick={() => setSelectedChat(chat)}
-            >
-              <div className="chat-item-top">
-                <span className="chat-username">{chat.username}</span>
-                <span className="chat-time">{chat.time}</span>
-              </div>
-              <div className="chat-preview-row">
-                <span className="chat-preview">{chat.lastMessage}</span>
-                {chat.unread > 0 && <span className="chat-unread">{chat.unread}</span>}
-              </div>
-            </div>
-          ))}
-        </div>
-        <div className="chat-window">
-          {selectedChat ? (
-            <>
-              <div className="chat-header">{selectedChat.username}</div>
-              <div className="chat-messages">
-                {(selectedChat.messages || []).map((msg, i) => (
-                  <div key={i} className={`msg ${msg.sender}`}>{msg.text}</div>
-                ))}
-              </div>
-              <div className="chat-input">
-                <input placeholder="Type a message..." />
-                <button className="sort-btn">Send</button>
-              </div>
-            </>
-          ) : (
-            <div className="no-chat">Select a chat</div>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-
   return (
     <div className="admin-container">
 
@@ -473,7 +390,6 @@ export const Dashboard = () => {
           { key: "suitability", label: "Suitability review" },
           { key: "request", label: "Experiences" },
           { key: "EhostJoin", label: "E-hosts" },
-          { key: "message", label: "Message box" },
         ].map(({ key, label }) => (
           <button
             key={key}

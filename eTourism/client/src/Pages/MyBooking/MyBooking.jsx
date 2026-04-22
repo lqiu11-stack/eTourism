@@ -123,7 +123,6 @@ export const MyBooking = () => {
           <button className="Mybooking-small-btn" onClick={(e) => { stop(e); navigate(`/booking/${b.id}/reschedule`); }}>
             Reschedule
           </button>
-          <button className="Mybooking-small-btn" onClick={stop}>Customer service</button>
           <button className="Mybooking-calendar-btn" onClick={stop}>Save to calendar</button>
         </div>
       </>
