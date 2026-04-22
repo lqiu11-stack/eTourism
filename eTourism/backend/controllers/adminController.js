@@ -7,6 +7,7 @@ const Booking = require('../models/Booking');
 const ExperienceScore = require('../models/ExperienceScore');
 const Refund = require('../models/Refund');
 const Payment = require('../models/Payment');
+const Analytics = require('../models/Analytics');
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const checkoutNodeJssdk = require('@paypal/checkout-server-sdk');
 
