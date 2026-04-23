@@ -201,7 +201,7 @@ const getExperiences = async (req, res) => {
     const ehostId = req.user ? req.user.id : req.userId; 
 
     const { rows } = await pool.query(
-        `SELECT id, title, cover_image, location_name, price, status, rejection_reason, date_time
+        `SELECT id, title, cover_image, location_name, country, price, status, rejection_reason, date_time
          FROM experiences
          WHERE ehost_id = $1 AND status != 'deleted'
          ORDER BY created_at DESC`,
