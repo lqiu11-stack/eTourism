@@ -80,16 +80,21 @@ export const EhostDashboard = () => {
     }
   };
 
-  const handleSeeMessage = (exp) => {
-    setRejectionModal({
-      open: true,
-      reason: exp.rejection_reason || "",
-      title: exp.title || exp.location_name || "Your application",
-    });
-  };
-
-  const handleCheckReview = (experienceId) => {
-    navigate(`/DetailPage?id=${experienceId}`, { state: { from: "ehost" } });
+  const openReviewModal = (exp) => {
+    const title = exp.title || exp.location_name || "Your application";
+    if (exp.status === "rejected") {
+      setRejectionModal({
+        open: true,
+        reason: exp.rejection_reason || "",
+        title,
+      });
+    } else {
+      setRejectionModal({
+        open: true,
+        reason: "Your application is still under review. An admin will respond shortly.",
+        title,
+      });
+    }
   };
 
   const renderRow = (exp) => {
@@ -98,38 +103,53 @@ export const EhostDashboard = () => {
     let statusNode = null;
     let button = null;
 
+    const stop = (fn) => (e) => {
+      e.stopPropagation();
+      fn();
+    };
+
     if (exp.status === "rejected") {
       statusNode = <div className="eh-row-status eh-status-rejected">Your application was not successful.</div>;
       button = (
-        <button className="eh-row-btn" onClick={() => handleSeeMessage(exp)}>
-          Click to see message
+        <button className="eh-row-btn" onClick={stop(() => openReviewModal(exp))}>
+          Click to check the review
         </button>
       );
     } else if (exp.status === "approved" && isFuture) {
-      statusNode = <div className="eh-row-status eh-status-approved">Approve</div>;
+      statusNode = null;
       button = (
-        <button className="eh-row-btn" onClick={() => handleJoinStream(exp.id)}>
+        <button className="eh-row-btn" onClick={stop(() => handleJoinStream(exp.id))}>
           Join the stream
         </button>
       );
     } else if (exp.status === "approved") {
-      statusNode = null;
-      button = (
-        <button className="eh-row-btn" onClick={() => handleCheckReview(exp.id)}>
-          Click to check the review
-        </button>
-      );
+      statusNode = <div className="eh-row-status eh-status-closed">Experience has already taken place.</div>;
+      button = null;
     } else {
-      statusNode = <div className="eh-row-status eh-status-pending">Pending approval</div>;
+      statusNode = <div className="eh-row-status eh-status-pending">Waiting for admin to approve</div>;
       button = (
-        <button className="eh-row-btn" disabled>
-          Waiting for review
+        <button className="eh-row-btn" onClick={stop(() => openReviewModal(exp))}>
+          Click to check the review
         </button>
       );
     }
 
+    const goToDetail = () => navigate(`/DetailPage?id=${exp.id}`, { state: { from: "ehost" } });
+
     return (
-      <div className="eh-row" key={exp.id}>
+      <div
+        className="eh-row eh-row-clickable"
+        key={exp.id}
+        onClick={goToDetail}
+        role="button"
+        tabIndex={0}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            goToDetail();
+          }
+        }}
+      >
         <img src={getCountryImage(exp.country)} alt={exp.title || "experience"} className="eh-row-image" />
         <div className="eh-row-body">
           <div className="eh-row-title-line">
@@ -139,10 +159,9 @@ export const EhostDashboard = () => {
             )}
           </div>
           <div className="eh-row-datetime">{formatDateTime(exp.date_time) || "Date TBC"}</div>
-          {statusNode && exp.status === "rejected" && statusNode}
-          {exp.status !== "approved" && exp.status !== "rejected" && statusNode}
+          {statusNode}
         </div>
-        <div className="eh-row-action">{button}</div>
+        {button && <div className="eh-row-action">{button}</div>}
       </div>
     );
   };

@@ -117,6 +117,21 @@
   padding: 18px 22px;
 }
 
+.eh-row-clickable {
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.eh-row-clickable:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(90, 26, 26, 0.12);
+}
+
+.eh-row-clickable:focus-visible {
+  outline: 2px solid #a3373b;
+  outline-offset: 2px;
+}
+
 .eh-row-image {
   width: 120px;
   height: 100px;
@@ -175,6 +190,11 @@
 .eh-status-approved {
   color: #a3373b;
   font-weight: 500;
+}
+
+.eh-status-closed {
+  color: #6b6b6b;
+  font-style: italic;
 }
 
 .eh-row-action {
