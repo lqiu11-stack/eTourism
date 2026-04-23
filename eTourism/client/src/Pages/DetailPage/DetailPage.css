@@ -96,11 +96,25 @@
 }
 
 .detail-book-error{
-  margin-top:8px;
+  display:flex;
+  align-items:flex-start;
+  gap:8px;
+  margin-top:12px;
+  padding:10px 14px;
+  max-width:320px;
+  background:#fdecec;
+  border:1px solid #7a0000;
+  border-radius:8px;
   font-size:16px !important;
   color:#7a0000;
   font-weight:500;
   line-height:1.4;
+}
+.detail-book-error::before{
+  content:"\26A0";
+  font-size:18px;
+  line-height:1.2;
+  flex-shrink:0;
 }
 
 /* VIDEO */
@@ -364,6 +378,11 @@
     text-align: center;
     padding: 14px 20px;
     font-size: 16px;
+  }
+  .detail-book-error {
+    max-width: none;
+    width: 100%;
+    box-sizing: border-box;
   }
   .detail-video-section,
   .detail-blog-section {
