@@ -811,3 +811,198 @@
   background: #fdecea;
   color: #c62828;
 }
+
+.table-header,
+.table-row,
+.user-table-header,
+.user-table-row,
+.request-row,
+.report-header,
+.report-row,
+.suit-table-header,
+.suit-table-row,
+.table-box > div[style*="grid"] {
+  column-gap: 16px;
+}
+
+.table-header > *,
+.table-row > *,
+.user-table-header > *,
+.user-table-row > *,
+.request-row > *,
+.report-header > *,
+.report-row > *,
+.suit-table-header > *,
+.suit-table-row > *,
+.table-box > div[style*="grid"] > * {
+  min-width: 0;
+  overflow-wrap: break-word;
+}
+
+@media (max-width: 900px) {
+  .admin-navbar {
+    padding: 18px 20px;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .admin-nav-links {
+    gap: 14px;
+    flex-wrap: wrap;
+  }
+  .profile-section {
+    margin: 90px 20px 20px 20px;
+  }
+  .tabs {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .tab {
+    padding: 10px 20px;
+    font-size: 14px;
+    white-space: nowrap;
+  }
+  .booking-top {
+    flex-wrap: wrap;
+  }
+  .admin-search-bar {
+    width: 100%;
+  }
+  .refund-panel,
+  .suit-panel {
+    width: min(900px, 94vw);
+    flex-direction: column;
+    gap: 24px;
+  }
+  .refund-left,
+  .refund-right {
+    max-width: 100%;
+    width: 100%;
+  }
+  .suit-panel-right {
+    border-left: none;
+    border-top: 1px solid #e8dada;
+    padding-left: 0;
+    padding-top: 16px;
+  }
+  .chat-layout {
+    flex-direction: column;
+  }
+  .chat-list {
+    max-width: 100%;
+  }
+  .report-charts-row {
+    flex-direction: column;
+    gap: 16px;
+  }
+  .report-section {
+    padding: 12px 14px;
+  }
+  .report-heading {
+    font-size: 14px;
+  }
+  .table-header,
+  .table-row,
+  .user-table-header,
+  .user-table-row,
+  .request-row,
+  .report-header,
+  .report-row,
+  .suit-table-header,
+  .suit-table-row,
+  .table-box > div[style*="grid"] {
+    column-gap: 16px;
+  }
+  .table-header > *,
+  .table-row > *,
+  .user-table-header > *,
+  .user-table-row > *,
+  .request-row > *,
+  .report-header > *,
+  .report-row > *,
+  .suit-table-header > *,
+  .suit-table-row > *,
+  .table-box > div[style*="grid"] > * {
+    min-width: 0;
+    overflow-wrap: break-word;
+  }
+}
+
+@media (max-width: 640px) {
+  .admin-container {
+    padding: 12px;
+  }
+  .admin-navbar {
+    padding: 14px 16px;
+  }
+  .profile-section {
+    margin: 80px 16px 16px 16px;
+    flex-wrap: wrap;
+  }
+  .profile-btn {
+    margin-left: 0;
+  }
+  .tab {
+    padding: 10px 16px;
+    font-size: 13px;
+  }
+  .content-box {
+    padding: 14px;
+    border-radius: 14px;
+  }
+  .table-box {
+    padding: 12px;
+  }
+  .report-section {
+    padding: 10px 10px 14px;
+  }
+  .report-heading {
+    font-size: 13px;
+    margin-bottom: 8px;
+  }
+  .table-header,
+  .user-table-header,
+  .report-header,
+  .suit-table-header {
+    display: none !important;
+  }
+  .table-row,
+  .user-table-row,
+  .request-row,
+  .report-row,
+  .suit-table-row {
+    display: flex !important;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 6px;
+    padding: 14px 12px;
+    border-bottom: 1px solid #f1e3e3;
+    word-break: break-word;
+  }
+  .table-row > *,
+  .user-table-row > *,
+  .request-row > *,
+  .report-row > *,
+  .suit-table-row > * {
+    width: 100%;
+  }
+  .user-data-row {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+  .user-data-row label {
+    font-size: 16px;
+  }
+  .userdata-typein,
+  .userdata-typein-email {
+    width: 100%;
+  }
+  .refund-panel,
+  .suit-panel {
+    padding: 20px;
+    max-height: 88vh;
+    overflow-y: auto;
+  }
+  .msg {
+    max-width: 85%;
+  }
+}

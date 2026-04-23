@@ -15,6 +15,8 @@ const {
   updateBookingMeetingLink,
   getBookingPreferences,
   updateBookingPreferences,
+  getMe,
+  updateMe,
   submitApplication,
 } = require('../controllers/ehostController');
 
@@ -55,7 +57,11 @@ router.post('/calendar/unavailable-dates', requireRole('ehost'), setUnavailableD
 // PATCH /api/ehost/bookings/:id/meeting-link
 router.patch('/bookings/:id/meeting-link', requireRole('ehost'), updateBookingMeetingLink);
 
+// GET /api/ehost/me
+router.get('/me', requireRole('ehost'), getMe);
 
+// PATCH /api/ehost/me
+router.patch('/me', requireRole('ehost'), updateMe);
 
 
 router.post('/apply', validateApplication, submitApplication);

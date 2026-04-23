@@ -192,3 +192,75 @@
   cursor: pointer;
   font-size: 14px;
 }
+
+@media (max-width: 900px) {
+  .success-section {
+    padding-top: 80px;
+  }
+  .booking-card {
+    width: auto;
+    margin: 30px clamp(16px, 4vw, 60px);
+    padding: 30px;
+  }
+  .steps {
+    flex-wrap: wrap;
+    gap: 20px;
+  }
+  .step {
+    width: 45%;
+  }
+}
+
+@media (max-width: 640px) {
+  .success-section {
+    padding-top: 60px;
+  }
+  .success-icon,
+  .icontick {
+    width: 72px;
+    height: 72px;
+  }
+  .booking-card {
+    margin: 24px 16px;
+    padding: 20px;
+  }
+  .booking-card h3 {
+    font-size: 20px;
+  }
+  .booking-content {
+    flex-direction: column;
+    gap: 16px;
+  }
+  .booking-img {
+    width: 100%;
+    max-height: 220px;
+    object-fit: cover;
+  }
+  .booking-info h4 {
+    font-size: 18px;
+  }
+  .booking-info p {
+    font-size: 16px;
+  }
+  .booking-actions,
+  .refund-buttons {
+    flex-wrap: wrap;
+  }
+  .steps {
+    flex-direction: column;
+    gap: 18px;
+    padding: 18px;
+  }
+  .step {
+    width: 100%;
+  }
+  .step p {
+    max-width: 100%;
+  }
+  .schedual {
+    flex-wrap: wrap;
+  }
+  .calendar-btn {
+    margin: 8px 0;
+  }
+}

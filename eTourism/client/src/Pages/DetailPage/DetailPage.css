@@ -97,8 +97,8 @@
 
 .detail-book-error{
   margin-top:8px;
-  font-size:13px;
-  color:#ffcccc;
+  font-size:16px;
+  color:#7a0000;
   font-weight:500;
 }
 
@@ -285,4 +285,117 @@
   align-items:center;
   justify-content:center;
   margin:200px 0px 0px 0px;
+}
+
+/* Responsive */
+@media (max-width: 900px) {
+  .detail-hero {
+    height: auto;
+    min-height: 520px;
+    padding: 40px 0;
+  }
+  .detail-hero-content {
+    padding: 110px clamp(20px, 4vw, 60px) 40px;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 24px;
+  }
+  .detail-hero-left h1 {
+    font-size: clamp(24px, 4vw, 36px);
+  }
+  .detail-video-section,
+  .detail-blog-section {
+    flex-direction: column;
+    padding: 40px 24px 10px;
+    gap: 30px;
+  }
+  .detail-video-left {
+    padding: 0;
+    width: 100%;
+  }
+  .detail-video-left img,
+  .detail-video-player {
+    width: 100%;
+    max-width: 600px;
+  }
+  .detail-video-right {
+    max-width: 100%;
+    width: 100%;
+  }
+  .blog-card {
+    width: 100%;
+    max-width: 400px;
+    margin-left: 0;
+  }
+  .detail-guide-section,
+  .detail-review-section,
+  .detail-refund-section,
+  .detail-photo-section {
+    padding: 20px clamp(20px, 4vw, 60px) 40px;
+  }
+  .detail-photo-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .detail-photo-grid img {
+    width: 100%;
+  }
+  .detail-reviews {
+    flex-wrap: wrap;
+  }
+  .detail-newsletter {
+    margin-top: 100px;
+  }
+}
+
+@media (max-width: 640px) {
+  .detail-hero {
+    min-height: 480px;
+  }
+  .detail-hero-content {
+    padding: 130px 20px 30px;
+  }
+  .detail-hero-left h1 {
+    font-size: clamp(22px, 6vw, 30px);
+    padding-bottom: 12px;
+  }
+  .detail-book-btn {
+    width: 100%;
+    text-align: center;
+    padding: 14px 20px;
+    font-size: 16px;
+  }
+  .detail-video-section,
+  .detail-blog-section {
+    padding: 30px 16px 10px;
+  }
+  .detail-video-left h3 {
+    font-size: 20px;
+  }
+  .detail-guide-section,
+  .detail-review-section,
+  .detail-refund-section,
+  .detail-photo-section {
+    padding: 16px 16px 30px;
+  }
+  .detail-photo-grid {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+  .detail-review {
+    width: 100%;
+  }
+  .detail-reviews {
+    flex-direction: column;
+    gap: 14px;
+  }
+  .detail-guide-card {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .detail-newsletter {
+    margin-top: 60px;
+  }
+  .quote {
+    font-size: 44px;
+  }
 }

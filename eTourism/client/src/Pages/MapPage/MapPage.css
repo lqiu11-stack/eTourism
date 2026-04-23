@@ -140,3 +140,40 @@ label {
   cursor: pointer;
   font-size: 13px;
 }
+
+@media (max-width: 900px) {
+  .sidebar {
+    width: 280px;
+    padding: 15px 20px;
+  }
+  .sidebar-inner {
+    padding: 0 20px 30px 0;
+  }
+}
+
+@media (max-width: 640px) {
+  .map-layout {
+    flex-direction: column;
+    height: auto;
+    overflow: visible;
+    margin-top: 60px;
+  }
+  .sidebar {
+    width: 100%;
+    height: auto;
+    max-height: 50vh;
+    border-right: none;
+    border-bottom: 1px solid #ddd;
+    padding: 15px 16px;
+  }
+  .sidebar-inner {
+    padding: 0;
+  }
+  .sidebar-footer {
+    padding: 0 0 40px 0;
+  }
+  .map-container {
+    height: 60vh;
+    min-height: 400px;
+  }
+}

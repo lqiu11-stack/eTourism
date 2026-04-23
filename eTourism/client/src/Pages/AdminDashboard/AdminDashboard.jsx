@@ -387,7 +387,7 @@ export const Dashboard = () => {
       <div className="profile-section">
         <img src={profileImg} alt="profile" className="profile-img" />
         <h2>{user.first_name || "Admin"}</h2>
-        <button className="profile-btn">Profile and setting</button>
+        {/* <button className="profile-btn">Profile and setting</button> */}
       </div>
 
       {/* ===== Tabs ===== */}
@@ -555,7 +555,7 @@ const Booking = ({
           <div style={{ fontSize: "13px" }}>{item.payment_method || "—"}</div>
           <div>
             {item.status === "refund_pending" ? (
-              <button className="sort-btn" onClick={() => handleRefund(item)}>{item.status}</button>
+              <button className="sort-btn" onClick={() => handleRefund(item)}>refund pending</button>
             ) : (
               <button className="sort-btn" disabled>{item.status}</button>
             )}
@@ -627,7 +627,7 @@ const UserData = ({
       </div>
 
       <div className="table-box">
-        <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr", fontWeight: "bold", borderBottom: "1px solid black", paddingBottom: "10px" }}>
+        <div className="table-header" style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr", fontWeight: "bold", borderBottom: "1px solid black", paddingBottom: "10px" }}>
           <span>Email</span>
           <span>Role</span>
           <span>Status</span>
@@ -636,7 +636,7 @@ const UserData = ({
         {loading && <p style={{ padding: "12px" }}>Loading...</p>}
         {!loading && filtered.length === 0 && <p style={{ padding: "12px" }}>No users found.</p>}
         {filtered.map((item) => (
-          <div key={item.id} style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr", alignItems: "center", padding: "10px 0", borderBottom: "1px solid #eee" }}>
+          <div className="table-row" key={item.id} style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr", alignItems: "center", padding: "10px 0", borderBottom: "1px solid #eee" }}>
             <div>{item.email}</div>
             <div>{item.role}</div>
             <div>
@@ -719,7 +719,7 @@ const ExperienceRequests = ({ experiences, loading, statusFilter, setStatusFilte
     </div>
 
     <div className="table-box">
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 2fr 1fr 2fr", fontWeight: "bold", borderBottom: "1px solid black", paddingBottom: "10px" }}>
+      <div className="table-header" style={{ display: "grid", gridTemplateColumns: "1fr 2fr 1fr 2fr", fontWeight: "bold", borderBottom: "1px solid black", paddingBottom: "10px" }}>
         <span>ID</span>
         <span>Title</span>
         <span>Status</span>
@@ -728,7 +728,7 @@ const ExperienceRequests = ({ experiences, loading, statusFilter, setStatusFilte
       {loading && <p style={{ padding: "12px" }}>Loading...</p>}
       {!loading && experiences.length === 0 && <p style={{ padding: "12px" }}>No experiences found.</p>}
       {experiences.map((item) => (
-        <div key={item.id} style={{ display: "grid", gridTemplateColumns: "1fr 2fr 1fr 2fr", alignItems: "center", padding: "10px 0", borderBottom: "1px solid #eee" }}>
+        <div className="table-row" key={item.id} style={{ display: "grid", gridTemplateColumns: "1fr 2fr 1fr 2fr", alignItems: "center", padding: "10px 0", borderBottom: "1px solid #eee" }}>
           <div>#{item.id}</div>
           <div>{item.title}</div>
           <div>
@@ -767,7 +767,18 @@ const barOptions = () => ({
   },
   scales: {
     x: { beginAtZero: true, ticks: { stepSize: 1, precision: 0 }, grid: { color: "#f0e8e8" } },
-    y: { grid: { display: false }, ticks: { font: { size: 12 } } },
+    y: {
+      grid: { display: false },
+      ticks: {
+        font: { size: 12 },
+        autoSkip: false,
+        callback: function (value) {
+          const label = this.getLabelForValue(value);
+          const max = window.innerWidth < 640 ? 14 : window.innerWidth < 900 ? 20 : 28;
+          return label.length > max ? label.slice(0, max - 1) + "…" : label;
+        },
+      },
+    },
   },
 });
 
@@ -1022,7 +1033,7 @@ const EhostApplications = ({
     </div>
 
     <div className="table-box">
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 2fr 2fr 1fr 2fr", fontWeight: "bold", borderBottom: "1px solid black", paddingBottom: "10px" }}>
+      <div className="table-header" style={{ display: "grid", gridTemplateColumns: "1fr 2fr 2fr 1fr 2fr", fontWeight: "bold", borderBottom: "1px solid black", paddingBottom: "10px" }}>
         <span>ID</span>
         <span>Name</span>
         <span>Email</span>
@@ -1032,7 +1043,7 @@ const EhostApplications = ({
       {loading && <p style={{ padding: "12px" }}>Loading...</p>}
       {!loading && applications.length === 0 && <p style={{ padding: "12px" }}>No applications found.</p>}
       {applications.map((item) => (
-        <div key={item.id} style={{ display: "grid", gridTemplateColumns: "1fr 2fr 2fr 1fr 2fr", alignItems: "center", padding: "10px 0", borderBottom: "1px solid #eee" }}>
+        <div className="table-row" key={item.id} style={{ display: "grid", gridTemplateColumns: "1fr 2fr 2fr 1fr 2fr", alignItems: "center", padding: "10px 0", borderBottom: "1px solid #eee" }}>
           <div>#{item.id}</div>
           <div>{item.name}</div>
           <div>{item.email}</div>
