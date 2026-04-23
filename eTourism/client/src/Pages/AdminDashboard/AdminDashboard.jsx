@@ -767,7 +767,18 @@ const barOptions = () => ({
   },
   scales: {
     x: { beginAtZero: true, ticks: { stepSize: 1, precision: 0 }, grid: { color: "#f0e8e8" } },
-    y: { grid: { display: false }, ticks: { font: { size: 12 } } },
+    y: {
+      grid: { display: false },
+      ticks: {
+        font: { size: 12 },
+        autoSkip: false,
+        callback: function (value) {
+          const label = this.getLabelForValue(value);
+          const max = window.innerWidth < 640 ? 14 : window.innerWidth < 900 ? 20 : 28;
+          return label.length > max ? label.slice(0, max - 1) + "…" : label;
+        },
+      },
+    },
   },
 });
 

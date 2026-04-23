@@ -892,6 +892,13 @@
   }
   .report-charts-row {
     flex-direction: column;
+    gap: 16px;
+  }
+  .report-section {
+    padding: 12px 14px;
+  }
+  .report-heading {
+    font-size: 14px;
   }
   .table-header,
   .table-row,
@@ -944,6 +951,13 @@
   }
   .table-box {
     padding: 12px;
+  }
+  .report-section {
+    padding: 10px 10px 14px;
+  }
+  .report-heading {
+    font-size: 13px;
+    margin-bottom: 8px;
   }
   .table-header,
   .user-table-header,
