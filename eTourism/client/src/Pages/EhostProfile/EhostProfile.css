@@ -97,6 +97,11 @@
   box-sizing: border-box;
 }
 
+input[type="date"] {
+    color: white;
+    -webkit-text-fill-color: black;
+}
+
 .ep-input:focus,
 .ep-textarea:focus {
   outline: none;
