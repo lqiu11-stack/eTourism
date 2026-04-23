@@ -34,6 +34,13 @@ export const DetailPage = () => {
   const [searchParams] = useSearchParams();
   const token = localStorage.getItem("token");
   const isLoggedIn = !!token;
+  const user = JSON.parse(localStorage.getItem("user") || "{}");
+  const isEhost = user.role === "ehost";
+
+  const blockVisitorFeature = (feature) => (e) => {
+    e.preventDefault();
+    alert(`${feature} is only available to visitors. You are signed in as an e-host.`);
+  };
 
   const [experience, setExperience] = useState(null);
   const [reviews, setReviews] = useState([]);
@@ -78,7 +85,13 @@ export const DetailPage = () => {
 
           <div className="nav-links">
               <Link to="/help" className="nav-link">Helping centre</Link>
-              <Link to="/Mybooking" className="nav-link">My booking</Link>
+              <Link
+                to="/Mybooking"
+                className="nav-link"
+                onClick={isEhost ? blockVisitorFeature("My booking") : undefined}
+              >
+                My booking
+              </Link>
                {isLoggedIn ? (
                   <button className="nav-link nav-btn-link" onClick={handleLogout}>
                     Logout
@@ -110,8 +123,10 @@ export const DetailPage = () => {
             {(() => {
               const isPast = experience?.date_time && new Date(experience.date_time).getTime() <= Date.now();
               const notApproved = experience?.status && experience.status !== 'approved';
-              const unavailable = isPast || notApproved;
-              const reason = isPast
+              const unavailable = isPast || notApproved || isEhost;
+              const reason = isEhost
+                ? 'E-hosts cannot book experiences. Please sign in as a visitor to book.'
+                : isPast
                 ? 'Booking is closed — this experience has already started.'
                 : notApproved
                 ? 'This experience is not available for booking.'
@@ -121,7 +136,13 @@ export const DetailPage = () => {
                   <button
                     className={`detail-book-btn${unavailable ? ' detail-book-btn--disabled' : ''}`}
                     disabled={unavailable}
-                    onClick={() => !unavailable && navigate(`/PaymentPage?id=${searchParams.get("id")}`)}
+                    onClick={() => {
+                      if (isEhost) {
+                        alert('E-hosts cannot book experiences. Please sign in as a visitor.');
+                        return;
+                      }
+                      if (!unavailable) navigate(`/PaymentPage?id=${searchParams.get("id")}`);
+                    }}
                   >
                     Book it now!
                   </button>

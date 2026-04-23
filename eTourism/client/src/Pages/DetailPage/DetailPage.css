@@ -97,9 +97,10 @@
 
 .detail-book-error{
   margin-top:8px;
-  font-size:16px;
+  font-size:16px !important;
   color:#7a0000;
   font-weight:500;
+  line-height:1.4;
 }
 
 /* VIDEO */

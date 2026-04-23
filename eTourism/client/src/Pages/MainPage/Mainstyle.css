@@ -276,6 +276,29 @@
   background:#f5eded;
 }
 
+.filter-check{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding:9px 16px;
+  font-size:14px;
+  color:#333;
+  cursor:pointer;
+  user-select:none;
+}
+
+.filter-check:hover{
+  background:#f5eded;
+}
+
+.filter-check input[type="checkbox"]{
+  cursor:pointer;
+  accent-color:#7a0000;
+  width:16px;
+  height:16px;
+  margin:0;
+}
+
 /* FEATURES */
 
 .features{
