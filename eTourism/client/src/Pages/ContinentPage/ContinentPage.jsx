@@ -12,6 +12,7 @@ import { getCountryImage } from "../../utils/countryImages";
 
 const API_BASE = import.meta.env.VITE_API_URL;
 const VALID_CONTINENTS = ["Africa", "Asia", "Europe", "North America", "South America", "Oceania"];
+const ALL_VALUE = "all";
 
 const getImage = (exp) => getCountryImage(exp.country);
 
@@ -29,7 +30,11 @@ export const ContinentPage = () => {
   const token = localStorage.getItem("token");
   const isLoggedIn = !!token;
 
-  const activeContinent = VALID_CONTINENTS.includes(continent) ? continent : "Asia";
+  const isAll = continent === ALL_VALUE;
+  const activeContinent = isAll
+    ? null
+    : VALID_CONTINENTS.includes(continent) ? continent : "Asia";
+  const headerTitle = isAll ? "Explore destinations" : activeContinent;
 
   const [experiences, setExperiences] = useState([]);
   const [filtered, setFiltered] = useState([]);
@@ -41,9 +46,26 @@ export const ContinentPage = () => {
   const [showCategoryMenu, setShowCategoryMenu] = useState(false);
   const [showLanguageMenu, setShowLanguageMenu] = useState(false);
 
+  const applyFilters = useCallback((list, q, date) => {
+    let results = list;
+    if (q && q.trim()) {
+      const needle = q.trim().toLowerCase();
+      results = results.filter(e =>
+        (e.location_name && e.location_name.toLowerCase().includes(needle)) ||
+        (e.country && e.country.toLowerCase().includes(needle))
+      );
+    }
+    if (date) {
+      results = results.filter(e =>
+        e.date_time && e.date_time.slice(0, 10) === date
+      );
+    }
+    return results;
+  }, []);
+
   const fetchExperiences = useCallback(async () => {
     const params = new URLSearchParams();
-    params.set("continent", activeContinent);
+    if (activeContinent) params.set("continent", activeContinent);
     if (activeCategory) params.set("category", activeCategory);
     if (activeLanguage) params.set("language", activeLanguage);
     try {
@@ -55,21 +77,17 @@ export const ContinentPage = () => {
 
   useEffect(() => { fetchExperiences(); }, [fetchExperiences]);
 
+  useEffect(() => {
+    if (experiences.length === 0) return;
+    const initialQ = searchParams.get("q");
+    const initialDate = searchParams.get("date");
+    if (initialQ || initialDate) {
+      setFiltered(applyFilters(experiences, initialQ || "", initialDate || ""));
+    }
+  }, [experiences, searchParams, applyFilters]);
+
   const handleSearch = () => {
-    let results = experiences;
-    if (searchLocation.trim()) {
-      const q = searchLocation.trim().toLowerCase();
-      results = results.filter(e =>
-        (e.location_name && e.location_name.toLowerCase().includes(q)) ||
-        (e.country && e.country.toLowerCase().includes(q))
-      );
-    }
-    if (searchDate) {
-      results = results.filter(e =>
-        e.date_time && e.date_time.slice(0, 10) === searchDate
-      );
-    }
-    setFiltered(results);
+    setFiltered(applyFilters(experiences, searchLocation, searchDate));
   };
 
   const handleLogout = () => {
@@ -104,7 +122,7 @@ export const ContinentPage = () => {
             </div>
           </nav>
 
-          <h1 className="hero-title">{activeContinent}</h1>
+          <h1 className="hero-title">{headerTitle}</h1>
 
           <div className="search-panel">
 
@@ -225,14 +243,18 @@ export const ContinentPage = () => {
       <section className="continent-grid-section">
         <h2 className="section-title">All activity</h2>
         {filtered.length === 0 ? (
-          <p className="continent-empty">No experiences available for {activeContinent} yet.</p>
+          <p className="continent-empty">
+            {experiences.length === 0
+              ? `No experiences available${activeContinent ? ` for ${activeContinent}` : ""} yet.`
+              : "No results match your search."}
+          </p>
         ) : (
           <div className="continent-grid">
             {filtered.map(exp => (
               <div
                 key={exp.id}
                 className="tour-card"
-                onClick={() => navigate(`/DetailPage?id=${exp.id}`, { state: { from: "continent", continent: activeContinent } })}
+                onClick={() => navigate(`/DetailPage?id=${exp.id}`, { state: { from: "continent", continent: activeContinent || "all" } })}
                 style={{ cursor: "pointer" }}
               >
                 <div className="tour-image">

@@ -59,7 +59,7 @@ export const MainPage = () => {
     const params = new URLSearchParams();
     if (searchLocation.trim()) params.set('q', searchLocation.trim());
     if (searchDate) params.set('date', searchDate);
-    const target = activeContinent || 'Asia';
+    const target = activeContinent || 'all';
     navigate(`/continent/${target}${params.toString() ? `?${params}` : ''}`);
   };
 
@@ -274,7 +274,7 @@ export const MainPage = () => {
               <h2 className="section-title">Where next?</h2>
               <p className="section-subtitle">Here are some popular choice</p>
             </div>
-            <button className="more-btn" onClick={() => navigate('/continent/Asia')}>Explore more</button>
+            <button className="more-btn" onClick={() => navigate('/continent/all')}>Explore more</button>
           </div>
           <div className="destination-grid">
             <div
