@@ -23,6 +23,7 @@ export const LoginPage = () => {
   const getRedirectPath = (role) => {
     if (redirectTo) return redirectTo;
     if (role === "admin") return "/Dashboard";
+    if (role === "ehost") return "/EhostDashboard";
     return "/MainPage";
   };
 
@@ -96,9 +97,6 @@ export const LoginPage = () => {
       <div className="top-links">
           <button className="top-btn" type="submit" onClick={() => navigate("/Eregistrate1")}>
             Join us to become an E-host
-          </button>
-          <button className="top-btn" type="submit" onClick={() => navigate("/DashBoard")}>
-            Admin Login
           </button>
         </div>
       <form className="login-box" onSubmit={handleSubmit}>

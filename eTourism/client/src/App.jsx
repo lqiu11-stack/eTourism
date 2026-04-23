@@ -14,6 +14,9 @@ import { MyBooking } from "./Pages/MyBooking/MyBooking.jsx";
 import { MyBookingDetail } from "./Pages/BookingDetail/BookingDetail.jsx";
 import { RefundPage } from "./Pages/RefundPage/RefundPage.jsx";
 import { MapPage } from "./Pages/MapPage/MapPage.jsx";
+import { EhostDashboard } from "./Pages/EhostDashboard/EhostDashboard.jsx";
+import { ApplyActivity } from "./Pages/ApplyActivity/ApplyActivity.jsx";
+import { EhostProfile } from "./Pages/EhostProfile/EhostProfile.jsx";
 
 
 
@@ -39,6 +42,9 @@ function App() {
         <Route path="/MyBookingDetail" element={<MyBookingDetail />} />
         <Route path="/RefundPage" element={<RefundPage />} />
         <Route path="/MapPage" element={< MapPage />} />
+        <Route path="/EhostDashboard" element={<EhostDashboard />} />
+        <Route path="/ApplyActivity" element={<ApplyActivity />} />
+        <Route path="/EhostProfile" element={<EhostProfile />} />
       </Routes>
   );
 }
