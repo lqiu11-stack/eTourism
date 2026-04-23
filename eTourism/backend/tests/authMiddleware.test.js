@@ -288,7 +288,7 @@ describe('validateApplication()', () => {
 
   it('400 : missing name', () => {
     const req = makeReq({}, {
-      birthday: '1990-01-01', nationality: 'UK', email: 'test@test.com',
+      birthday: '1990-01-01', country: 'UK', email: 'test@test.com',
       hasExperience: true, preferredCountry: 'UK',
       description: 'Great guide', videoLink: 'https://yt.com/x', isContractAgreed: true,
     });
@@ -303,7 +303,7 @@ describe('validateApplication()', () => {
 
   it('400 : missing birthday', () => {
     const req = makeReq({}, {
-      name: 'John', nationality: 'UK', email: 'test@test.com',
+      name: 'John', country: 'UK', email: 'test@test.com',
       hasExperience: true, preferredCountry: 'UK',
       description: 'Great guide', videoLink: 'https://yt.com/x', isContractAgreed: true,
     });
@@ -316,7 +316,7 @@ describe('validateApplication()', () => {
     assert.equal(next.mock.callCount(), 0);
   });
 
-  it('400 : missing nationality', () => {
+  it('400 : missing country', () => {
     const req = makeReq({}, {
       name: 'John', birthday: '1990-01-01', email: 'test@test.com',
       hasExperience: true, preferredCountry: 'UK',
@@ -333,7 +333,7 @@ describe('validateApplication()', () => {
 
   it('400 : missing email', () => {
     const req = makeReq({}, {
-      name: 'John', birthday: '1990-01-01', nationality: 'UK',
+      name: 'John', birthday: '1990-01-01', country: 'UK',
       hasExperience: true, preferredCountry: 'UK',
       description: 'Great guide', videoLink: 'https://yt.com/x', isContractAgreed: true,
     });
@@ -348,7 +348,7 @@ describe('validateApplication()', () => {
 
   it('400 : missing hasExperience', () => {
     const req = makeReq({}, {
-      name: 'John', birthday: '1990-01-01', nationality: 'UK', email: 'test@test.com',
+      name: 'John', birthday: '1990-01-01', country: 'UK', email: 'test@test.com',
       preferredCountry: 'UK',
       description: 'Great guide', videoLink: 'https://yt.com/x', isContractAgreed: true,
     });
@@ -363,7 +363,7 @@ describe('validateApplication()', () => {
 
   it('400 : missing preferredCountry', () => {
     const req = makeReq({}, {
-      name: 'John', birthday: '1990-01-01', nationality: 'UK', email: 'test@test.com',
+      name: 'John', birthday: '1990-01-01', country: 'UK', email: 'test@test.com',
       hasExperience: false,
       description: 'Great guide', videoLink: 'https://yt.com/x', isContractAgreed: true,
     });
@@ -378,7 +378,7 @@ describe('validateApplication()', () => {
 
   it('400 : missing description', () => {
     const req = makeReq({}, {
-      name: 'John', birthday: '1990-01-01', nationality: 'UK', email: 'test@test.com',
+      name: 'John', birthday: '1990-01-01', country: 'UK', email: 'test@test.com',
       hasExperience: true, preferredCountry: 'UK',
       videoLink: 'https://yt.com/x', isContractAgreed: true,
     });
@@ -393,7 +393,7 @@ describe('validateApplication()', () => {
 
   it('400 : missing videoLink', () => {
     const req = makeReq({}, {
-      name: 'John', birthday: '1990-01-01', nationality: 'UK', email: 'test@test.com',
+      name: 'John', birthday: '1990-01-01', country: 'UK', email: 'test@test.com',
       hasExperience: true, preferredCountry: 'UK',
       description: 'Great guide', isContractAgreed: true,
     });
@@ -408,7 +408,7 @@ describe('validateApplication()', () => {
 
   it('400 : isContractAgreed is false', () => {
     const req = makeReq({}, {
-      name: 'John', birthday: '1990-01-01', nationality: 'UK', email: 'test@test.com',
+      name: 'John', birthday: '1990-01-01', country: 'UK', email: 'test@test.com',
       hasExperience: true, preferredCountry: 'UK',
       description: 'Great guide', videoLink: 'https://yt.com/x', isContractAgreed: false,
     });
@@ -423,7 +423,7 @@ describe('validateApplication()', () => {
 
   it('400 : isContractAgreed is undefined', () => {
     const req = makeReq({}, {
-      name: 'John', birthday: '1990-01-01', nationality: 'UK', email: 'test@test.com',
+      name: 'John', birthday: '1990-01-01', country: 'UK', email: 'test@test.com',
       hasExperience: true, preferredCountry: 'UK',
       description: 'Great guide', videoLink: 'https://yt.com/x',
     });
@@ -438,7 +438,7 @@ describe('validateApplication()', () => {
 
   it('passes : all required fields present with isContractAgreed true', () => {
     const req = makeReq({}, {
-      name: 'John Smith', birthday: '1990-01-01', nationality: 'UK', email: 'john@test.com',
+      name: 'John Smith', birthday: '1990-01-01', country: 'UK', email: 'john@test.com',
       hasExperience: true, preferredCountry: 'UK',
       description: 'Experienced guide', videoLink: 'https://youtube.com/x',
       isContractAgreed: true,
@@ -453,7 +453,7 @@ describe('validateApplication()', () => {
 
   it('passes : hasExperience false is valid when all other fields provided', () => {
     const req = makeReq({}, {
-      name: 'Jane Smith', birthday: '1995-05-15', nationality: 'FR', email: 'jane@test.com',
+      name: 'Jane Smith', birthday: '1995-05-15', country: 'FR', email: 'jane@test.com',
       hasExperience: false, preferredCountry: 'France',
       description: 'New guide eager to learn', videoLink: 'https://youtube.com/y',
       isContractAgreed: true,

@@ -41,14 +41,14 @@ function requireRole(...roles) {
 /*3-4 edit ehost registionation and login by Emily 
 Middleware for validating eHost application form data */
 const validateApplication = (req, res, next) => {
-  const { 
-    name, birthday, nationality, email, 
-    hasExperience, preferredCountry, 
-    description, videoLink, isContractAgreed 
+  const {
+    name, birthday, country, email,
+    hasExperience, preferredCountry,
+    description, videoLink, isContractAgreed
   } = req.body;
 
-  
-  if (!name || !birthday || !nationality || !email) {
+
+  if (!name || !birthday || !country || !email) {
     return res.status(400).json({ message: "Please fill in all required personal details." });
   }
 

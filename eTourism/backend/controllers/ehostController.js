@@ -953,15 +953,15 @@ const sendConfirmationEmail = (email, name) => {
 const submitApplication = async (req, res) => {
   try {
     
-    const { 
-      name, birthday, nationality, email, 
-      hasExperience, yearsOfExperience, pastJourneyInfo, preferredCountry, 
-      preferredSpotTypes, description, videoLink, isContractAgreed 
+    const {
+      name, birthday, country, email,
+      hasExperience, yearsOfExperience, preferredCountry,
+      description, videoLink
     } = req.body;
 
-    
+
     const { rows: existingRows } = await pool.query(
-      'SELECT id FROM ehost_applications WHERE email = $1', 
+      'SELECT id FROM ehost_applications WHERE email = $1',
       [email]
     );
 
@@ -971,23 +971,20 @@ const submitApplication = async (req, res) => {
 
     // !!!Save the data into the database.
     const { rows: newAppRows } = await pool.query(
-      `INSERT INTO ehost_applications 
-      (name, birthday, nationality, email, has_experience, years_of_experience, past_journey_info, preferred_country, preferred_spot_types, description, video_link, is_contract_agreed, status)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, 'pending') 
+      `INSERT INTO ehost_applications
+      (name, birthday, country, email, has_experience, years_of_experience, preferred_country, description, video_link, status)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'pending')
       RETURNING id`,
       [
-        name, 
-        birthday, 
-        nationality, 
-        email, 
-        hasExperience, 
-        yearsOfExperience || 0, 
-        pastJourneyInfo || null, 
-        preferredCountry, 
-        preferredSpotTypes ? JSON.stringify(preferredSpotTypes) : null, 
-        description, 
-        videoLink, 
-        isContractAgreed
+        name,
+        birthday,
+        country,
+        email,
+        hasExperience,
+        yearsOfExperience || 0,
+        preferredCountry,
+        description,
+        videoLink
       ]
     );
 

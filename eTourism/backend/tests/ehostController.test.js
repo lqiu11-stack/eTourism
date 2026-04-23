@@ -65,7 +65,7 @@ describe('submitApplication()', () => {
     });
 
     const req = makeReq({
-      name: 'John Smith', birthday: '1990-01-01', nationality: 'UK',
+      name: 'John Smith', birthday: '1990-01-01', country: 'UK',
       email: 'john@example.com', hasExperience: true, preferredCountry: 'UK',
       description: 'Great tour guide', videoLink: 'https://youtube.com/x',
       isContractAgreed: true,
@@ -107,7 +107,7 @@ describe('submitApplication()', () => {
     });
 
     const req = makeReq({
-      name: 'John Smith', birthday: '1990-01-01', nationality: 'UK',
+      name: 'John Smith', birthday: '1990-01-01', country: 'UK',
       email: 'john@example.com', hasExperience: true, preferredCountry: 'UK',
       description: 'Great tour guide', videoLink: 'https://youtube.com/x',
       isContractAgreed: true,
