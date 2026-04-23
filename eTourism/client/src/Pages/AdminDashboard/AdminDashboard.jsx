@@ -555,7 +555,7 @@ const Booking = ({
           <div style={{ fontSize: "13px" }}>{item.payment_method || "—"}</div>
           <div>
             {item.status === "refund_pending" ? (
-              <button className="sort-btn" onClick={() => handleRefund(item)}>{item.status}</button>
+              <button className="sort-btn" onClick={() => handleRefund(item)}>refund pending</button>
             ) : (
               <button className="sort-btn" disabled>{item.status}</button>
             )}
