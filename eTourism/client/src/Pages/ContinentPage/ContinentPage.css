@@ -1,0 +1,47 @@
+.continent-page .detail-back-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  max-height: 25px;
+  display: flex;
+  align-items: center;
+  margin-right: auto;
+}
+.continent-page .detail-back-icon {
+  width: 25px;
+  display: block;
+  filter: brightness(0) invert(1);
+}
+
+.continent-grid-section {
+  padding: 60px clamp(20px, 4vw, 100px);
+}
+
+.continent-grid-section .section-title {
+  margin-bottom: 20px;
+  font-size: 28px;
+}
+
+.continent-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 24px;
+}
+
+.continent-empty {
+  color: #666;
+  font-size: 16px;
+}
+
+@media (max-width: 640px) {
+  .continent-grid-section {
+    padding: 40px 20px;
+  }
+  .continent-grid-section .section-title {
+    font-size: 22px;
+  }
+  .continent-grid {
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 16px;
+  }
+}

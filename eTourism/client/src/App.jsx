@@ -17,6 +17,7 @@ import { MapPage } from "./Pages/MapPage/MapPage.jsx";
 import { EhostDashboard } from "./Pages/EhostDashboard/EhostDashboard.jsx";
 import { ApplyActivity } from "./Pages/ApplyActivity/ApplyActivity.jsx";
 import { EhostProfile } from "./Pages/EhostProfile/EhostProfile.jsx";
+import { ContinentPage } from "./Pages/ContinentPage/ContinentPage.jsx";
 
 
 
@@ -45,6 +46,7 @@ function App() {
         <Route path="/EhostDashboard" element={<EhostDashboard />} />
         <Route path="/ApplyActivity" element={<ApplyActivity />} />
         <Route path="/EhostProfile" element={<EhostProfile />} />
+        <Route path="/continent/:continent" element={<ContinentPage />} />
       </Routes>
   );
 }
