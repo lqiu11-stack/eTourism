@@ -1,5 +1,16 @@
 const pool = require('../config/db');
+const User = require('../models/User');
 const { CATEGORIES, LANGUAGES, CONTINENTS, GENDER_PREFERENCES } = require('../constants/enums');
+
+const EDITABLE_PROFILE_FIELDS = [
+  'first_name',
+  'last_name',
+  'bio',
+  'profile_image',
+  'country',
+  'language',
+  'date_of_birth',
+];
 
 const supportedGenderPreferences = GENDER_PREFERENCES;
 
@@ -190,8 +201,8 @@ const getExperiences = async (req, res) => {
     const ehostId = req.user ? req.user.id : req.userId; 
 
     const { rows } = await pool.query(
-        `SELECT id, cover_image, location_name, price, status, rejection_reason 
-         FROM experiences 
+        `SELECT id, title, cover_image, location_name, price, status, rejection_reason, date_time
+         FROM experiences
          WHERE ehost_id = $1 AND status != 'deleted'
          ORDER BY created_at DESC`,
         [ehostId]
@@ -882,7 +893,57 @@ const updateBookingMeetingLink = async (req, res) => {
 
 
 
-//ehost-01: eHost Application Submission API 
+// ehost profile: self-service profile read/update
+const getMe = async (req, res) => {
+  try {
+    const ehostId = req.user ? req.user.id : req.userId;
+    const user = await User.findById(ehostId);
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found.' });
+    }
+    res.status(200).json({ success: true, data: user });
+  } catch (error) {
+    console.error('Failed to retrieve eHost profile:', error);
+    res.status(500).json({ success: false, message: 'Server internal error' });
+  }
+};
+
+const updateMe = async (req, res) => {
+  try {
+    const ehostId = req.user ? req.user.id : req.userId;
+
+    const updates = {};
+    for (const key of EDITABLE_PROFILE_FIELDS) {
+      if (Object.prototype.hasOwnProperty.call(req.body, key)) {
+        const value = req.body[key];
+        updates[key] = value === '' ? null : value;
+      }
+    }
+
+    if (updates.language !== undefined && updates.language !== null && !LANGUAGES.includes(updates.language)) {
+      return res.status(400).json({
+        success: false,
+        message: `Invalid language. Allowed values: ${LANGUAGES.join(', ')}`,
+      });
+    }
+
+    if (Object.keys(updates).length === 0) {
+      return res.status(400).json({ success: false, message: 'No editable fields provided.' });
+    }
+
+    const updated = await User.update(ehostId, updates);
+    if (!updated) {
+      return res.status(404).json({ success: false, message: 'User not found.' });
+    }
+    res.status(200).json({ success: true, data: updated });
+  } catch (error) {
+    console.error('Failed to update eHost profile:', error);
+    res.status(500).json({ success: false, message: 'Server internal error' });
+  }
+};
+
+
+//ehost-01: eHost Application Submission API
 
 const sendConfirmationEmail = (email, name) => {
   console.log(`[Email Service] is sending a confirmation email to ${email}...`);
@@ -962,5 +1023,7 @@ module.exports = {
   updateBookingMeetingLink,
   getBookingPreferences,
   updateBookingPreferences,
-  submitApplication 
+  getMe,
+  updateMe,
+  submitApplication
 };
