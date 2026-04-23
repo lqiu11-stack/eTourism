@@ -80,7 +80,8 @@
 
 .ep-label {
   font-size: 14px;
-  color: #4a4a4a;
+  color: #
+  ;
   margin-top: 4px;
   font-weight: 500;
 }
@@ -154,16 +155,34 @@ input[type="date"] {
   cursor: not-allowed;
 }
 
+@media (max-width: 900px) {
+  .ep-navbar {
+    padding: 20px 24px;
+  }
+  .ep-form {
+    margin: 28px clamp(16px, 4vw, 40px) 0;
+    padding: 28px;
+  }
+}
+
 @media (max-width: 640px) {
   .ep-grid {
     grid-template-columns: 1fr;
   }
   .ep-navbar {
-    grid-template-columns: 80px 1fr 80px;
-    padding: 18px 16px;
+    grid-template-columns: 70px 1fr 70px;
+    padding: 16px 14px;
+  }
+  .ep-title {
+    font-size: 20px;
   }
   .ep-form {
-    padding: 22px;
-    margin: 22px 14px 0;
+    padding: 18px;
+    margin: 18px 14px 0;
+  }
+  .ep-avatar-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 14px;
   }
 }

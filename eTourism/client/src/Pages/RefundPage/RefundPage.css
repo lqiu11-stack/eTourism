@@ -166,3 +166,67 @@
   opacity: 0.5;
   cursor: not-allowed;
 }
+
+@media (max-width: 900px) {
+  .Myhero-title {
+    margin: 50px 20px 10px clamp(16px, 4vw, 60px);
+    font-size: 28px;
+  }
+  .refund-booking-card {
+    margin: 20px clamp(16px, 4vw, 60px);
+    width: auto;
+    padding: 20px 24px;
+  }
+  .refund-box {
+    width: auto;
+    margin: 0 clamp(16px, 4vw, 60px) 40px;
+  }
+  .policy-row {
+    flex-wrap: wrap;
+  }
+  .policy-card {
+    flex: 1 1 calc(50% - 10px);
+  }
+}
+
+@media (max-width: 640px) {
+  .Mybooking-hero {
+    height: 180px;
+  }
+  .Myhero-title {
+    font-size: clamp(20px, 5vw, 28px);
+    margin: 40px 16px 10px 16px;
+  }
+  .refund-booking-card {
+    flex-direction: column;
+    align-items: flex-start;
+    margin: 16px;
+    padding: 18px;
+    gap: 14px;
+  }
+  .refund-booking-card img {
+    width: 100%;
+    height: 180px;
+  }
+  .service-btn {
+    margin-left: 0;
+    width: 100%;
+    text-align: center;
+  }
+  .refund-box {
+    margin: 0 16px 32px;
+    padding: 20px;
+  }
+  .policy-row {
+    flex-direction: column;
+    gap: 14px;
+  }
+  .refund-bottom {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 14px;
+  }
+  .cancel-btn {
+    width: 100%;
+  }
+}

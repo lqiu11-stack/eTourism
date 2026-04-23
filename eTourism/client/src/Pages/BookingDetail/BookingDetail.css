@@ -322,3 +322,86 @@ button:disabled {
 .review-submit-btn:hover {
   background: #922f2f;
 }
+
+@media (max-width: 900px) {
+  .Myhero-title {
+    margin: 50px 20px 10px clamp(16px, 4vw, 60px);
+    font-size: 28px;
+  }
+  .Detail-booking-card {
+    margin: 20px clamp(16px, 4vw, 60px);
+    width: auto;
+    padding: 28px;
+  }
+  .steps {
+    flex-wrap: wrap;
+    gap: 20px;
+  }
+  .step {
+    width: 45%;
+  }
+}
+
+@media (max-width: 640px) {
+  .Mybooking-hero {
+    height: 180px;
+  }
+  .Myhero-title {
+    font-size: clamp(20px, 5vw, 28px);
+    margin: 40px 16px 10px 16px;
+  }
+  .Detail-booking-card {
+    margin: 20px 16px;
+    padding: 20px;
+  }
+  .booking-card h3 {
+    font-size: 20px;
+  }
+  .booking-content {
+    flex-direction: column;
+    gap: 16px;
+  }
+  .booking-img {
+    width: 100%;
+    max-height: 220px;
+    object-fit: cover;
+  }
+  .booking-info h4 {
+    font-size: 18px;
+  }
+  .booking-info p {
+    font-size: 16px;
+  }
+  .booking-actions,
+  .refund-buttons {
+    flex-wrap: wrap;
+  }
+  .refund-buttons button {
+    flex: 1 1 auto;
+    padding: 12px 16px;
+  }
+  .steps {
+    flex-direction: column;
+    gap: 18px;
+    padding: 18px;
+  }
+  .step {
+    width: 100%;
+  }
+  .step p {
+    max-width: 100%;
+  }
+  .review-card {
+    padding: 20px;
+  }
+  .review-title {
+    font-size: 20px;
+  }
+  .review-submit-wrapper {
+    justify-content: stretch;
+  }
+  .review-submit-btn {
+    width: 100%;
+    padding: 14px 20px;
+  }
+}

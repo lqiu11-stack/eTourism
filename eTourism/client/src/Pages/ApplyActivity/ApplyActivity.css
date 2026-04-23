@@ -138,16 +138,35 @@
   cursor: not-allowed;
 }
 
+@media (max-width: 900px) {
+  .aa-navbar {
+    padding: 20px 24px;
+  }
+  .aa-form {
+    margin: 28px clamp(16px, 4vw, 40px) 0;
+    padding: 28px;
+  }
+}
+
 @media (max-width: 640px) {
   .aa-grid {
     grid-template-columns: 1fr;
   }
   .aa-navbar {
-    grid-template-columns: 80px 1fr 80px;
-    padding: 18px 16px;
+    grid-template-columns: 70px 1fr 70px;
+    padding: 16px 14px;
+  }
+  .aa-title {
+    font-size: 20px;
   }
   .aa-form {
-    padding: 22px;
-    margin: 22px 14px 0;
+    padding: 16px;
+    margin: 18px 14px 0;
+  }
+  .aa-checkbox-row {
+    padding-bottom: 0;
+  }
+  .aa-preview {
+    max-width: 100%;
   }
 }

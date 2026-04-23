@@ -166,3 +166,52 @@
   font-size: 14px;
   margin: 0;
 }
+
+@media (max-width: 900px) {
+  .password-reset {
+    justify-content: center;
+    padding-right: 4vw;
+    padding-left: 4vw;
+  }
+  .reset-box {
+    margin-right: 0;
+    margin-left: 0;
+    width: min(600px, 100%);
+  }
+}
+
+@media (max-width: 640px) {
+  .password-reset {
+    padding: 4vh 16px 32px;
+  }
+  .password-reset::before {
+    background: linear-gradient(
+      180deg,
+      rgba(102,102,102,0) 0%,
+      rgba(43,45,66,0.75) 60%
+    );
+  }
+  .reset-box {
+    width: 100%;
+    min-height: auto;
+    margin-top: 70px;
+    gap: 0.9rem;
+  }
+  .back-btn {
+    top: 20px;
+    left: 16px;
+  }
+  .back-icon {
+    width: 30px;
+  }
+  .verify-input {
+    width: 100%;
+  }
+  .verify-row {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .verify-btn {
+    width: 100%;
+  }
+}

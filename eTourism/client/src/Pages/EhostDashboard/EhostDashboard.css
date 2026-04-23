@@ -320,3 +320,45 @@
     width: 100%;
   }
 }
+
+@media (max-width: 640px) {
+  .eh-navbar {
+    padding: 16px 18px;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .eh-navbar-title {
+    font-size: 20px;
+  }
+  .eh-nav-links {
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  .eh-nav-link {
+    font-size: 14px;
+  }
+  .eh-breadcrumb {
+    padding: 10px 16px 0;
+  }
+  .eh-section {
+    padding: 0 16px;
+    margin-top: 22px;
+  }
+  .eh-actions-card {
+    padding: 18px;
+  }
+  .eh-action-tile {
+    min-height: 120px;
+    padding: 18px;
+    font-size: 16px;
+  }
+  .eh-row {
+    padding: 14px;
+  }
+  .eh-row-title {
+    font-size: 16px;
+  }
+  .eh-modal-panel {
+    padding: 20px;
+  }
+}

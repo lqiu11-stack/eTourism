@@ -292,3 +292,70 @@ input[type="date"]::-webkit-calendar-picker-indicator{
   background: #7a0000;
   color: white;
 }
+
+@media (max-width: 900px) {
+  .join-e-host-page {
+    padding-left: 6vw;
+    padding-right: 6vw;
+  }
+  .join-e-host-step {
+    width: min(700px, 100%);
+  }
+  .join-box {
+    padding: 4rem 0 1.5rem 0;
+  }
+  .next-btn {
+    left: auto;
+    right: 0;
+    top: auto;
+    bottom: -90px;
+    transform: none;
+  }
+}
+
+@media (max-width: 640px) {
+  .join-e-host-page {
+    padding: 2vh 16px;
+    background-position: top;
+  }
+  .join-e-host-page::before {
+    background: linear-gradient(
+      180deg,
+      rgba(43, 45, 66, 0.75) 0%,
+      rgba(43, 45, 66, 0.9) 100%
+    );
+  }
+  .join-e-host-step {
+    width: 100%;
+  }
+  .join-box {
+    padding: 5rem 0 2rem 0;
+    gap: 0.8rem;
+  }
+  .back-btn {
+    top: 20px;
+    left: 16px;
+  }
+  .back-icon {
+    width: 30px;
+  }
+  .next-btn {
+    position: static;
+    width: 100%;
+    transform: none;
+    margin-top: 1rem;
+  }
+  .next-icon {
+    height: 50px;
+  }
+  .tag-container {
+    gap: 10px 10px;
+  }
+  .tag-button {
+    padding: 8px 18px;
+  }
+  .contract-box {
+    min-height: 140px;
+    font-size: 14px;
+  }
+}

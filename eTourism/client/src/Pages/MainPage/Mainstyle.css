@@ -1,5 +1,6 @@
 .main-page{
   width:100%;
+  overflow-x: hidden;
   /* font-family: sans-serif; */
 }
 
@@ -739,5 +740,181 @@
 
 .card-empty-msg {
   color: #666;
+}
+
+/* Responsive */
+@media (max-width: 900px) {
+  .hero {
+    height: auto;
+    min-height: 560px;
+    padding-bottom: 40px;
+  }
+  .hero-title {
+    font-size: clamp(22px, 4vw, 32px);
+    padding: 7rem 1rem 0 1rem;
+  }
+  .navbar {
+    padding: 18px 20px;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .nav-links {
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .navbar > .nav-links + .nav-links {
+    width: 100%;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+  }
+  .search-row {
+    gap: 20px;
+  }
+  .popular,
+  .where-wrapper {
+    padding: 30px 24px;
+  }
+  .destination-section {
+    padding: 30px 20px 10px 20px;
+  }
+  .section-header,
+  .section-title {
+    font-size: 26px;
+  }
+  .destination-grid {
+    grid-template-columns: 1fr;
+  }
+  .right-column {
+    grid-template-columns: 1fr 1fr;
+  }
+  .features {
+    flex-wrap: wrap;
+    gap: 24px;
+  }
+  .newsletter {
+    margin-top: 120px;
+  }
+  .footer-container {
+    flex-wrap: wrap;
+    gap: 24px;
+  }
+}
+
+@media (max-width: 640px) {
+  .hero {
+    min-height: 520px;
+  }
+  .hero-title {
+    padding: 6rem 1rem 0 1rem;
+    font-size: clamp(20px, 5vw, 28px);
+  }
+  .navbar {
+    padding: 14px 16px;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .nav-links {
+    gap: 10px 14px;
+    font-size: 14px;
+  }
+  .navbar > .nav-links + .nav-links {
+    width: 100%;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+  }
+  .search-panel {
+    padding: 18px 16px;
+    gap: 14px;
+  }
+  .search-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 14px;
+  }
+  .search-title,
+  .filter-title {
+    font-size: 18px;
+  }
+  .filter-chip {
+    font-size: 15px;
+    padding: 8px 16px;
+  }
+  .popular,
+  .where-wrapper {
+    padding: 24px 16px;
+  }
+  .destination-section {
+    padding: 20px 14px 10px 14px;
+  }
+  .section-header {
+    font-size: 22px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .section-title {
+    font-size: clamp(20px, 5vw, 28px);
+  }
+  .card-list {
+    gap: 24px;
+    justify-content: center;
+  }
+  .tour-card {
+    width: 100%;
+    max-width: 340px;
+  }
+  .destination-grid {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+  .right-column {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+  .big-card,
+  .tall-card {
+    height: 240px;
+  }
+  .card-text h3 {
+    font-size: 24px;
+  }
+  .card-text p {
+    font-size: 16px;
+  }
+  .more-btn {
+    padding-top: 10px;
+  }
+  .newsletter {
+    margin-top: 60px;
+    height: auto;
+    padding: 50px 16px;
+  }
+  .newsletter-content h2 {
+    font-size: 24px;
+  }
+  .newsletter-content p {
+    font-size: 16px;
+  }
+  .newsletter-form {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 0 16px;
+  }
+  .newsletter-form input {
+    width: 100%;
+  }
+  .footer {
+    padding: 30px 20px;
+  }
+  .footer-container {
+    flex-direction: column;
+    gap: 20px;
+  }
+  .categories {
+    padding: 40px 20px;
+  }
+  .category-list {
+    flex-wrap: wrap;
+  }
 }
 

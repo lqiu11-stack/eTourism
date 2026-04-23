@@ -171,3 +171,59 @@ input, button, textarea, select {
   align-items: center;
   z-index: 9999;
 }
+
+@media (max-width: 900px) {
+  .login-page {
+    padding-top: 6vh;
+    padding-right: 4vw;
+    padding-left: 4vw;
+    justify-content: center;
+    align-items: center;
+  }
+  .login-box {
+    margin-right: 0;
+    margin-left: 0;
+    margin-top: 6vh;
+    width: min(450px, 100%);
+  }
+  .top-links {
+    right: 24px;
+    gap: 24px;
+  }
+}
+
+@media (max-width: 640px) {
+  .login-page {
+    padding: 4vh 16px 32px;
+    justify-content: center;
+    align-items: flex-start;
+  }
+  .rectangle {
+    background: linear-gradient(
+      180deg,
+      rgba(102,102,102,0) 0%,
+      rgba(43,45,66,0.75) 70%
+    );
+  }
+  .login-box {
+    width: 100%;
+    min-height: auto;
+    margin: 90px 0 0 0;
+    gap: 1.2rem;
+  }
+  .top-links {
+    position: static;
+    width: 100%;
+    justify-content: center;
+    gap: 20px;
+    padding: 12px 16px;
+    margin: 0;
+  }
+  .social-btn {
+    width: 56px;
+    height: 56px;
+  }
+  .social-btn img {
+    width: 32px;
+  }
+}
