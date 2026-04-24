@@ -126,6 +126,10 @@ export const LoginPage = () => {
           Forget your password?
         </button>
 
+        <button type="button" className="forgot" onClick={() => navigate("/VisitorRegistrate")}>
+          Create a new account
+        </button>
+
         <div className="social-row">
           <button type="button" className="social-btn" onClick={handleGoogleLogin}>
             <img src={google} alt="google" />
