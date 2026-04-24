@@ -10,12 +10,9 @@ import customerSrevice from "../icon/customer-service.png"
 import customerReview from "../icon/customer-review.png"
 import LiveIcon from "../icon/live.png"
 import translate from "../icon/language.png"
-import { getCountryImage } from "../../utils/countryImages";
 import { useNavigate, Link } from "react-router-dom";
 
 const API_BASE = import.meta.env.VITE_API_URL;
-
-const getImage = (exp) => getCountryImage(exp.country);
 
 const formatDate = (dt) => {
   if (!dt) return 'Choose a date...';
@@ -33,48 +30,52 @@ export const MainPage = () => {
   const navigate = useNavigate();
   const token = localStorage.getItem("token");
   const isLoggedIn = !!token;
+  const user = JSON.parse(localStorage.getItem("user") || "{}");
+  const isEhost = user.role === "ehost";
 
   const [experiences, setExperiences] = useState([]);
-  const [filtered, setFiltered] = useState([]);
   const [searchLocation, setSearchLocation] = useState("");
   const [searchDate, setSearchDate] = useState("");
 
-  const [activeContinent, setActiveContinent] = useState(null);
-  const [activeCategory,  setActiveCategory]  = useState(null);
-  const [activeLanguage,  setActiveLanguage]  = useState(null);
+  const [activeContinents, setActiveContinents] = useState([]);
+  const [activeCategories, setActiveCategories] = useState([]);
+  const [activeLanguages,  setActiveLanguages]  = useState([]);
   const [showRegionMenu,  setShowRegionMenu]  = useState(false);
   const [showCategoryMenu,setShowCategoryMenu]= useState(false);
   const [showLanguageMenu,setShowLanguageMenu]= useState(false);
 
+  const toggleIn = (list, value) =>
+    list.includes(value) ? list.filter(v => v !== value) : [...list, value];
+
   const fetchExperiences = useCallback(async () => {
-    const params = new URLSearchParams();
-    if (activeContinent) params.set('continent', activeContinent);
-    if (activeCategory)  params.set('category',  activeCategory);
-    if (activeLanguage)  params.set('language',  activeLanguage);
     try {
-      const { data } = await axios.get(`${API_BASE}/visitor/experiences?${params}`);
+      const { data } = await axios.get(`${API_BASE}/visitor/experiences`);
       setExperiences(data);
-      setFiltered(data);
     } catch {}
-  }, [activeContinent, activeCategory, activeLanguage]);
+  }, []);
 
   useEffect(() => { fetchExperiences(); }, [fetchExperiences]);
 
+  const buildSearchParams = () => {
+    const params = new URLSearchParams();
+    if (searchLocation.trim()) params.set('q', searchLocation.trim());
+    if (searchDate) params.set('date', searchDate);
+    if (activeContinents.length) params.set('continents', activeContinents.join(','));
+    if (activeCategories.length) params.set('categories', activeCategories.join(','));
+    if (activeLanguages.length) params.set('languages', activeLanguages.join(','));
+    return params;
+  };
+
   const handleSearch = () => {
-    let results = experiences;
-    if (searchLocation.trim()) {
-      const q = searchLocation.trim().toLowerCase();
-      results = results.filter(e =>
-        (e.location_name && e.location_name.toLowerCase().includes(q)) ||
-        (e.country && e.country.toLowerCase().includes(q))
-      );
-    }
-    if (searchDate) {
-      results = results.filter(e =>
-        e.date_time && e.date_time.slice(0, 10) === searchDate
-      );
-    }
-    setFiltered(results);
+    const params = buildSearchParams();
+    const target = activeContinents.length === 1 ? activeContinents[0] : 'all';
+    navigate(`/continent/${target}${params.toString() ? `?${params}` : ''}`);
+  };
+
+  const handleExploreMore = () => {
+    const params = buildSearchParams();
+    const target = activeContinents.length === 1 ? activeContinents[0] : 'all';
+    navigate(`/continent/${target}${params.toString() ? `?${params}` : ''}`);
   };
 
   const handleLogout = () => {
@@ -83,40 +84,10 @@ export const MainPage = () => {
     navigate("/login");
   };
 
-  const soldOut = filtered.filter(e => e.max_visitors <= 15);
-  const monthly  = filtered.filter(e => e.max_visitors > 15);
-
   const continentCounts = experiences.reduce((acc, e) => {
     if (e.continent) acc[e.continent] = (acc[e.continent] || 0) + 1;
     return acc;
   }, {});
-
-  const renderCard = (exp) => (
-    <div
-      className="tour-card"
-      key={exp.id}
-      onClick={() =>
-        navigate(`/DetailPage?id=${exp.id}`, {
-          state: { from: "main" },
-        })
-      }
-      style={{ cursor: "pointer" }}
-    >
-      <div className="tour-image">
-        <img src={getImage(exp)} alt={exp.title} />
-        <div className="image-overlay">
-          <h3>{exp.title}</h3>
-        </div>
-      </div>
-      <div className="tour-info">
-        <p>{formatDate(exp.date_time)}</p>
-        <p>{exp.price}£ / per ticket</p>
-        <button className="book-btn">
-          Click to book &gt;&gt;
-        </button>
-      </div>
-    </div>
-  );
 
   return (
     <div className="main-page">
@@ -136,7 +107,18 @@ export const MainPage = () => {
 
             <div className="nav-links">
               <Link to="/Eregistrate1" className="nav-link">Become E-host</Link>
-              <Link to="/MyBooking" className="nav-link" onClick={() => window.scrollTo(0, 0)}>
+              <Link
+                to="/MyBooking"
+                className="nav-link"
+                onClick={(e) => {
+                  if (isEhost) {
+                    e.preventDefault();
+                    alert("My booking is only available to visitors. You are signed in as an e-host.");
+                    return;
+                  }
+                  window.scrollTo(0, 0);
+                }}
+              >
                 My booking
               </Link>
               {isLoggedIn ? (
@@ -219,16 +201,24 @@ export const MainPage = () => {
               <div className="filter-list">
                 <div style={{ position: 'relative' }}>
                   <button
-                    className={`filter-chip${activeContinent ? ' filter-chip--active' : ''}`}
+                    className={`filter-chip${activeContinents.length ? ' filter-chip--active' : ''}`}
                     onClick={() => { setShowRegionMenu(p => !p); setShowCategoryMenu(false); setShowLanguageMenu(false); }}
                   >
-                    {activeContinent ? `Region: ${activeContinent}` : '+ Region'}
+                    {activeContinents.length
+                      ? `Region${activeContinents.length > 1 ? ` (${activeContinents.length})` : `: ${activeContinents[0]}`}`
+                      : '+ Region'}
                   </button>
                   {showRegionMenu && (
                     <div className="filter-dropdown">
-                      <button onClick={() => { setActiveContinent(null); setShowRegionMenu(false); }}>All</button>
                       {['Africa','Asia','Europe','North America','South America','Oceania'].map(c => (
-                        <button key={c} onClick={() => { setActiveContinent(c); setShowRegionMenu(false); }}>{c}</button>
+                        <label key={c} className="filter-check">
+                          <input
+                            type="checkbox"
+                            checked={activeContinents.includes(c)}
+                            onChange={() => setActiveContinents(prev => toggleIn(prev, c))}
+                          />
+                          {c}
+                        </label>
                       ))}
                     </div>
                   )}
@@ -236,16 +226,24 @@ export const MainPage = () => {
 
                 <div style={{ position: 'relative' }}>
                   <button
-                    className={`filter-chip${activeCategory ? ' filter-chip--active' : ''}`}
+                    className={`filter-chip${activeCategories.length ? ' filter-chip--active' : ''}`}
                     onClick={() => { setShowCategoryMenu(p => !p); setShowRegionMenu(false); setShowLanguageMenu(false); }}
                   >
-                    {activeCategory ? `Type: ${activeCategory}` : '+ Tour type'}
+                    {activeCategories.length
+                      ? `Type${activeCategories.length > 1 ? ` (${activeCategories.length})` : `: ${activeCategories[0]}`}`
+                      : '+ Tour type'}
                   </button>
                   {showCategoryMenu && (
                     <div className="filter-dropdown">
-                      <button onClick={() => { setActiveCategory(null); setShowCategoryMenu(false); }}>All</button>
                       {['Cultural Tourism','Historical Tourism','Art Tourism','Eco Tourism','Luxury Tourism','Culinary Tourism','Wellness Tourism','Religious Tourism'].map(c => (
-                        <button key={c} onClick={() => { setActiveCategory(c); setShowCategoryMenu(false); }}>{c}</button>
+                        <label key={c} className="filter-check">
+                          <input
+                            type="checkbox"
+                            checked={activeCategories.includes(c)}
+                            onChange={() => setActiveCategories(prev => toggleIn(prev, c))}
+                          />
+                          {c}
+                        </label>
                       ))}
                     </div>
                   )}
@@ -253,16 +251,24 @@ export const MainPage = () => {
 
                 <div style={{ position: 'relative' }}>
                   <button
-                    className={`filter-chip${activeLanguage ? ' filter-chip--active' : ''}`}
+                    className={`filter-chip${activeLanguages.length ? ' filter-chip--active' : ''}`}
                     onClick={() => { setShowLanguageMenu(p => !p); setShowRegionMenu(false); setShowCategoryMenu(false); }}
                   >
-                    {activeLanguage ? `Language: ${activeLanguage}` : '+ Tour language'}
+                    {activeLanguages.length
+                      ? `Language${activeLanguages.length > 1 ? ` (${activeLanguages.length})` : `: ${activeLanguages[0]}`}`
+                      : '+ Tour language'}
                   </button>
                   {showLanguageMenu && (
                     <div className="filter-dropdown">
-                      <button onClick={() => { setActiveLanguage(null); setShowLanguageMenu(false); }}>All</button>
                       {['English','Spanish','French','German','Italian','Portuguese','Dutch','Arabic','Chinese','Japanese','Korean','Hindi','Thai','Turkish','Russian'].map(l => (
-                        <button key={l} onClick={() => { setActiveLanguage(l); setShowLanguageMenu(false); }}>{l}</button>
+                        <label key={l} className="filter-check">
+                          <input
+                            type="checkbox"
+                            checked={activeLanguages.includes(l)}
+                            onChange={() => setActiveLanguages(prev => toggleIn(prev, l))}
+                          />
+                          {l}
+                        </label>
                       ))}
                     </div>
                   )}
@@ -270,7 +276,7 @@ export const MainPage = () => {
 
                 <button
                   className="filter-chip"
-                  onClick={() => { setActiveContinent(null); setActiveCategory(null); setActiveLanguage(null); setSearchLocation(""); setSearchDate(""); setShowRegionMenu(false); setShowCategoryMenu(false); setShowLanguageMenu(false); }}
+                  onClick={() => { setActiveContinents([]); setActiveCategories([]); setActiveLanguages([]); setSearchLocation(""); setSearchDate(""); setShowRegionMenu(false); setShowCategoryMenu(false); setShowLanguageMenu(false); }}
                 >
                   Reset filter
                 </button>
@@ -318,67 +324,41 @@ export const MainPage = () => {
               <h2 className="section-title">Where next?</h2>
               <p className="section-subtitle">Here are some popular choice</p>
             </div>
-            <button className="more-btn">Explore more</button>
+            <button className="more-btn" onClick={handleExploreMore}>Explore more</button>
           </div>
           <div className="destination-grid">
-            <div className="destination-card big-card">
+            <div
+              className="destination-card big-card"
+              onClick={() => navigate('/continent/Asia')}
+              style={{ cursor: 'pointer' }}
+            >
               <div className="card-text">
                 <h3>Asia</h3>
                 <p>{continentCounts['Asia'] || 0} experience{continentCounts['Asia'] !== 1 ? 's' : ''} available</p>
               </div>
             </div>
             <div className="right-column">
-              <div className="destination-card tall-card">
+              <div
+                className="destination-card tall-card"
+                onClick={() => navigate('/continent/Europe')}
+                style={{ cursor: 'pointer' }}
+              >
                 <div className="small-card-text">
                   <h3>Europe</h3>
                   <p>{continentCounts['Europe'] || 0} experience{continentCounts['Europe'] !== 1 ? 's' : ''} available</p>
                 </div>
               </div>
-              <div className="destination-card tall-card">
+              <div
+                className="destination-card tall-card"
+                onClick={() => navigate('/continent/Africa')}
+                style={{ cursor: 'pointer' }}
+              >
                 <div className="small-card-text">
                   <h3>Africa</h3>
                   <p>{continentCounts['Africa'] || 0} experience{continentCounts['Africa'] !== 1 ? 's' : ''} available</p>
                 </div>
               </div>
             </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Almost Sold Out */}
-      <section className="popular">
-        <div className="destination-section">
-          <div className="where-header">
-            <div>
-              <h2 className="section-title">Almost sold out!</h2>
-              <p className="section-subtitle">Grab your last chance to explore the world with us.</p>
-            </div>
-            <button className="more-btn">Click here to check more</button>
-          </div>
-          <div className="card-list">
-            {soldOut.length > 0
-                ? soldOut.map(renderCard)
-                : <p style={{color:'#666'}}>No experiences found.</p>
-            }
-          </div>
-        </div>
-      </section>
-
-      {/* Top Choice This Month */}
-      <section className="popular">
-        <div className="destination-section">
-          <div className="where-header">
-            <div>
-              <h2 className="section-title">Top choice this month!</h2>
-              <p className="section-subtitle">Don't know what to choose? Check our monthly recommendation</p>
-            </div>
-            <button className="more-btn">Click here to check more</button>
-          </div>
-          <div className="card-list">
-            { monthly.length > 0
-                ? monthly.map(renderCard)
-                : <p style={{color:'#666'}}>No experiences found.</p>
-            }
           </div>
         </div>
       </section>

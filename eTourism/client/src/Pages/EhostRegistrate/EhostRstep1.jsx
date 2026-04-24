@@ -3,19 +3,32 @@ import arrowRight from "../icon/arrow-right.png";
 import backIcon from "../icon/back.png";
 import "./style.css";
 import { useNavigate } from "react-router-dom";
-import { StepProgress } from "../EhostRegistarte/Step.jsx";
+import { StepProgress } from "../EhostRegistrate/Step.jsx";
+import { COUNTRIES } from "../../utils/countries";
 
 export const Eregistrate1 = () => {
   const navigate = useNavigate();
-  const [form, setForm] = useState({ name: "", birthday: "", nationality: "", email: "" });
+  const [form, setForm] = useState(() => {
+    const saved = JSON.parse(sessionStorage.getItem("ehost_step1") || "{}");
+    return {
+      name: saved.name || "",
+      birthday: saved.birthday || "",
+      country: saved.country || "",
+      email: saved.email || "",
+    };
+  });
   const [error, setError] = useState("");
 
   const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
 
   const handleNext = (e) => {
     e.preventDefault();
-    if (!form.name || !form.birthday || !form.nationality || !form.email) {
+    if (!form.name || !form.birthday || !form.country || !form.email) {
       setError("Please fill in all required fields.");
+      return;
+    }
+    if (!COUNTRIES.includes(form.country)) {
+      setError("Please select a country from the list.");
       return;
     }
     sessionStorage.setItem("ehost_step1", JSON.stringify(form));
@@ -45,8 +58,20 @@ export const Eregistrate1 = () => {
           <label className="text-wrapper-3">Please tell us your birthday*</label>
           <input className="rectangle-2" type="date" name="birthday" value={form.birthday} onChange={handleChange} />
 
-          <label className="text-wrapper-4">Please tell us your nationality*</label>
-          <input className="rectangle-3" type="text" name="nationality" placeholder="Enter nationality" value={form.nationality} onChange={handleChange} />
+          <label className="text-wrapper-4">Please tell us your country*</label>
+          <input
+            className="rectangle-3"
+            type="text"
+            name="country"
+            list="country-options"
+            placeholder="Start typing your country..."
+            autoComplete="off"
+            value={form.country}
+            onChange={handleChange}
+          />
+          <datalist id="country-options">
+            {COUNTRIES.map((c) => <option key={c} value={c} />)}
+          </datalist>
 
           <label className="text-wrapper-5">Please tell us your E-mail*</label>
           {error && <div className="error-text">{error}</div>}

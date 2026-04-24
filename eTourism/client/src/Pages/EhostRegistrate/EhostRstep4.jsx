@@ -6,7 +6,7 @@ import { useNavigate } from "react-router-dom";
 import { StepProgress } from "./Step.jsx";
 import axios from "axios";
 
-const API_BASE = import.meta.env.VITE_API_BASE;
+const API_BASE = import.meta.env.VITE_API_URL;
 
 export const Eregistrate4 = () => {
   const navigate = useNavigate();

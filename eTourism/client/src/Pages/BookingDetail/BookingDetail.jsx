@@ -22,6 +22,9 @@ const formatDate = (dt) => {
 export const MyBookingDetail = () => {
   console.log('[BookingDetail] component rendered');
   const [rating, setRating] = useState(0);
+  const [quality, setQuality] = useState("");
+  const [reviewComment, setReviewComment] = useState("");
+  const [reviewStatus, setReviewStatus] = useState({ state: "idle", message: "" });
   const navigate = useNavigate();
   const location = useLocation();
   useLayoutEffect(() => {
@@ -133,6 +136,38 @@ export const MyBookingDetail = () => {
   const isPast = eventDate && eventDate < now;
   const hoursUntil = eventDate ? (eventDate - now) / 36e5 : null;
   const isWithin2h = hoursUntil !== null && hoursUntil <= 2;
+  const submitReview = async () => {
+    if (!booking?.experience_id) {
+      setReviewStatus({ state: "error", message: "Missing experience info." });
+      return;
+    }
+    if (rating < 1) {
+      setReviewStatus({ state: "error", message: "Please select a star rating." });
+      return;
+    }
+    const commentParts = [];
+    if (quality.trim()) commentParts.push(`Quality: ${quality.trim()}`);
+    if (reviewComment.trim()) commentParts.push(reviewComment.trim());
+    setReviewStatus({ state: "submitting", message: "" });
+    try {
+      await axios.post(
+        `${API_BASE}/visitor/reviews`,
+        {
+          experience_id: booking.experience_id,
+          rating,
+          comment: commentParts.join("\n\n"),
+        },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setReviewStatus({ state: "success", message: "Thanks for your review!" });
+    } catch (err) {
+      setReviewStatus({
+        state: "error",
+        message: err?.response?.data?.message || "Failed to submit review. Please try again.",
+      });
+    }
+  };
+
   const isRefundBlocked =
     !booking ||
     isPast ||
@@ -153,7 +188,6 @@ export const MyBookingDetail = () => {
           <img src={backIcon} alt="Back" className="detail-back-icon" />
         </button>
         <div className="nav-links">
-          <Link to="/help" className="nav-link">Helping centre</Link>
           <Link to="/Mybooking" className="nav-link">My booking</Link>
           {isLoggedIn ? (
             <button className="nav-link nav-btn-link" onClick={handleLogout}>Logout</button>
@@ -322,6 +356,9 @@ export const MyBookingDetail = () => {
           <input
             className="review-input"
             placeholder=""
+            value={quality}
+            onChange={(e) => setQuality(e.target.value)}
+            disabled={reviewStatus.state === "submitting" || reviewStatus.state === "success"}
           />
 
           {/* Q3 */}
@@ -329,11 +366,30 @@ export const MyBookingDetail = () => {
             Any additional comments?
           </p>
 
-          <textarea className="review-textarea" />
+          <textarea
+            className="review-textarea"
+            value={reviewComment}
+            onChange={(e) => setReviewComment(e.target.value)}
+            disabled={reviewStatus.state === "submitting" || reviewStatus.state === "success"}
+          />
+
+          {reviewStatus.message && (
+            <p className={`review-status review-status--${reviewStatus.state}`}>
+              {reviewStatus.message}
+            </p>
+          )}
 
           <div className="review-submit-wrapper">
-            <button className="review-submit-btn">
-              Submit a review
+            <button
+              className="review-submit-btn"
+              onClick={submitReview}
+              disabled={reviewStatus.state === "submitting" || reviewStatus.state === "success"}
+            >
+              {reviewStatus.state === "submitting"
+                ? "Submitting..."
+                : reviewStatus.state === "success"
+                ? "Review submitted"
+                : "Submit a review"}
             </button>
           </div>
 

@@ -1,10 +1,10 @@
 import { Routes, Route } from "react-router-dom";
 import { LoginPage } from "./Pages/Login/LoginPage.jsx";
 import { PassWordReset } from "./Pages/PasswordReset/PassWordReset.jsx";
-import { Eregistrate1 } from "./Pages/EhostRegistarte/EhostRstep1.jsx";
-import { Eregistrate2 } from "./Pages/EhostRegistarte/EhostRstep2.jsx";
-import { Eregistrate3 } from "./Pages/EhostRegistarte/EhostRstep3.jsx";
-import { Eregistrate4 } from "./Pages/EhostRegistarte/EhostRstep4.jsx";
+import { Eregistrate1 } from "./Pages/EhostRegistrate/EhostRstep1.jsx";
+import { Eregistrate2 } from "./Pages/EhostRegistrate/EhostRstep2.jsx";
+import { Eregistrate3 } from "./Pages/EhostRegistrate/EhostRstep3.jsx";
+import { Eregistrate4 } from "./Pages/EhostRegistrate/EhostRstep4.jsx";
 import { MainPage } from "./Pages/MainPage/MainPage.jsx";
 import { DetailPage } from "./Pages/DetailPage/DetailPage.jsx";
 import { PaymentPage } from "./Pages/PaymentPage/PaymentPage.jsx";
@@ -17,8 +17,8 @@ import { MapPage } from "./Pages/MapPage/MapPage.jsx";
 import { EhostDashboard } from "./Pages/EhostDashboard/EhostDashboard.jsx";
 import { ApplyActivity } from "./Pages/ApplyActivity/ApplyActivity.jsx";
 import { EhostProfile } from "./Pages/EhostProfile/EhostProfile.jsx";
+import { ContinentPage } from "./Pages/ContinentPage/ContinentPage.jsx";
 import { VisitorRegistrate } from "./Pages/VisitorRegistrate/VisitorRegistrate.jsx";
-
 
 
 
@@ -46,6 +46,7 @@ function App() {
         <Route path="/EhostDashboard" element={<EhostDashboard />} />
         <Route path="/ApplyActivity" element={<ApplyActivity />} />
         <Route path="/EhostProfile" element={<EhostProfile />} />
+        <Route path="/continent/:continent" element={<ContinentPage />} />
         <Route path="/VisitorRegistrate" element={<VisitorRegistrate />} />
       </Routes>
   );

@@ -14,6 +14,7 @@ import { getCountryImage } from "../../utils/countryImages";
 
 const API_BASE = import.meta.env.VITE_API_URL;
 const DEFAULT_CENTER = { lat: 51.5101, lng: -0.1340 };
+const MAP_LIBRARIES = ["places"];
 
 export const MapPage = () => {
   const navigate = useNavigate();
@@ -31,6 +32,7 @@ export const MapPage = () => {
 
   const { isLoaded } = useJsApiLoader({
     googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY,
+    libraries: MAP_LIBRARIES,
   });
 
   const [data, setData] = useState([]);
@@ -128,7 +130,6 @@ export const MapPage = () => {
                   </button>
 
           <div className="nav-links">
-              <Link to="/help" className="nav-link">Helping centre</Link>
               <Link to="/Mybooking" className="nav-link">My booking</Link>
                {isLoggedIn ? (
                   <button className="nav-link nav-btn-link" onClick={handleLogout}>

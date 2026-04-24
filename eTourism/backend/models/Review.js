@@ -21,7 +21,7 @@ const Review = {
 
   async findByExperience(experience_id) {
     const { rows } = await pool.query(
-      `SELECT r.*, u.first_name, u.last_name, u.country
+      `SELECT r.*, u.first_name, u.country
        FROM reviews r
        JOIN users u ON r.visitor_id = u.id
        WHERE r.experience_id = $1

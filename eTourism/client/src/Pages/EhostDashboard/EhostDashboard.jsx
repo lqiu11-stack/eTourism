@@ -150,7 +150,7 @@ export const EhostDashboard = () => {
           }
         }}
       >
-        <img src={getCountryImage(exp.country)} alt={exp.title || "experience"} className="eh-row-image" />
+        <img src={exp.cover_image || getCountryImage(exp.country)} alt={exp.title || "experience"} className="eh-row-image" />
         <div className="eh-row-body">
           <div className="eh-row-title-line">
             <span className="eh-row-title">{exp.title || exp.location_name}</span>
@@ -171,9 +171,6 @@ export const EhostDashboard = () => {
       <header className="eh-navbar">
         <h1 className="eh-navbar-title">E-host dashboard</h1>
         <nav className="eh-nav-links">
-          <button className="eh-nav-link" type="button" onClick={() => alert("Helping centre coming soon.")}>
-            Helping centre
-          </button>
           <button className="eh-nav-link" type="button" onClick={handleLogout}>
             Logout
           </button>
@@ -185,7 +182,7 @@ export const EhostDashboard = () => {
         <div className="eh-actions-card">
           <button className="eh-action-tile" type="button" onClick={() => navigate("/ApplyActivity")}>
             <img src={applyIcon} alt="" className="eh-action-icon" />
-            <span>Apply new activity</span>
+            <span>Apply for new experience</span>
           </button>
           <button className="eh-action-tile" type="button" onClick={() => navigate("/EhostProfile")}>
             <img src={profileIcon} alt="" className="eh-action-icon" />

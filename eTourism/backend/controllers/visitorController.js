@@ -1,5 +1,6 @@
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const checkoutNodeJssdk = require('@paypal/checkout-server-sdk');
+const pool = require('../config/db');
 const Booking = require('../models/Booking');
 const Experience = require('../models/Experience');
 const Payment = require('../models/Payment');
@@ -481,6 +482,54 @@ const refundBooking = async (req, res) => {
 };
 
 const createReview = async (req, res) => {
+  try {
+    const { experience_id, rating, comment } = req.body;
+    const visitor_id = req.userId;
+
+    if (!experience_id) {
+      return res.status(400).json({ message: 'experience_id is required' });
+    }
+    const ratingInt = Number(rating);
+    if (!Number.isInteger(ratingInt) || ratingInt < 1 || ratingInt > 5) {
+      return res.status(400).json({ message: 'rating must be an integer between 1 and 5' });
+    }
+    const trimmedComment = typeof comment === 'string' ? comment.trim() : '';
+
+    const { rows: eligible } = await pool.query(
+      `SELECT b.id
+         FROM bookings b
+         JOIN experiences e ON e.id = b.experience_id
+        WHERE b.visitor_id = $1
+          AND b.experience_id = $2
+          AND b.status = 'confirmed'
+          AND e.date_time < NOW()
+        LIMIT 1`,
+      [visitor_id, experience_id]
+    );
+    if (eligible.length === 0) {
+      return res.status(403).json({
+        message: 'You can only review experiences you have attended.',
+      });
+    }
+
+    const { rows: existing } = await pool.query(
+      `SELECT id FROM reviews WHERE visitor_id = $1 AND experience_id = $2 LIMIT 1`,
+      [visitor_id, experience_id]
+    );
+    if (existing.length > 0) {
+      return res.status(409).json({ message: 'You have already reviewed this experience.' });
+    }
+
+    const review = await Review.create({
+      visitor_id,
+      experience_id,
+      rating: ratingInt,
+      comment: trimmedComment,
+    });
+    return res.status(201).json(review);
+  } catch (err) {
+    return res.status(500).json({ message: 'Server error', error: String(err) });
+  }
 };
 
 const rescheduleBooking = async (req, res) => {

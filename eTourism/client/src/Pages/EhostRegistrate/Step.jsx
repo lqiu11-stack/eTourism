@@ -1,4 +1,4 @@
-import "../EhostRegistarte/Step.css";
+import "../EhostRegistrate/Step.css";
 
 export const StepProgress = ({ step }) => {
   const steps = [
