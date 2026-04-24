@@ -18,7 +18,7 @@ import { EhostDashboard } from "./Pages/EhostDashboard/EhostDashboard.jsx";
 import { ApplyActivity } from "./Pages/ApplyActivity/ApplyActivity.jsx";
 import { EhostProfile } from "./Pages/EhostProfile/EhostProfile.jsx";
 import { ContinentPage } from "./Pages/ContinentPage/ContinentPage.jsx";
-
+import { VisitorRegistrate } from "./Pages/VisitorRegistrate/VisitorRegistrate.jsx";
 
 
 
@@ -47,6 +47,7 @@ function App() {
         <Route path="/ApplyActivity" element={<ApplyActivity />} />
         <Route path="/EhostProfile" element={<EhostProfile />} />
         <Route path="/continent/:continent" element={<ContinentPage />} />
+        <Route path="/VisitorRegistrate" element={<VisitorRegistrate />} />
       </Routes>
   );
 }
