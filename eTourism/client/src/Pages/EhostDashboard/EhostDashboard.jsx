@@ -150,7 +150,7 @@ export const EhostDashboard = () => {
           }
         }}
       >
-        <img src={getCountryImage(exp.country)} alt={exp.title || "experience"} className="eh-row-image" />
+        <img src={exp.cover_image || getCountryImage(exp.country)} alt={exp.title || "experience"} className="eh-row-image" />
         <div className="eh-row-body">
           <div className="eh-row-title-line">
             <span className="eh-row-title">{exp.title || exp.location_name}</span>

@@ -26,6 +26,17 @@ export const PaymentPage = () => {
   const [termsText, setTermsText] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [groupGenderType, setGroupGenderType] = useState("");
+
+  const genderPreference = experience?.gender_preference || "any";
+  const requiresGroupGender = genderPreference !== "any";
+
+  const genderPreferenceHint = {
+    female_only: "This experience is for all-female groups only.",
+    male_only: "This experience is for all-male groups only.",
+    no_all_male_groups: "The eHost does not accept all-male groups for this experience.",
+    no_all_female_groups: "The eHost does not accept all-female groups for this experience.",
+  }[genderPreference];
 
   const handleLogout = () => {
     localStorage.removeItem("token");
@@ -82,6 +93,10 @@ export const PaymentPage = () => {
       setError("Please agree to the Terms before checkout.");
       return false;
     }
+    if (requiresGroupGender && !groupGenderType) {
+      setError("Please tell us the gender make-up of your group.");
+      return false;
+    }
     if (!token) {
       navigate(`/login?redirect=/PaymentPage?id=${experienceId}`);
       return false;
@@ -100,6 +115,7 @@ export const PaymentPage = () => {
         contact_name: name,
         contact_email: email,
         agreed_to_terms: true,
+        ...(requiresGroupGender ? { group_gender_type: groupGenderType } : {}),
       },
       { headers: { Authorization: `Bearer ${token}` } }
     );
@@ -255,6 +271,24 @@ export const PaymentPage = () => {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
           />
+
+          {requiresGroupGender && (
+            <>
+              <label>
+                Group make-up*
+                {genderPreferenceHint && <span> ({genderPreferenceHint})</span>}
+              </label>
+              <select
+                value={groupGenderType}
+                onChange={(e) => { setGroupGenderType(e.target.value); setError(""); }}
+              >
+                <option value="">Select your group type...</option>
+                <option value="all_female">All female</option>
+                <option value="all_male">All male</option>
+                <option value="mixed">Mixed group</option>
+              </select>
+            </>
+          )}
 
           {bookingUnavailableReason && (
             <p className="input-error">{bookingUnavailableReason}</p>

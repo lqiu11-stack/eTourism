@@ -70,7 +70,7 @@ export const DetailPage = () => {
       {/* HERO */}
       <section
         className="detail-hero"
-        style={{ backgroundImage: `url(${getCountryImage(experience?.country)})` }}
+        style={{ backgroundImage: `url(${experience?.cover_image || getCountryImage(experience?.country)})` }}
       >
         <div className="detail-hero-overlay"/>
 
@@ -260,7 +260,7 @@ export const DetailPage = () => {
 
 
       {/* PHOTOS */}
-      <section className="detail-photo-section">
+      {/* <section className="detail-photo-section">
 
         <h3>More photo</h3>
 
@@ -273,7 +273,7 @@ export const DetailPage = () => {
 
         </div>
 
-      </section>
+      </section> */}
 
 
       <section className="detail-newsletter">
