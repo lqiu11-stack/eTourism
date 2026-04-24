@@ -6,7 +6,6 @@ import { storage } from "../../firebase";
 import {
   GoogleMap,
   Marker,
-  Autocomplete,
   useJsApiLoader,
 } from "@react-google-maps/api";
 import {
@@ -72,19 +71,33 @@ export const ApplyActivity = () => {
   });
   const autocompleteRef = useRef(null);
 
-  const onAutocompleteLoad = (ac) => { autocompleteRef.current = ac; };
-  const onPlaceChanged = () => {
-    const place = autocompleteRef.current?.getPlace();
-    if (!place?.geometry?.location) return;
-    const lat = place.geometry.location.lat();
-    const lng = place.geometry.location.lng();
-    setForm((prev) => ({
-      ...prev,
-      latitude: lat,
-      longitude: lng,
-      location_name: prev.location_name || place.name || place.formatted_address || "",
-    }));
-  };
+  useEffect(() => {
+    if (!mapIsLoaded) return;
+    const el = autocompleteRef.current;
+    if (!el) return;
+
+    const handler = async (event) => {
+      const place = event.placePrediction?.toPlace?.() ?? event.place;
+      if (!place) return;
+      await place.fetchFields({
+        fields: ["location", "displayName", "formattedAddress"],
+      });
+      if (!place.location) return;
+      setForm((prev) => ({
+        ...prev,
+        latitude: place.location.lat(),
+        longitude: place.location.lng(),
+        location_name:
+          prev.location_name ||
+          place.displayName ||
+          place.formattedAddress ||
+          "",
+      }));
+    };
+
+    el.addEventListener("gmp-select", handler);
+    return () => el.removeEventListener("gmp-select", handler);
+  }, [mapIsLoaded]);
   const onMapClick = (e) => {
     if (!e.latLng) return;
     setForm((prev) => ({ ...prev, latitude: e.latLng.lat(), longitude: e.latLng.lng() }));
@@ -289,13 +302,11 @@ export const ApplyActivity = () => {
         <label className="aa-label">Pin the location on the map*</label>
         {mapIsLoaded ? (
           <>
-            <Autocomplete onLoad={onAutocompleteLoad} onPlaceChanged={onPlaceChanged}>
-              <input
-                className="aa-input"
-                type="text"
-                placeholder="Search a place (e.g. Eiffel Tower)"
-              />
-            </Autocomplete>
+            <gmp-place-autocomplete
+              ref={autocompleteRef}
+              class="aa-input"
+              placeholder="Search a place (e.g. Eiffel Tower)"
+            ></gmp-place-autocomplete>
             <GoogleMap
               mapContainerStyle={mapContainerStyle}
               center={
