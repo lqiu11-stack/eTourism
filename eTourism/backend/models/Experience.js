@@ -62,8 +62,7 @@ const Experience = {
   async findByIdWithHost(id) {
     const { rows } = await pool.query(
       `SELECT e.*,
-              u.first_name    AS ehost_first_name,
-              u.last_name     AS ehost_last_name,
+              COALESCE(u.display_name, u.first_name) AS ehost_first_name,
               u.bio           AS ehost_bio,
               u.profile_image AS ehost_profile_image
        FROM experiences e

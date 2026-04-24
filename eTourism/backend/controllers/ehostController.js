@@ -2,9 +2,12 @@ const pool = require('../config/db');
 const User = require('../models/User');
 const { CATEGORIES, LANGUAGES, CONTINENTS, GENDER_PREFERENCES } = require('../constants/enums');
 
+const YOUTUBE_URL_RE = /^(https?:\/\/)?(www\.)?(youtube\.com\/(watch\?v=|shorts\/|embed\/)|youtu\.be\/)([\w-]{11})([&?].*)?$/i;
+
 const EDITABLE_PROFILE_FIELDS = [
   'first_name',
   'last_name',
+  'display_name',
   'bio',
   'profile_image',
   'country',
@@ -104,7 +107,12 @@ try {
         max_visitors,
         cover_image,       // frontend image link url (String)
         gender_preference, // sex preference
-        allows_piggyback   // Boolean
+        allows_piggyback,  // Boolean
+        sample_video_url,
+        video_description,
+        video_highlights,
+        date_time,
+        price_discounted
     } = req.body;
 
 
@@ -151,10 +159,58 @@ try {
       });
     }
 
+    let normalizedSampleVideoUrl = null;
+    if (sample_video_url !== undefined && sample_video_url !== null && String(sample_video_url).trim() !== '') {
+      const trimmed = String(sample_video_url).trim();
+      if (!YOUTUBE_URL_RE.test(trimmed)) {
+        return res.status(400).json({
+          success: false,
+          message: 'sample_video_url must be a valid YouTube link.',
+        });
+      }
+      normalizedSampleVideoUrl = trimmed;
+    }
+
+    let normalizedVideoHighlights = null;
+    if (Array.isArray(video_highlights)) {
+      const cleaned = video_highlights
+        .map((item) => (item === null || item === undefined ? '' : String(item).trim()))
+        .filter(Boolean);
+      normalizedVideoHighlights = cleaned.length ? cleaned : null;
+    }
+
+    const normalizedVideoDescription =
+      typeof video_description === 'string' && video_description.trim() !== ''
+        ? video_description.trim()
+        : null;
+
+    let normalizedDateTime = null;
+    if (date_time !== undefined && date_time !== null && String(date_time).trim() !== '') {
+      normalizedDateTime = parseDateTimeInput(date_time);
+      if (!normalizedDateTime) {
+        return res.status(400).json({ success: false, message: 'Invalid date_time.' });
+      }
+      if (new Date(normalizedDateTime).getTime() <= Date.now()) {
+        return res.status(400).json({ success: false, message: 'date_time must be in the future.' });
+      }
+    }
+
+    let normalizedPriceDiscounted = null;
+    if (price_discounted !== undefined && price_discounted !== null && String(price_discounted).trim() !== '') {
+      const parsedDiscount = Number(price_discounted);
+      if (!Number.isFinite(parsedDiscount) || parsedDiscount < 0) {
+        return res.status(400).json({ success: false, message: 'price_discounted must be a non-negative number.' });
+      }
+      if (parsedDiscount >= Number(price)) {
+        return res.status(400).json({ success: false, message: 'price_discounted must be lower than price.' });
+      }
+      normalizedPriceDiscounted = parsedDiscount;
+    }
+
     const { rows } = await pool.query(
         `INSERT INTO experiences
-        (title, ehost_id, location_name, country, continent, latitude, longitude, category, language, description, price, duration_minutes, max_visitors, cover_image, gender_preference, allows_piggyback, status)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, 'pending')
+        (title, ehost_id, location_name, country, continent, latitude, longitude, category, language, description, price, price_discounted, duration_minutes, max_visitors, cover_image, gender_preference, allows_piggyback, sample_video_url, video_description, video_highlights, date_time, status)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, 'pending')
         RETURNING *`,
         [
             title,
@@ -168,11 +224,16 @@ try {
             language || 'English',
             description,
             price,
+            normalizedPriceDiscounted,
             duration_minutes || 60,
             max_visitors || 10,
             cover_image,
             normalizedGenderPreference,
             allows_piggyback || false,
+            normalizedSampleVideoUrl,
+            normalizedVideoDescription,
+            normalizedVideoHighlights,
+            normalizedDateTime,
         ]
     );
 

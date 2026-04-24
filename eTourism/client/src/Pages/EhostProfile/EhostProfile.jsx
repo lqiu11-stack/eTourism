@@ -8,7 +8,7 @@ import "./EhostProfile.css";
 
 const API_BASE = import.meta.env.VITE_API_URL;
 
-const EDITABLE = ["first_name", "last_name", "bio", "profile_image", "country", "language", "date_of_birth"];
+const EDITABLE = ["first_name", "last_name", "display_name", "bio", "profile_image", "country", "language", "date_of_birth"];
 
 const toDateInput = (iso) => {
   if (!iso) return "";
@@ -25,6 +25,7 @@ export const EhostProfile = () => {
   const [form, setForm] = useState({
     first_name: "",
     last_name: "",
+    display_name: "",
     bio: "",
     profile_image: "",
     country: "",
@@ -54,6 +55,7 @@ export const EhostProfile = () => {
         setForm({
           first_name: me.first_name || "",
           last_name: me.last_name || "",
+          display_name: me.display_name || "",
           bio: me.bio || "",
           profile_image: me.profile_image || "",
           country: me.country || "",
@@ -157,6 +159,16 @@ export const EhostProfile = () => {
                 <input className="ep-input" name="last_name" value={form.last_name} onChange={handleChange} />
               </div>
             </div>
+
+            <label className="ep-label">Public display name (optional)</label>
+            <input
+              className="ep-input"
+              name="display_name"
+              value={form.display_name}
+              onChange={handleChange}
+              placeholder="Leave blank to use your first name"
+            />
+            <div className="ep-hint">Visitors will see this handle on your listings instead of your real first name.</div>
 
             <div className="ep-grid">
               <div>

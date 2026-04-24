@@ -128,7 +128,6 @@ export const MapPage = () => {
                   </button>
 
           <div className="nav-links">
-              <Link to="/help" className="nav-link">Helping centre</Link>
               <Link to="/Mybooking" className="nav-link">My booking</Link>
                {isLoggedIn ? (
                   <button className="nav-link nav-btn-link" onClick={handleLogout}>

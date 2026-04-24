@@ -11,6 +11,7 @@ import { useNavigate, useSearchParams, Link, useLocation } from "react-router-do
 import backIcon from "../icon/back.png";
 import blog from "../icon/blogger.png";
 import { getCountryImage } from "../../utils/countryImages";
+import { toYouTubeEmbed } from "../../utils/youtube";
 
 const API_BASE = import.meta.env.VITE_API_URL;
 
@@ -84,7 +85,6 @@ export const DetailPage = () => {
                   </button>
 
           <div className="nav-links">
-              <Link to="/help" className="nav-link">Helping centre</Link>
               <Link
                 to="/Mybooking"
                 className="nav-link"
@@ -163,11 +163,14 @@ export const DetailPage = () => {
           <h3>Are you still hesitating?</h3>
           <p>Check our past video</p>
 
-          {experience?.sample_video_url ? (
-            <video
-              src={experience.sample_video_url}
-              controls
+          {experience?.sample_video_url && toYouTubeEmbed(experience.sample_video_url) ? (
+            <iframe
+              src={toYouTubeEmbed(experience.sample_video_url)}
               className="detail-video-player"
+              title="Sample video"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+              frameBorder="0"
             />
           ) : (
             <img src={videoImg} alt="detail-live video"/>
@@ -200,7 +203,7 @@ export const DetailPage = () => {
           />
 
           <div>
-            <h4>{experience?.ehost_first_name} {experience?.ehost_last_name}</h4>
+            <h4>{experience?.ehost_first_name}</h4>
             <p>{experience?.ehost_bio}</p>
           </div>
 
@@ -218,7 +221,7 @@ export const DetailPage = () => {
                 <span className="quote">{"\u275D"}</span>
                 <div className="stars">{renderStars(reviews[0].rating)}</div>
               </div>
-              <h3 className="blog-name">{reviews[0].first_name} {reviews[0].last_name}</h3>
+              <h3 className="blog-name">{reviews[0].first_name}</h3>
               <p className="blog-text">{reviews[0].comment}</p>
             </div>
             <div className="detail-video-left">

@@ -5,8 +5,7 @@ import backIcon from "../icon/back.png";
 import "./style.css";
 import { useNavigate } from "react-router-dom";
 import { StepProgress } from "../EhostRegistrate/Step.jsx";
-
-const YOUTUBE_URL_RE = /^(https?:\/\/)?(www\.)?(youtube\.com\/(watch\?v=|shorts\/|embed\/)|youtu\.be\/)[\w-]{11}([&?].*)?$/i;
+import { isYouTubeUrl } from "../../utils/youtube";
 
 export const Eregistrate3 = () => {
   const navigate = useNavigate();
@@ -31,7 +30,7 @@ export const Eregistrate3 = () => {
       setError("Please fill in all required fields.");
       return;
     }
-    if (!YOUTUBE_URL_RE.test(videoLink.trim())) {
+    if (!isYouTubeUrl(videoLink)) {
       setError("Please paste a valid YouTube link (e.g. https://youtube.com/watch?v=...).");
       return;
     }
