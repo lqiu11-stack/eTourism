@@ -17,12 +17,12 @@ const User = {
     return rows[0] || null;
   },
 
-  async create({ email, password_hash, role, first_name, last_name, date_of_birth, country, language }) {
+  async create({ email, password_hash, role, first_name, last_name, date_of_birth, country, language, bio, profile_image }) {
     const { rows } = await pool.query(
-      `INSERT INTO users (email, password_hash, role, first_name, last_name, date_of_birth, country, language)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-       RETURNING id, email, role, first_name, last_name, created_at`,
-      [email, password_hash, role, first_name, last_name, date_of_birth, country, language]
+      `INSERT INTO users (email, password_hash, role, first_name, last_name, date_of_birth, country, language, bio, profile_image)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+       RETURNING id, email, role, first_name, last_name, date_of_birth, country, language, bio, profile_image, created_at`,
+      [email, password_hash, role, first_name, last_name, date_of_birth, country, language, bio ?? null, profile_image ?? null]
     );
     return rows[0];
   },

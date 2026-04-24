@@ -140,3 +140,46 @@ textarea.vrectangle-4::placeholder {
   opacity: 0;
   cursor: pointer;
 }
+
+.visitor-agreements {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 18px;
+  margin-bottom: 12px;
+  width: 450px;
+  font-size: 14px;
+  line-height: 1.4;
+  color: white;
+}
+
+.visitor-agreements .agreement-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  cursor: pointer;
+}
+
+.visitor-agreements input[type="checkbox"] {
+  margin-top: 4px;
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  accent-color: #a64a4ac4;
+  cursor: pointer;
+}
+
+.visitor-agreements a {
+  color: white;
+  text-decoration: underline;
+}
+
+.visitor-register-error {
+  color: #ffd6d6;
+  background: rgba(166, 74, 74, 0.35);
+  border-radius: 12px;
+  padding: 10px 14px;
+  font-size: 14px;
+  margin: 12px 0 0;
+  width: 422px;
+}

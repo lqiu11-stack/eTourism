@@ -21,26 +21,77 @@ export const VisitorRegistrate = () => {
     bio: "",
     profile_image: ""
   });
+  const [agreements, setAgreements] = useState({
+    is_over_18: false,
+    payment_method_on_file: false,
+    accepted_terms: false,
+    accepted_behaviour: false,
+    accepted_recording: false,
+  });
+  const [error, setError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
+  const handleAgreementChange = (e) => {
+    setAgreements({ ...agreements, [e.target.name]: e.target.checked });
+  };
+
+  const calculateAge = (dob) => {
+    if (!dob) return null;
+    const birth = new Date(dob);
+    if (Number.isNaN(birth.getTime())) return null;
+    const now = new Date();
+    let age = now.getFullYear() - birth.getFullYear();
+    const m = now.getMonth() - birth.getMonth();
+    if (m < 0 || (m === 0 && now.getDate() < birth.getDate())) age -= 1;
+    return age;
+  };
+
+  const allAgreementsChecked =
+    agreements.is_over_18 &&
+    agreements.payment_method_on_file &&
+    agreements.accepted_terms &&
+    agreements.accepted_behaviour &&
+    agreements.accepted_recording;
+
   const handleSubmit = async (e) => {
-  e.preventDefault();
+    e.preventDefault();
+    setError("");
 
-  try {
-    await axios.post(`${API_BASE}/auth/register`, form);
+    const age = calculateAge(form.date_of_birth);
+    if (age === null || age < 18) {
+      setError("You must be at least 18 years old to register.");
+      return;
+    }
+    if (!allAgreementsChecked) {
+      setError("Please confirm all eligibility and agreement items.");
+      return;
+    }
 
-    alert("Registration successful!");
-
-    setTimeout(() => {
-      navigate("/login");
-    }, 2000); 
-  } catch (err) {
-    alert("Register failed");
-  }
-};
+    setSubmitting(true);
+    try {
+      await axios.post(`${API_BASE}/auth/register`, {
+        ...form,
+        accepted_terms: agreements.accepted_terms,
+        accepted_behaviour: agreements.accepted_behaviour,
+        accepted_recording: agreements.accepted_recording,
+        payment_method_on_file: agreements.payment_method_on_file,
+      });
+      setTimeout(() => {
+        navigate("/login");
+      }, 1500);
+    } catch (err) {
+      const message =
+        err.response?.data?.error ||
+        err.response?.data?.message ||
+        "Registration failed. Please try again.";
+      setError(message);
+      setSubmitting(false);
+    }
+  };
 
 const formatDate = (dt) => {
   if (!dt) return 'DD/MM/YYYY';
@@ -65,9 +116,10 @@ const formatDate = (dt) => {
         <img src={backIcon} alt="Back" className="back-icon" />
       </button>
 
+      <form className="visitor-register-form" onSubmit={handleSubmit}>
       <div className="join-e-host-step">
-        <form className="join-box" onSubmit={handleSubmit}>
-          
+        <div className="join-box">
+
           <h1 className="vtext-wrapper">Create Account</h1>
 
           {/* Email */}
@@ -144,10 +196,10 @@ const formatDate = (dt) => {
             onChange={handleChange}
             required
           />
-        </form>
+        </div>
       </div>
       <div className="join-e-host-step-right">
-        <form className="join-box" onSubmit={handleSubmit}>
+        <div className="join-box">
           {/* Language */}
           <label className="vtext-wrapper-3">Language*</label>
           <input
@@ -176,13 +228,88 @@ const formatDate = (dt) => {
             onChange={handleChange}
           />
 
+          {/* Eligibility & agreements */}
+          <div className="visitor-agreements">
+            <label className="agreement-row">
+              <input
+                type="checkbox"
+                name="is_over_18"
+                checked={agreements.is_over_18}
+                onChange={handleAgreementChange}
+              />
+              <span>I confirm I am at least 18 years old.</span>
+            </label>
+
+            <label className="agreement-row">
+              <input
+                type="checkbox"
+                name="payment_method_on_file"
+                checked={agreements.payment_method_on_file}
+                onChange={handleAgreementChange}
+              />
+              <span>
+                I have a valid payment method (e.g. credit/debit card or supported
+                provider) ready for bookings.
+              </span>
+            </label>
+
+            <label className="agreement-row">
+              <input
+                type="checkbox"
+                name="accepted_terms"
+                checked={agreements.accepted_terms}
+                onChange={handleAgreementChange}
+              />
+              <span>
+                I have read and agree to the{" "}
+                <a href="/terms.txt" target="_blank" rel="noopener noreferrer">
+                  Terms of Service
+                </a>
+                .
+              </span>
+            </label>
+
+            <label className="agreement-row">
+              <input
+                type="checkbox"
+                name="accepted_behaviour"
+                checked={agreements.accepted_behaviour}
+                onChange={handleAgreementChange}
+              />
+              <span>
+                I agree to behave appropriately during live experiences and to follow
+                the host's reasonable instructions.
+              </span>
+            </label>
+
+            <label className="agreement-row">
+              <input
+                type="checkbox"
+                name="accepted_recording"
+                checked={agreements.accepted_recording}
+                onChange={handleAgreementChange}
+              />
+              <span>
+                I consent to experiences being recorded for safety, quality, and
+                dispute resolution.
+              </span>
+            </label>
+          </div>
+
+          {error && (
+            <p className="visitor-register-error" role="alert">
+              {error}
+            </p>
+          )}
+
           {/* Submit button */}
-          <button type="submit" className="visitor-submit">
-            Register →
+          <button type="submit" className="visitor-submit" disabled={submitting}>
+            {submitting ? "Registering..." : "Register →"}
           </button>
 
-        </form>
+        </div>
       </div>
+      </form>
     </div>
   );
 };

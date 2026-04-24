@@ -6,6 +6,7 @@ const Experience = require('../models/Experience');
 const Payment = require('../models/Payment');
 const Refund = require('../models/Refund');
 const Review = require('../models/Review');
+const User = require('../models/User');
 
 const normalizeGenderPreference = (value) => {
   if (value === undefined || value === null || value === '') {
@@ -137,6 +138,16 @@ const getPayPalClient = () => {
 };
 
 const getMe = async (req, res) => {
+  try {
+    const user = await User.findById(req.userId);
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    return res.json(user);
+  } catch (err) {
+    console.error('[visitor.getMe]', err);
+    return res.status(500).json({ error: err.message || 'Failed to load profile' });
+  }
 };
 
 const getExperiences = async (req, res) => {
