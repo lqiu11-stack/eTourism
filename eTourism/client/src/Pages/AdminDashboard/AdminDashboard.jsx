@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import "./AdminDashboard.css";
 import profileImg from "../icon/head.png";
 import { Link, useNavigate } from "react-router-dom";
@@ -15,6 +15,7 @@ import {
   ArcElement,
 } from "chart.js";
 import { Bar, Doughnut } from "react-chartjs-2";
+import { useAuthToken } from "../../hooks/useAuthToken";
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ArcElement);
 
@@ -22,7 +23,7 @@ const API_BASE = import.meta.env.VITE_API_URL;
 
 export const Dashboard = () => {
   const navigate = useNavigate();
-  const token = localStorage.getItem("token");
+  const token = useAuthToken();
   const user = JSON.parse(localStorage.getItem("user") || "{}");
   const isLoggedIn = !!token;
 
@@ -783,53 +784,65 @@ const barOptions = () => ({
 });
 
 const Reports = ({ analytics, loading }) => {
+  const expChartData = useMemo(() => {
+    if (!analytics) return null;
+    return {
+      labels: analytics.topExperiences.map((e) =>
+        e.title.length > 28 ? e.title.slice(0, 26) + "…" : e.title
+      ),
+      datasets: [{
+        data: analytics.topExperiences.map((e) => Number(e.booking_count)),
+        backgroundColor: "#a88b8b",
+        borderColor: "#8b6b6b",
+        borderWidth: 1,
+        borderRadius: 4,
+      }],
+    };
+  }, [analytics]);
+
+  const hostChartData = useMemo(() => {
+    if (!analytics) return null;
+    return {
+      labels: analytics.topHosts.map((h) => h.name),
+      datasets: [{
+        data: analytics.topHosts.map((h) => Number(h.booking_count)),
+        backgroundColor: "#7b9eb8",
+        borderColor: "#5a7e9b",
+        borderWidth: 1,
+        borderRadius: 4,
+      }],
+    };
+  }, [analytics]);
+
+  const countryChartData = useMemo(() => {
+    if (!analytics) return null;
+    return {
+      labels: analytics.visitorCountries.map((c) => c.country),
+      datasets: [{
+        data: analytics.visitorCountries.map((c) => Number(c.visitor_count)),
+        backgroundColor: "#8bb897",
+        borderColor: "#6a9a78",
+        borderWidth: 1,
+        borderRadius: 4,
+      }],
+    };
+  }, [analytics]);
+
+  const categoryChartData = useMemo(() => {
+    if (!analytics) return null;
+    return {
+      labels: analytics.categoryBreakdown.map((c) => c.category || "Uncategorised"),
+      datasets: [{
+        data: analytics.categoryBreakdown.map((c) => Number(c.booking_count)),
+        backgroundColor: CHART_COLORS.slice(0, analytics.categoryBreakdown.length),
+        borderWidth: 1,
+        borderColor: "#fff",
+      }],
+    };
+  }, [analytics]);
+
   if (loading) return <p style={{ padding: "16px" }}>Loading reports...</p>;
   if (!analytics) return <p style={{ padding: "16px" }}>No data available.</p>;
-
-  const expChartData = {
-    labels: analytics.topExperiences.map((e) =>
-      e.title.length > 28 ? e.title.slice(0, 26) + "…" : e.title
-    ),
-    datasets: [{
-      data: analytics.topExperiences.map((e) => Number(e.booking_count)),
-      backgroundColor: "#a88b8b",
-      borderColor: "#8b6b6b",
-      borderWidth: 1,
-      borderRadius: 4,
-    }],
-  };
-
-  const hostChartData = {
-    labels: analytics.topHosts.map((h) => h.name),
-    datasets: [{
-      data: analytics.topHosts.map((h) => Number(h.booking_count)),
-      backgroundColor: "#7b9eb8",
-      borderColor: "#5a7e9b",
-      borderWidth: 1,
-      borderRadius: 4,
-    }],
-  };
-
-  const countryChartData = {
-    labels: analytics.visitorCountries.map((c) => c.country),
-    datasets: [{
-      data: analytics.visitorCountries.map((c) => Number(c.visitor_count)),
-      backgroundColor: "#8bb897",
-      borderColor: "#6a9a78",
-      borderWidth: 1,
-      borderRadius: 4,
-    }],
-  };
-
-  const categoryChartData = {
-    labels: analytics.categoryBreakdown.map((c) => c.category || "Uncategorised"),
-    datasets: [{
-      data: analytics.categoryBreakdown.map((c) => Number(c.booking_count)),
-      backgroundColor: CHART_COLORS.slice(0, analytics.categoryBreakdown.length),
-      borderWidth: 1,
-      borderColor: "#fff",
-    }],
-  };
 
   const doughnutOptions = {
     responsive: true,

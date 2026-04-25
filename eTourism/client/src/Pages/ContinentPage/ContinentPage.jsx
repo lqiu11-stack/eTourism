@@ -9,6 +9,7 @@ import dateIcon from "../icon/calendar.png";
 import filterIcon from "../icon/filter.png";
 import backIcon from "../icon/back.png";
 import { getCountryImage } from "../../utils/countryImages";
+import { useAuthToken } from "../../hooks/useAuthToken";
 
 const API_BASE = import.meta.env.VITE_API_URL;
 const VALID_CONTINENTS = ["Africa", "Asia", "Europe", "North America", "South America", "Oceania"];
@@ -27,7 +28,7 @@ export const ContinentPage = () => {
   const navigate = useNavigate();
   const { continent } = useParams();
   const [searchParams] = useSearchParams();
-  const token = localStorage.getItem("token");
+  const token = useAuthToken();
   const isLoggedIn = !!token;
   const user = JSON.parse(localStorage.getItem("user") || "{}");
   const isEhost = user.role === "ehost";

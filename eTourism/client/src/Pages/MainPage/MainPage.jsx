@@ -11,6 +11,7 @@ import customerReview from "../icon/customer-review.png"
 import LiveIcon from "../icon/live.png"
 import translate from "../icon/language.png"
 import { useNavigate, Link } from "react-router-dom";
+import { useAuthToken } from "../../hooks/useAuthToken";
 
 const API_BASE = import.meta.env.VITE_API_URL;
 
@@ -28,7 +29,7 @@ const formatDate = (dt) => {
 
 export const MainPage = () => {
   const navigate = useNavigate();
-  const token = localStorage.getItem("token");
+  const token = useAuthToken();
   const isLoggedIn = !!token;
   const user = JSON.parse(localStorage.getItem("user") || "{}");
   const isEhost = user.role === "ehost";
@@ -54,6 +55,7 @@ export const MainPage = () => {
     } catch {}
   }, []);
 
+  console.log(experiences);
   useEffect(() => { fetchExperiences(); }, [fetchExperiences]);
 
   const buildSearchParams = () => {

@@ -12,6 +12,7 @@ import backIcon from "../icon/back.png";
 import blog from "../icon/blogger.png";
 import { getCountryImage } from "../../utils/countryImages";
 import { toYouTubeEmbed } from "../../utils/youtube";
+import { useAuthToken } from "../../hooks/useAuthToken";
 
 const API_BASE = import.meta.env.VITE_API_URL;
 
@@ -33,7 +34,7 @@ export const DetailPage = () => {
 
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const token = localStorage.getItem("token");
+  const token = useAuthToken();
   const isLoggedIn = !!token;
   const user = JSON.parse(localStorage.getItem("user") || "{}");
   const isEhost = user.role === "ehost";

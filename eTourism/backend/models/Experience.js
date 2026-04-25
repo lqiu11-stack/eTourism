@@ -42,8 +42,15 @@ const Experience = {
     return rows[0] || null;
   },
 
-  async findAll({ status, category, country, continent, ehost_id, language, price_min, price_max, search } = {}) {
-    let query = 'SELECT * FROM experiences WHERE 1=1';
+  async findAll({ status, category, country, continent, ehost_id, language, price_min, price_max, search, limit, offset } = {}) {
+    const cappedLimit = Math.min(Math.max(Number.isInteger(Number(limit)) ? Number(limit) : 50, 1), 100);
+    const safeOffset = Math.max(Number.isInteger(Number(offset)) ? Number(offset) : 0, 0);
+    let query = `SELECT
+        id, ehost_id, title, category, country, continent, location_name,
+        latitude, longitude, date_time, duration_minutes, max_visitors,
+        price, price_discounted, cover_image, gender_preference, allows_piggyback,
+        language, status, created_at
+       FROM experiences WHERE 1=1`;
     const values = [];
     if (status)    { values.push(status);    query += ` AND status = $${values.length}`; }
     if (category)  { values.push(category);  query += ` AND category = $${values.length}`; }
@@ -54,7 +61,11 @@ const Experience = {
     if (price_min) { values.push(Number(price_min)); query += ` AND price >= $${values.length}`; }
     if (price_max) { values.push(Number(price_max)); query += ` AND price <= $${values.length}`; }
     if (search)    { values.push(`%${search.toLowerCase()}%`); query += ` AND (LOWER(title) LIKE $${values.length} OR LOWER(location_name) LIKE $${values.length} OR LOWER(description) LIKE $${values.length})`; }
-    query += ' ORDER BY date_time ASC';
+    values.push(cappedLimit);
+    const limitIdx = values.length;
+    values.push(safeOffset);
+    const offsetIdx = values.length;
+    query += ` ORDER BY date_time ASC LIMIT $${limitIdx} OFFSET $${offsetIdx}`;
     const { rows } = await pool.query(query, values);
     return rows;
   },

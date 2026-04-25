@@ -5,6 +5,7 @@ import applyIcon from "../icon/approve.png";
 import profileIcon from "../icon/customer-review.png";
 import { RejectionModal } from "./RejectionModal.jsx";
 import { getCountryImage } from "../../utils/countryImages";
+import { useAuthToken } from "../../hooks/useAuthToken";
 import "./EhostDashboard.css";
 
 const API_BASE = import.meta.env.VITE_API_URL;
@@ -23,7 +24,7 @@ const formatDateTime = (iso) => {
 
 export const EhostDashboard = () => {
   const navigate = useNavigate();
-  const token = localStorage.getItem("token");
+  const token = useAuthToken();
   const user = JSON.parse(localStorage.getItem("user") || "{}");
 
   const [experiences, setExperiences] = useState([]);

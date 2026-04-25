@@ -6,6 +6,7 @@ import axios from "axios";
 import { getCountryImage } from "../../utils/countryImages";
 import { useLocation } from "react-router-dom";
 import { useLayoutEffect } from "react";
+import { useAuthToken } from "../../hooks/useAuthToken";
 
 export const BookingDetail = () => {
   const location = useLocation();
@@ -35,7 +36,7 @@ const formatDate = (dt) => {
 };
 
 export const MyBooking = () => {
-  const token = localStorage.getItem("token");
+  const token = useAuthToken();
   const isLoggedIn = !!token;
   const navigate = useNavigate();
 

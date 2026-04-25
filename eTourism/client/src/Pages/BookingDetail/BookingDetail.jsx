@@ -8,6 +8,7 @@ import approveIcon from "../icon/approve.png";
 import enjoyIcon from "../icon/enjoy.png";
 import { getCountryImage } from "../../utils/countryImages";
 import { useLayoutEffect } from "react";
+import { useAuthToken } from "../../hooks/useAuthToken";
 
 
 
@@ -33,7 +34,7 @@ export const MyBookingDetail = () => {
     });
   }, [location.key]);
 
-  const token = localStorage.getItem("token");
+  const token = useAuthToken();
   const isLoggedIn = !!token;
 
   const handleLogout = () => {
