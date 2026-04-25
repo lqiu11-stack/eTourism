@@ -11,8 +11,13 @@ import customerReview from "../icon/customer-review.png"
 import LiveIcon from "../icon/live.png"
 import translate from "../icon/language.png"
 import { useNavigate, Link } from "react-router-dom";
+import { getCountryImage } from "../../utils/countryImages";
 
 const API_BASE = import.meta.env.VITE_API_URL;
+
+const getImage = (exp) => getCountryImage(exp.country);
+
+
 
 const formatDate = (dt) => {
   if (!dt) return 'Choose a date...';
@@ -44,6 +49,8 @@ export const MainPage = () => {
   const [showCategoryMenu,setShowCategoryMenu]= useState(false);
   const [showLanguageMenu,setShowLanguageMenu]= useState(false);
 
+  const [filtered, setFiltered] = useState([]);
+
   const toggleIn = (list, value) =>
     list.includes(value) ? list.filter(v => v !== value) : [...list, value];
 
@@ -54,7 +61,12 @@ export const MainPage = () => {
     } catch {}
   }, []);
 
-  useEffect(() => { fetchExperiences(); }, [fetchExperiences]);
+  useEffect(() => {
+      axios.get(`${API_BASE}/visitor/experiences`)
+        .then(({ data }) => { setExperiences(data); setFiltered(data); })
+        .catch(() => {});
+    }, []);
+
 
   const buildSearchParams = () => {
     const params = new URLSearchParams();
@@ -88,6 +100,42 @@ export const MainPage = () => {
     if (e.continent) acc[e.continent] = (acc[e.continent] || 0) + 1;
     return acc;
   }, {});
+
+  const soldOut = filtered.filter(e => e.max_visitors <= 15);
+
+  // const maxId = Math.max(...filtered.map(e => e.id));
+  // const newEvent = filtered.filter (e => e.id >= maxId-5);
+  const maxItemNum = 8;
+  const newevent = filtered.sort((a, b) => b.id - a.id).slice(0, maxItemNum);
+
+  const renderCard = (exp) => (
+    <div
+      className="tour-card"
+      key={exp.id}
+      onClick={() =>
+        navigate(`/DetailPage?id=${exp.id}`, {
+          state: { from: "main" },
+        })
+      }
+      style={{ cursor: "pointer" }}
+    >
+      <div className="tour-image">
+        <img src={getImage(exp)} alt={exp.title} />
+        <div className="image-overlay">
+          <h3>{exp.title}</h3>
+        </div>
+      </div>
+      <div className="tour-info">
+        <p>{formatDate(exp.date_time)}</p>
+        <p>{exp.price}£ / per ticket</p>
+        <button className="book-btn">
+          Click to book &gt;&gt;
+        </button>
+      </div>
+    </div>
+  );
+
+
 
   return (
     <div className="main-page">
@@ -362,6 +410,46 @@ export const MainPage = () => {
           </div>
         </div>
       </section>
+
+      {/* Almost Sold Out */}
+      <section className="popular">
+        <div className="destination-section">
+          <div className="where-header">
+            <div>
+              <h2 className="section-title">Almost sold out!</h2>
+              <p className="section-subtitle">Grab your last chance to explore the world with us.</p>
+            </div>
+            <button className="more-btn">Click here to check more</button>
+          </div>
+          <div className="card-list">
+            {soldOut.length > 0
+                ? soldOut.map(renderCard)
+                : <p style={{color:'#666'}}>No experiences found.</p>
+            }
+          </div>
+        </div>
+      </section>
+
+      {/* Top Choice This Month */}
+      <section className="popular">
+        <div className="destination-section">
+          <div className="where-header">
+            <div>
+              <h2 className="section-title">New event!</h2>
+              <p className="section-subtitle">Don't know what to choose? Check out our new activity!</p>
+            </div>
+            <button className="more-btn">Click here to check more</button>
+          </div>
+          <div className="card-list">
+            { newevent.length > 0
+                ? newevent.map(renderCard)
+                : <p style={{color:'#666'}}>No experiences found.</p>
+            }
+          </div>
+        </div>
+      </section>
+
+
 
       {/* Newsletter */}
       <section className="newsletter">
