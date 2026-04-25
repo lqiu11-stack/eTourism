@@ -28,6 +28,7 @@ export const EhostDashboard = () => {
   const [experiences, setExperiences] = useState([]);
   const [loading, setLoading] = useState(false);
   const [rejectionModal, setRejectionModal] = useState({ open: false, reason: "", title: "" });
+  const [deleteModal, setDeleteModal] = useState({ open: false, id: null, title: "" });
 
   useEffect(() => {
     if (!token || user.role !== "ehost") {
@@ -79,8 +80,14 @@ export const EhostDashboard = () => {
     }
   };
 
-  const handleDelete = async (id) => {
-    if (!window.confirm("Delete this experience? This cannot be undone.")) return;
+  const requestDelete = (exp) => {
+    setDeleteModal({ open: true, id: exp.id, title: exp.title || exp.location_name || "this experience" });
+  };
+
+  const confirmDelete = async () => {
+    const id = deleteModal.id;
+    setDeleteModal({ open: false, id: null, title: "" });
+    if (!id) return;
     try {
       await axios.delete(`${API_BASE}/ehost/experiences/${id}`, {
         headers: { Authorization: `Bearer ${token}` },
@@ -184,8 +191,9 @@ export const EhostDashboard = () => {
           {button}
           {exp.status !== "approved" && (
             <button
+              type="button"
               className="eh-row-btn eh-row-btn-danger"
-              onClick={stop(() => handleDelete(exp.id))}
+              onClick={stop(() => requestDelete(exp))}
             >
               Delete
             </button>
@@ -237,6 +245,33 @@ export const EhostDashboard = () => {
           reason={rejectionModal.reason}
           onClose={() => setRejectionModal({ open: false, reason: "", title: "" })}
         />
+      )}
+
+      {deleteModal.open && (
+        <div className="eh-modal-overlay" role="dialog" aria-modal="true">
+          <div className="eh-modal-panel">
+            <h3 className="eh-modal-title">Delete experience?</h3>
+            <div className="eh-modal-body">
+              Are you sure you want to delete &quot;{deleteModal.title}&quot;? This cannot be undone.
+            </div>
+            <div className="eh-modal-actions" style={{ gap: 10 }}>
+              <button
+                type="button"
+                className="eh-row-btn"
+                onClick={() => setDeleteModal({ open: false, id: null, title: "" })}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="eh-modal-close"
+                onClick={confirmDelete}
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

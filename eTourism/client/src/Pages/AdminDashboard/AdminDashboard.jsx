@@ -140,17 +140,28 @@ export const Dashboard = () => {
     }
   };
 
-  const handleDeleteUser = async (id) => {
-    if (!window.confirm("Delete this user? This cannot be undone.")) return;
-    try {
-      await axios.delete(`${API_BASE}/admin/users/${id}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      fetchUsers();
-      setShowUserModal(false);
-    } catch (e) {
-      alert(e.response?.data?.message || "Failed to delete user.");
-    }
+  const [confirmModal, setConfirmModal] = useState({ open: false, title: "", message: "", onConfirm: null });
+
+  const closeConfirmModal = () => setConfirmModal({ open: false, title: "", message: "", onConfirm: null });
+
+  const handleDeleteUser = (id) => {
+    setConfirmModal({
+      open: true,
+      title: "Delete user?",
+      message: "Delete this user? This cannot be undone.",
+      onConfirm: async () => {
+        closeConfirmModal();
+        try {
+          await axios.delete(`${API_BASE}/admin/users/${id}`, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          fetchUsers();
+          setShowUserModal(false);
+        } catch (e) {
+          alert(e.response?.data?.message || "Failed to delete user.");
+        }
+      },
+    });
   };
 
   const [experiences, setExperiences] = useState([]);
@@ -201,16 +212,23 @@ export const Dashboard = () => {
     }
   };
 
-  const handleDeleteExperience = async (id) => {
-    if (!window.confirm("Delete this experience?")) return;
-    try {
-      await axios.delete(`${API_BASE}/admin/experiences/${id}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      fetchExperiences(expStatusFilter);
-    } catch (e) {
-      alert(e.response?.data?.message || "Failed to delete.");
-    }
+  const handleDeleteExperience = (id) => {
+    setConfirmModal({
+      open: true,
+      title: "Delete experience?",
+      message: "This cannot be undone.",
+      onConfirm: async () => {
+        closeConfirmModal();
+        try {
+          await axios.delete(`${API_BASE}/admin/experiences/${id}`, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          fetchExperiences(expStatusFilter);
+        } catch (e) {
+          alert(e.response?.data?.message || "Failed to delete.");
+        }
+      },
+    });
   };
 
   const [applications, setApplications] = useState([]);
@@ -505,6 +523,18 @@ export const Dashboard = () => {
         )}
       </div>
 
+      {confirmModal.open && (
+        <div className="refund-overlay" role="dialog" aria-modal="true">
+          <div className="refund-panel" style={{ width: "min(440px, 90vw)", padding: 24, flexDirection: "column", gap: 16 }}>
+            <h3 style={{ margin: 0 }}>{confirmModal.title}</h3>
+            <p style={{ margin: 0 }}>{confirmModal.message}</p>
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: 10 }}>
+              <button type="button" className="sort-btn" onClick={closeConfirmModal}>Cancel</button>
+              <button type="button" className="sort-btn" style={{ background: "#e57373", color: "white" }} onClick={() => confirmModal.onConfirm && confirmModal.onConfirm()}>Delete</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
@@ -743,7 +773,7 @@ const ExperienceRequests = ({ experiences, loading, statusFilter, setStatusFilte
                 <button className="sort-btn" onClick={() => onReject(item.id)}>Reject</button>
               </>
             )}
-            <button className="sort-btn" style={{ background: "#e57373", color: "white" }} onClick={() => onDelete(item.id)}>Delete</button>
+            <button type="button" className="sort-btn" style={{ background: "#e57373", color: "white" }} onClick={() => onDelete(item.id)}>Delete</button>
           </div>
         </div>
       ))}
@@ -1056,12 +1086,6 @@ const EhostApplications = ({
             <button className="sort-btn" onClick={() => { setSelectedApp(item); setShowAppModal(true); }}>
               View
             </button>
-            {item.status === "pending" && (
-              <>
-                <button className="sort-btn" onClick={() => onApprove(item.id)}>Approve</button>
-                <button className="sort-btn" onClick={() => onReject(item.id)}>Reject</button>
-              </>
-            )}
           </div>
         </div>
       ))}
