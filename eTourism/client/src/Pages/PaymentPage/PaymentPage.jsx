@@ -22,8 +22,11 @@ export const PaymentPage = () => {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [agreedTerms, setAgreedTerms] = useState(false);
+  const [agreedAllAdults, setAgreedAllAdults] = useState(false);
   const [showTerms, setShowTerms] = useState(false);
   const [termsText, setTermsText] = useState("");
+  const [showWatchOnlyTerms, setShowWatchOnlyTerms] = useState(false);
+  const [watchOnlyTermsText, setWatchOnlyTermsText] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [groupGenderType, setGroupGenderType] = useState("");
@@ -55,6 +58,13 @@ export const PaymentPage = () => {
     fetch("/terms.txt")
       .then((r) => r.text())
       .then(setTermsText)
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    fetch("/watch-only-terms.txt")
+      .then((r) => r.text())
+      .then(setWatchOnlyTermsText)
       .catch(() => {});
   }, []);
 
@@ -91,6 +101,10 @@ export const PaymentPage = () => {
     }
     if (!agreedTerms) {
       setError("Please agree to the Terms before checkout.");
+      return false;
+    }
+    if (!agreedAllAdults) {
+      setError("Please confirm all viewers are 18+ before checkout.");
       return false;
     }
     if (requiresGroupGender && !groupGenderType) {
@@ -218,9 +232,10 @@ export const PaymentPage = () => {
           <div className="ticket">
             <div>
               <p className="ticket-title">
-                Economic ticket <span>{discountedPrice}£ / per ticket</span>
+                Watch-only ticket <span>{discountedPrice}£ / per ticket</span>
               </p>
-              <Link className="ticket-link" onClick={() => setShowTerms(true)}>click to see the detail</Link>
+              <span className="small-text">(no Q&A, stream only)</span>
+              <Link className="ticket-link" onClick={() => setShowWatchOnlyTerms(true)}>click to see the detail</Link>
             </div>
             <div className="counter">
               <button onClick={() => setQtyDiscounted(Math.max(0, qtyDiscounted - 1))}>-</button>
@@ -242,6 +257,15 @@ export const PaymentPage = () => {
               <Link className="terms-link" onClick={() => setShowTerms(true)}>the Terms</Link>
               {" "}and confirm I am 18+.
             </label>
+          </div>
+
+          <div className="terms">
+            <input
+              type="checkbox"
+              checked={agreedAllAdults}
+              onChange={(e) => { setAgreedAllAdults(e.target.checked); setError(""); }}
+            />
+            <label>I confirm that all viewers using these tickets are 18 or older.</label>
           </div>
 
           {/* Total */}
@@ -322,6 +346,22 @@ export const PaymentPage = () => {
             <h2>Terms & Conditions</h2>
             <div className="modal-content">
               {termsText.split("\n\n").map((para, i) => (
+                <p key={i} style={{ whiteSpace: "pre-wrap" }}>{para}</p>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showWatchOnlyTerms && (
+        <div className="modal-overlay" onClick={() => setShowWatchOnlyTerms(false)}>
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <button className="modal-close" onClick={() => setShowWatchOnlyTerms(false)} aria-label="Close">
+              <img src={close} className="close-icon" />
+            </button>
+            <h2>Watch-only Ticket Terms</h2>
+            <div className="modal-content">
+              {watchOnlyTermsText.split("\n\n").map((para, i) => (
                 <p key={i} style={{ whiteSpace: "pre-wrap" }}>{para}</p>
               ))}
             </div>
