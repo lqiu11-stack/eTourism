@@ -45,6 +45,7 @@ function App() {
         <Route path="/MapPage" element={< MapPage />} />
         <Route path="/EhostDashboard" element={<EhostDashboard />} />
         <Route path="/ApplyActivity" element={<ApplyActivity />} />
+        <Route path="/EditActivity/:id" element={<ApplyActivity />} />
         <Route path="/EhostProfile" element={<EhostProfile />} />
         <Route path="/continent/:continent" element={<ContinentPage />} />
         <Route path="/register/visitor" element={<VisitorRegister />} />

@@ -202,6 +202,19 @@
 
 .eh-row-action {
   flex-shrink: 0;
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.eh-row-btn-danger {
+  background: #c47878;
+  color: #fff;
+}
+
+.eh-row-btn-danger:hover:not(:disabled) {
+  background: #a86060;
 }
 
 .eh-row-btn {

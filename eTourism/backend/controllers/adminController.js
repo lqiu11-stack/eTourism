@@ -117,8 +117,8 @@ const rejectExperience = async (req, res) => {
 // DELETE /api/admin/experiences/:id
 const deleteExperience = async (req, res) => {
   try {
-    const deleted = await Experience.delete(req.params.id);
-    if (!deleted) return res.status(404).json({ message: 'Experience not found' });
+    const updated = await Experience.update(req.params.id, { status: 'deleted' });
+    if (!updated) return res.status(404).json({ message: 'Experience not found' });
     res.json({ message: 'Experience deleted successfully' });
   } catch (err) {
     res.status(500).json({ message: 'Server error', error: String(err) });

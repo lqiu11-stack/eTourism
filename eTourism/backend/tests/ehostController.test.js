@@ -197,18 +197,26 @@ describe('getExperienceById()', () => {
 describe('updateExperience()', () => {
   beforeEach(resetMocks);
 
-  it('200 : updates experience and sets status to pending', async () => {
+  const fullPayload = () => ({
+    title: 'City Tour',
+    location_name: 'New York',
+    country: 'United States',
+    price: 60,
+    description: 'An updated description',
+    cover_image: 'https://img.com/x.jpg',
+    meeting_link: 'https://meet.google.com/abc-defg-hij',
+  });
+
+  it('200 : updates pending experience successfully', async () => {
     const updated = { id: 1, location_name: 'New York', status: 'pending' };
     let callCount = 0;
     fakePool.query.mock.mockImplementation(() => {
       callCount += 1;
-      if (callCount === 1) {
-        return Promise.resolve({ rows: [{ id: 1 }] });
-      }
+      if (callCount === 1) return Promise.resolve({ rows: [{ id: 1, status: 'pending' }] });
       return Promise.resolve({ rows: [updated] });
     });
 
-    const req = makeReq({ location_name: 'New York', price: 60 }, { id: '1' }, {}, { id: 5 });
+    const req = makeReq(fullPayload(), { id: '1' }, {}, { id: 5 });
     const res = makeRes();
     await updateExperience(req, res);
 
@@ -216,20 +224,46 @@ describe('updateExperience()', () => {
     assert.deepEqual(res.json.mock.calls[0].arguments[0].data, updated);
   });
 
+  it('403 : refuses to edit non-pending experience', async () => {
+    fakePool.query.mock.mockImplementation(() =>
+      Promise.resolve({ rows: [{ id: 1, status: 'approved' }] })
+    );
+
+    const req = makeReq(fullPayload(), { id: '1' }, {}, { id: 5 });
+    const res = makeRes();
+    await updateExperience(req, res);
+
+    assert.equal(res.status.mock.calls[0].arguments[0], 403);
+    // ownership lookup only — no UPDATE issued
+    assert.equal(fakePool.query.mock.callCount(), 1);
+  });
+
   it('404 : experience not found or not owned by ehost', async () => {
     fakePool.query.mock.mockImplementation(() => Promise.resolve({ rows: [] }));
 
-    const req = makeReq({ location_name: 'New York' }, { id: '999' }, {}, { id: 5 });
+    const req = makeReq(fullPayload(), { id: '999' }, {}, { id: 5 });
     const res = makeRes();
     await updateExperience(req, res);
 
     assert.equal(res.status.mock.calls[0].arguments[0], 404);
   });
 
+  it('400 : missing required fields', async () => {
+    fakePool.query.mock.mockImplementation(() =>
+      Promise.resolve({ rows: [{ id: 1, status: 'pending' }] })
+    );
+
+    const req = makeReq({ title: 'Just a title' }, { id: '1' }, {}, { id: 5 });
+    const res = makeRes();
+    await updateExperience(req, res);
+
+    assert.equal(res.status.mock.calls[0].arguments[0], 400);
+  });
+
   it('500 : database error on ownership check', async () => {
     fakePool.query.mock.mockImplementation(() => Promise.reject(new Error('DB fail')));
 
-    const req = makeReq({ location_name: 'New York' }, { id: '1' }, {}, { id: 5 });
+    const req = makeReq(fullPayload(), { id: '1' }, {}, { id: 5 });
     const res = makeRes();
     await updateExperience(req, res);
 
@@ -237,10 +271,12 @@ describe('updateExperience()', () => {
   });
 
   it('500 : database error on update', async () => {
-    fakePool.query.mock.mockImplementationOnce(() => Promise.resolve({ rows: [{ id: 1 }] }));
+    fakePool.query.mock.mockImplementationOnce(() =>
+      Promise.resolve({ rows: [{ id: 1, status: 'pending' }] })
+    );
     fakePool.query.mock.mockImplementationOnce(() => Promise.reject(new Error('Update fail')));
 
-    const req = makeReq({ location_name: 'New York' }, { id: '1' }, {}, { id: 5 });
+    const req = makeReq(fullPayload(), { id: '1' }, {}, { id: 5 });
     const res = makeRes();
     await updateExperience(req, res);
 
@@ -262,14 +298,14 @@ describe('deleteExperience()', () => {
     assert.match(res.json.mock.calls[0].arguments[0].message, /removed/i);
   });
 
-  it('404 : experience not found or not owned by ehost', async () => {
+  it('403 : experience not found, not owned, or already approved', async () => {
     fakePool.query.mock.mockImplementation(() => Promise.resolve({ rows: [] }));
 
     const req = makeReq({}, { id: '999' }, {}, { id: 5 });
     const res = makeRes();
     await deleteExperience(req, res);
 
-    assert.equal(res.status.mock.calls[0].arguments[0], 404);
+    assert.equal(res.status.mock.calls[0].arguments[0], 403);
   });
 
   it('500 : database error', async () => {
@@ -603,7 +639,7 @@ describe('updateBookingPreferences()', () => {
 
   it('200 : updates gender preference and max visitors', async () => {
     fakePool.query.mock.mockImplementationOnce(() => Promise.resolve({
-      rows: [{ id: 10, gender_preference: 'no_all_male_groups', max_visitors: 6, date_time: '2026-06-01T10:00:00.000Z' }],
+      rows: [{ id: 10, gender_preference: 'mixed', max_visitors: 6, date_time: '2026-06-01T10:00:00.000Z' }],
     }));
     const req = makeReq({ gender_preference: 'no_all_male_groups', max_visitors: 6 }, { id: '10' }, {}, { id: 5 });
     const res = makeRes();
@@ -611,7 +647,7 @@ describe('updateBookingPreferences()', () => {
 
     assert.equal(res.status.mock.calls[0].arguments[0], 200);
     const payload = res.json.mock.calls[0].arguments[0];
-    assert.equal(payload.data.gender_preference, 'no_all_male_groups');
+    assert.equal(payload.data.gender_preference, 'mixed');
     assert.equal(payload.data.max_visitors, 6);
   });
 

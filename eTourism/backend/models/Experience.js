@@ -47,6 +47,7 @@ const Experience = {
     let query = 'SELECT * FROM experiences WHERE 1=1';
     const values = [];
     if (status)    { values.push(status);    query += ` AND status = $${values.length}`; }
+    else           { query += ` AND status <> 'deleted'`; }
     if (category)  { values.push(category);  query += ` AND category = $${values.length}`; }
     if (country)   { values.push(country);   query += ` AND country = $${values.length}`; }
     if (continent) { values.push(continent); query += ` AND continent = $${values.length}`; }

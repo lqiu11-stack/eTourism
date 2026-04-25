@@ -79,6 +79,18 @@ export const EhostDashboard = () => {
     }
   };
 
+  const handleDelete = async (id) => {
+    if (!window.confirm("Delete this experience? This cannot be undone.")) return;
+    try {
+      await axios.delete(`${API_BASE}/ehost/experiences/${id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      fetchExperiences();
+    } catch (e) {
+      alert(e.response?.data?.message || "Failed to delete.");
+    }
+  };
+
   const openReviewModal = (exp) => {
     const title = exp.title || exp.location_name || "Your application";
     if (exp.status === "rejected") {
@@ -160,7 +172,23 @@ export const EhostDashboard = () => {
           <div className="eh-row-datetime">{formatDateTime(exp.date_time) || "Date TBC"}</div>
           {statusNode}
         </div>
-        {button && <div className="eh-row-action">{button}</div>}
+        <div className="eh-row-action">
+          {exp.status === "pending" && (
+            <button
+              className="eh-row-btn"
+              onClick={stop(() => navigate(`/EditActivity/${exp.id}`))}
+            >
+              Edit
+            </button>
+          )}
+          {button}
+          <button
+            className="eh-row-btn eh-row-btn-danger"
+            onClick={stop(() => handleDelete(exp.id))}
+          >
+            Delete
+          </button>
+        </div>
       </div>
     );
   };
