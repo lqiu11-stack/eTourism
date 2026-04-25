@@ -152,7 +152,7 @@ const getMe = async (req, res) => {
 
 const getExperiences = async (req, res) => {
   try {
-    const { category, country, continent, language, price_min, price_max, search } = req.query;
+    const { category, country, continent, language, price_min, price_max, search, limit, offset } = req.query;
     const experiences = await Experience.findAll({
       status: 'approved',
       category:  category  || undefined,
@@ -162,6 +162,8 @@ const getExperiences = async (req, res) => {
       price_min: price_min || undefined,
       price_max: price_max || undefined,
       search:    search    || undefined,
+      limit,
+      offset,
     });
     return res.status(200).json(experiences);
   } catch (err) {
@@ -181,11 +183,11 @@ const getExperienceById = async (req, res) => {
 
 const getReviews = async (req, res) => {
   try {
-    const { experience_id } = req.query;
+    const { experience_id, limit, offset } = req.query;
     if (!experience_id) {
       return res.status(400).json({ message: 'experience_id query param is required' });
     }
-    const reviews = await Review.findByExperience(experience_id);
+    const reviews = await Review.findByExperience(experience_id, { limit, offset });
     return res.status(200).json(reviews);
   } catch (err) {
     return res.status(500).json({ message: 'Server error', error: String(err) });
@@ -281,7 +283,8 @@ const createBooking = async (req, res) => {
 const getBookings = async (req, res) => {
   try {
     const visitor_id = req.userId;
-    const bookings = await Booking.findByVisitor(visitor_id);
+    const { limit, offset } = req.query;
+    const bookings = await Booking.findByVisitor(visitor_id, { limit, offset });
     const mappedBookings = bookings.map((booking) => {
       const meetingConfig = booking.status === 'confirmed'
         ? toMeetingConfig(booking.meeting_link)

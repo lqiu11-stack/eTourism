@@ -79,8 +79,8 @@ const getPayPalClient = () => {
 // GET /api/admin/experiences?status=pending&search=tokyo
 const getExperiences = async (req, res) => {
   try {
-    const { status = 'pending', search } = req.query;
-    const experiences = await Experience.findAll({ status, search: search || undefined });
+    const { status = 'pending', search, limit, offset } = req.query;
+    const experiences = await Experience.findAll({ status, search: search || undefined, limit, offset });
     res.json(experiences);
   } catch (err) {
     res.status(500).json({ message: 'Server error', error: String(err) });
@@ -127,8 +127,8 @@ const deleteExperience = async (req, res) => {
 
 const getBookings = async (req, res) => {
   try {
-    const { status, booking_id } = req.query;
-    const bookings = await Booking.findAll({ status, booking_id: booking_id || undefined });
+    const { status, booking_id, limit, offset } = req.query;
+    const bookings = await Booking.findAll({ status, booking_id: booking_id || undefined, limit, offset });
     res.json(bookings);
   } catch (err) {
     res.status(500).json({ message: 'Server error', error: String(err) });

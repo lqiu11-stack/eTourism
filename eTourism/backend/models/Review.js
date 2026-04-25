@@ -19,14 +19,17 @@ const Review = {
     return rows[0];
   },
 
-  async findByExperience(experience_id) {
+  async findByExperience(experience_id, { limit, offset } = {}) {
+    const cappedLimit = Math.min(Math.max(Number.isInteger(Number(limit)) ? Number(limit) : 50, 1), 100);
+    const safeOffset = Math.max(Number.isInteger(Number(offset)) ? Number(offset) : 0, 0);
     const { rows } = await pool.query(
       `SELECT r.*, u.first_name, u.country
        FROM reviews r
        JOIN users u ON r.visitor_id = u.id
        WHERE r.experience_id = $1
-       ORDER BY r.created_at DESC`,
-      [experience_id]
+       ORDER BY r.created_at DESC
+       LIMIT $2 OFFSET $3`,
+      [experience_id, cappedLimit, safeOffset]
     );
     return rows;
   },

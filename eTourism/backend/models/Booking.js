@@ -67,19 +67,24 @@ const Booking = {
     return rows[0] || null;
   },
 
-  async findByVisitor(visitor_id) {
+  async findByVisitor(visitor_id, { limit, offset } = {}) {
+    const cappedLimit = Math.min(Math.max(Number.isInteger(Number(limit)) ? Number(limit) : 50, 1), 100);
+    const safeOffset = Math.max(Number.isInteger(Number(offset)) ? Number(offset) : 0, 0);
     const { rows } = await pool.query(
       `SELECT b.*, e.title, e.date_time, e.cover_image, e.country
        FROM bookings b
        JOIN experiences e ON b.experience_id = e.id
        WHERE b.visitor_id = $1
-       ORDER BY b.created_at DESC`,
-      [visitor_id]
+       ORDER BY b.created_at DESC
+       LIMIT $2 OFFSET $3`,
+      [visitor_id, cappedLimit, safeOffset]
     );
     return rows;
   },
 
-  async findAll({ status, booking_id } = {}) {
+  async findAll({ status, booking_id, limit, offset } = {}) {
+    const cappedLimit = Math.min(Math.max(Number.isInteger(Number(limit)) ? Number(limit) : 50, 1), 100);
+    const safeOffset = Math.max(Number.isInteger(Number(offset)) ? Number(offset) : 0, 0);
     const values = [];
     const conditions = [];
     if (status) {
@@ -91,6 +96,10 @@ const Booking = {
       conditions.push(`b.id = $${values.length}`);
     }
     const where = conditions.length > 0 ? 'WHERE ' + conditions.join(' AND ') : '';
+    values.push(cappedLimit);
+    const limitIdx = values.length;
+    values.push(safeOffset);
+    const offsetIdx = values.length;
     const { rows } = await pool.query(
       `SELECT
          b.id, b.status, b.amount_paid, b.qty_normal, b.qty_discounted,
@@ -113,20 +122,24 @@ const Booking = {
        LEFT JOIN payments p ON p.booking_id = b.id
        LEFT JOIN refunds r ON r.booking_id = b.id
        ${where}
-       ORDER BY b.id DESC`,
+       ORDER BY b.id DESC
+       LIMIT $${limitIdx} OFFSET $${offsetIdx}`,
       values
     );
     return rows;
   },
 
-  async findByExperience(experience_id) {
+  async findByExperience(experience_id, { limit, offset } = {}) {
+    const cappedLimit = Math.min(Math.max(Number.isInteger(Number(limit)) ? Number(limit) : 50, 1), 100);
+    const safeOffset = Math.max(Number.isInteger(Number(offset)) ? Number(offset) : 0, 0);
     const { rows } = await pool.query(
       `SELECT b.*, u.first_name, u.last_name, u.email
        FROM bookings b
        JOIN users u ON b.visitor_id = u.id
        WHERE b.experience_id = $1
-       ORDER BY b.created_at DESC`,
-      [experience_id]
+       ORDER BY b.created_at DESC
+       LIMIT $2 OFFSET $3`,
+      [experience_id, cappedLimit, safeOffset]
     );
     return rows;
   },

@@ -84,10 +84,12 @@ const Experience = {
     return rows[0] || null;
   },
 
-  async findByHost(ehost_id) {
+  async findByHost(ehost_id, { limit, offset } = {}) {
+    const cappedLimit = Math.min(Math.max(Number.isInteger(Number(limit)) ? Number(limit) : 50, 1), 100);
+    const safeOffset = Math.max(Number.isInteger(Number(offset)) ? Number(offset) : 0, 0);
     const { rows } = await pool.query(
-      'SELECT * FROM experiences WHERE ehost_id = $1 ORDER BY created_at DESC',
-      [ehost_id]
+      'SELECT * FROM experiences WHERE ehost_id = $1 ORDER BY created_at DESC LIMIT $2 OFFSET $3',
+      [ehost_id, cappedLimit, safeOffset]
     );
     return rows;
   },
