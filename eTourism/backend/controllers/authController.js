@@ -235,6 +235,23 @@ const facebookLogin = async (req, res) => {
   }
 };
 
+const checkEmail = async (req, res) => {
+  try {
+    if (!process.env.DATABASE_URL) {
+      return res.status(503).json({ error: 'DATABASE_URL is not configured' });
+    }
+    const email = (req.query.email || '').trim();
+    if (!email) {
+      return res.status(400).json({ error: 'email is required' });
+    }
+    const existing = await User.findByEmail(email);
+    res.json({ available: !existing });
+  } catch (err) {
+    console.error('[checkEmail]', err);
+    res.status(500).json({ error: err.message || 'Email check failed' });
+  }
+};
+
 const resetPassword = async (req, res) => {
   try {
     if (!process.env.DATABASE_URL) {
@@ -261,5 +278,5 @@ const resetPassword = async (req, res) => {
   }
 };
 
-module.exports = { register, login, resetPassword, googleLogin, facebookLogin};
+module.exports = { register, login, resetPassword, googleLogin, facebookLogin, checkEmail };
 

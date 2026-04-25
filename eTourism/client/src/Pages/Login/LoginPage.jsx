@@ -95,7 +95,7 @@ export const LoginPage = () => {
     <div className="login-page">
       <div className="rectangle" />
       <div className="top-links">
-          <button className="top-btn" type="submit" onClick={() => navigate("/Eregistrate1")}>
+          <button className="top-btn" type="submit" onClick={() => navigate("/register/ehost/step1")}>
             Join us to become an E-host
           </button>
         </div>
@@ -126,7 +126,7 @@ export const LoginPage = () => {
           Forget your password?
         </button>
 
-        <button type="button" className="forgot" onClick={() => navigate("/VisitorRegistrate")}>
+        <button type="button" className="forgot" onClick={() => navigate("/register/visitor")}>
           Create a new account
         </button>
 

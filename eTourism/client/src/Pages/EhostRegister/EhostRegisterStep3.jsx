@@ -4,10 +4,10 @@ import arrowRight from "../icon/arrow-right.png";
 import backIcon from "../icon/back.png";
 import "./style.css";
 import { useNavigate } from "react-router-dom";
-import { StepProgress } from "../EhostRegistrate/Step.jsx";
+import { StepProgress } from "./Step.jsx";
 import { isYouTubeUrl } from "../../utils/youtube";
 
-export const Eregistrate3 = () => {
+export const EhostRegisterStep3 = () => {
   const navigate = useNavigate();
 
   const saved = JSON.parse(sessionStorage.getItem("ehost_step3") || "{}");
@@ -40,7 +40,7 @@ export const Eregistrate3 = () => {
       description,
       videoLink: videoLink.trim(),
     }));
-    navigate("/Eregistrate4");
+    navigate("/register/ehost/step4");
   };
 
   return (
@@ -48,7 +48,7 @@ export const Eregistrate3 = () => {
       <button
         type="button"
         className="back-btn"
-        onClick={() => navigate("/Eregistrate2")}
+        onClick={() => navigate("/register/ehost/step2")}
         aria-label="Back"
       >
         <img src={backIcon} alt="Back" className="back-icon" />

@@ -1,8 +1,11 @@
 const router = require('express').Router();
-const { register, login, resetPassword, googleLogin,facebookLogin } = require('../controllers/authController');
+const { register, login, resetPassword, googleLogin,facebookLogin, checkEmail } = require('../controllers/authController');
 
 // POST /api/auth/register
 router.post('/register', register);
+
+// GET /api/auth/check-email?email=...
+router.get('/check-email', checkEmail);
 
 // POST /api/auth/login
 router.post('/login', login);

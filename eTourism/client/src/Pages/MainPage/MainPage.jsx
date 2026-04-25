@@ -106,7 +106,7 @@ export const MainPage = () => {
             </div>
 
             <div className="nav-links">
-              <Link to="/Eregistrate1" className="nav-link">Become E-host</Link>
+              <Link to="/register/ehost/step1" className="nav-link">Become E-host</Link>
               <Link
                 to="/MyBooking"
                 className="nav-link"
