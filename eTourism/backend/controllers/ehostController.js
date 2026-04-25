@@ -112,7 +112,8 @@ try {
         video_description,
         video_highlights,
         date_time,
-        price_discounted
+        price_discounted,
+        meeting_link
     } = req.body;
 
 
@@ -127,6 +128,20 @@ try {
         return res.status(400).json({
             success: false,
             message: 'Please upload a cover image of the experience project.'
+        });
+    }
+
+    if (!meeting_link || typeof meeting_link !== 'string' || !meeting_link.trim()) {
+        return res.status(400).json({
+            success: false,
+            message: 'Meeting link is required.'
+        });
+    }
+    const normalizedMeetingLink = meeting_link.trim();
+    if (!/^https?:\/\//i.test(normalizedMeetingLink)) {
+        return res.status(400).json({
+            success: false,
+            message: 'Meeting link must start with http:// or https://.'
         });
     }
 
@@ -209,8 +224,8 @@ try {
 
     const { rows } = await pool.query(
         `INSERT INTO experiences
-        (title, ehost_id, location_name, country, continent, latitude, longitude, category, language, description, price, price_discounted, duration_minutes, max_visitors, cover_image, gender_preference, allows_piggyback, sample_video_url, video_description, video_highlights, date_time, status)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, 'pending')
+        (title, ehost_id, location_name, country, continent, latitude, longitude, category, language, description, price, price_discounted, duration_minutes, max_visitors, cover_image, gender_preference, allows_piggyback, sample_video_url, video_description, video_highlights, date_time, meeting_link, status)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, 'pending')
         RETURNING *`,
         [
             title,
@@ -234,6 +249,7 @@ try {
             normalizedVideoDescription,
             normalizedVideoHighlights,
             normalizedDateTime,
+            normalizedMeetingLink,
         ]
     );
 
@@ -395,29 +411,6 @@ const deleteExperience = async (req, res) => {
 };
 
 
-const suggestedMeetingServices = ['Google Meet', 'Zoom', 'WhatsApp'];
-
-const toMeetingConfig = (meetingLink) => {
-  if (!meetingLink) {
-    return null;
-  }
-  try {
-    const parsed = JSON.parse(meetingLink);
-    if (parsed && typeof parsed === 'object' && parsed.link) {
-      return {
-        platform: parsed.platform || 'Custom',
-        link: parsed.link,
-        password: parsed.password || null,
-      };
-    }
-  } catch (error) {}
-  return {
-    platform: 'Custom',
-    link: meetingLink,
-    password: null,
-  };
-};
-
 const getBookings = async (req, res) => {
   try {
     const ehostId = req.user ? req.user.id : req.userId;
@@ -430,11 +423,11 @@ const getBookings = async (req, res) => {
          b.booking_date,
          b.amount_paid,
          b.status,
-         b.meeting_link,
          b.qty_normal,
          b.qty_discounted,
          b.contact_name,
          b.contact_email,
+         e.meeting_link,
          e.title AS experience_title,
          e.date_time AS experience_date_time,
          u.first_name AS visitor_first_name,
@@ -452,12 +445,11 @@ const getBookings = async (req, res) => {
 
     const data = rows.map((booking) => ({
       ...booking,
-      meeting_config: toMeetingConfig(booking.meeting_link),
+      meeting_config: booking.meeting_link ? { link: booking.meeting_link } : null,
     }));
 
     res.status(200).json({
       success: true,
-      suggested_services: suggestedMeetingServices,
       data,
     });
   } catch (error) {
@@ -875,79 +867,6 @@ const updateBookingPreferences = async (req, res) => {
   }
 };
 
-const updateBookingMeetingLink = async (req, res) => {
-  try {
-    const ehostId = req.user ? req.user.id : req.userId;
-    const bookingId = Number(req.params.id);
-    const {
-      platform = 'Custom',
-      meeting_link,
-      meeting_password = null,
-    } = req.body;
-
-    if (!Number.isInteger(bookingId) || bookingId <= 0) {
-      return res.status(400).json({ success: false, message: 'Invalid booking id.' });
-    }
-
-    if (!meeting_link || typeof meeting_link !== 'string' || !meeting_link.trim()) {
-      return res.status(400).json({ success: false, message: 'Meeting link is required.' });
-    }
-
-    const normalizedLink = meeting_link.trim();
-    if (!/^https?:\/\//i.test(normalizedLink)) {
-      return res.status(400).json({ success: false, message: 'Meeting link must start with http:// or https://.' });
-    }
-
-    const { rows: ownershipRows } = await pool.query(
-      `SELECT b.id
-       FROM bookings b
-       JOIN experiences e ON e.id = b.experience_id
-       WHERE b.id = $1
-         AND e.ehost_id = $2
-         AND e.date_time >= NOW()
-         AND b.status = 'confirmed'
-       LIMIT 1`,
-      [bookingId, ehostId]
-    );
-
-    if (ownershipRows.length === 0) {
-      return res.status(404).json({
-        success: false,
-        message: 'Booking not found, not upcoming, or you do not have permission.',
-      });
-    }
-
-    const meetingConfigString = JSON.stringify({
-      platform: String(platform || 'Custom').trim() || 'Custom',
-      link: normalizedLink,
-      password: meeting_password && String(meeting_password).trim()
-        ? String(meeting_password).trim()
-        : null,
-    });
-
-    const { rows: updateRows } = await pool.query(
-      `UPDATE bookings
-       SET meeting_link = $1
-       WHERE id = $2
-       RETURNING id, meeting_link`,
-      [meetingConfigString, bookingId]
-    );
-
-    res.status(200).json({
-      success: true,
-      message: 'Meeting link configured successfully.',
-      suggested_services: suggestedMeetingServices,
-      data: {
-        booking_id: updateRows[0].id,
-        meeting_config: toMeetingConfig(updateRows[0].meeting_link),
-      },
-    });
-  } catch (error) {
-    console.error('Failed to update meeting link:', error);
-    res.status(500).json({ success: false, message: 'Server internal error' });
-  }
-};
-
 
 
 
@@ -1078,7 +997,6 @@ module.exports = {
   updateCalendarSlot,
   deleteCalendarSlot,
   setUnavailableDates,
-  updateBookingMeetingLink,
   getBookingPreferences,
   updateBookingPreferences,
   getMe,

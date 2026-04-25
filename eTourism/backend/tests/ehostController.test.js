@@ -31,7 +31,6 @@ const {
   updateCalendarSlot,
   deleteCalendarSlot,
   setUnavailableDates,
-  updateBookingMeetingLink,
   getBookingPreferences,
   updateBookingPreferences,
   submitApplication,
@@ -294,6 +293,7 @@ describe('createExperience()', () => {
     const req = makeReq({
       title: 'City Tour', location_name: 'London', country: 'UK',
       price: 50, description: 'A great tour', cover_image: 'https://img.com/x.jpg',
+      meeting_link: 'https://meet.google.com/abc-defg-hij',
     }, {}, {}, { id: 5 });
     const res = makeRes();
     await createExperience(req, res);
@@ -327,6 +327,7 @@ describe('createExperience()', () => {
     const req = makeReq({
       title: 'City Tour', location_name: 'London', country: 'UK',
       price: 50, description: 'A great tour', cover_image: 'https://img.com/x.jpg',
+      meeting_link: 'https://meet.google.com/abc-defg-hij',
     }, {}, {}, { id: 5 });
     const res = makeRes();
     await createExperience(req, res);
@@ -338,6 +339,7 @@ describe('createExperience()', () => {
     const req = makeReq({
       title: 'City Tour', location_name: 'London', country: 'UK',
       price: 50, description: 'A great tour', cover_image: 'https://img.com/x.jpg',
+      meeting_link: 'https://meet.google.com/abc-defg-hij',
       gender_preference: 'unknown_value',
     }, {}, {}, { id: 5 });
     const res = makeRes();
@@ -351,10 +353,10 @@ describe('createExperience()', () => {
 describe('getBookings()', () => {
   beforeEach(resetMocks);
 
-  it('200 : returns upcoming confirmed bookings and service suggestions', async () => {
+  it('200 : returns upcoming confirmed bookings with experience meeting link', async () => {
     const rows = [{
       id: 1,
-      meeting_link: JSON.stringify({ platform: 'Zoom', link: 'https://zoom.us/j/123', password: '8899' }),
+      meeting_link: 'https://zoom.us/j/123',
     }];
     fakePool.query.mock.mockImplementation(() => Promise.resolve({ rows }));
     const req = makeReq({}, {}, {}, { id: 5 });
@@ -362,7 +364,6 @@ describe('getBookings()', () => {
     await getBookings(req, res);
 
     assert.equal(res.status.mock.calls[0].arguments[0], 200);
-    assert.deepEqual(res.json.mock.calls[0].arguments[0].suggested_services, ['Google Meet', 'Zoom', 'WhatsApp']);
     assert.equal(res.json.mock.calls[0].arguments[0].data[0].meeting_config.link, 'https://zoom.us/j/123');
   });
 
@@ -648,68 +649,3 @@ describe('updateBookingPreferences()', () => {
   });
 });
 
-describe('updateBookingMeetingLink()', () => {
-  beforeEach(resetMocks);
-
-  it('200 : updates meeting link for upcoming confirmed booking', async () => {
-    let callCount = 0;
-    fakePool.query.mock.mockImplementation(() => {
-      callCount += 1;
-      if (callCount === 1) {
-        return Promise.resolve({ rows: [{ id: 1 }] });
-      }
-      return Promise.resolve({
-        rows: [{
-          id: 1,
-          meeting_link: JSON.stringify({ platform: 'Google Meet', link: 'https://meet.google.com/abc-defg-hij', password: '2233' }),
-        }],
-      });
-    });
-
-    const req = makeReq(
-      { platform: 'Google Meet', meeting_link: 'https://meet.google.com/abc-defg-hij', meeting_password: '2233' },
-      { id: '1' },
-      {},
-      { id: 5 }
-    );
-    const res = makeRes();
-    await updateBookingMeetingLink(req, res);
-
-    assert.equal(res.status.mock.calls[0].arguments[0], 200);
-    assert.equal(res.json.mock.calls[0].arguments[0].data.meeting_config.password, '2233');
-  });
-
-  it('400 : invalid booking id', async () => {
-    const req = makeReq({ meeting_link: 'https://zoom.us/j/123' }, { id: 'abc' }, {}, { id: 5 });
-    const res = makeRes();
-    await updateBookingMeetingLink(req, res);
-
-    assert.equal(res.status.mock.calls[0].arguments[0], 400);
-  });
-
-  it('400 : invalid meeting link format', async () => {
-    const req = makeReq({ meeting_link: 'zoom.us/j/123' }, { id: '1' }, {}, { id: 5 });
-    const res = makeRes();
-    await updateBookingMeetingLink(req, res);
-
-    assert.equal(res.status.mock.calls[0].arguments[0], 400);
-  });
-
-  it('404 : booking not upcoming or not owned by ehost', async () => {
-    fakePool.query.mock.mockImplementationOnce(() => Promise.resolve({ rows: [] }));
-    const req = makeReq({ meeting_link: 'https://zoom.us/j/123' }, { id: '1' }, {}, { id: 5 });
-    const res = makeRes();
-    await updateBookingMeetingLink(req, res);
-
-    assert.equal(res.status.mock.calls[0].arguments[0], 404);
-  });
-
-  it('500 : database error', async () => {
-    fakePool.query.mock.mockImplementationOnce(() => Promise.reject(new Error('DB fail')));
-    const req = makeReq({ meeting_link: 'https://zoom.us/j/123' }, { id: '1' }, {}, { id: 5 });
-    const res = makeRes();
-    await updateBookingMeetingLink(req, res);
-
-    assert.equal(res.status.mock.calls[0].arguments[0], 500);
-  });
-});

@@ -58,6 +58,7 @@ export const ApplyActivity = () => {
     price_discounted: "",
     latitude: "",
     longitude: "",
+    meeting_link: "",
   });
   const [coverImage, setCoverImage] = useState("");
   const [uploading, setUploading] = useState(false);
@@ -181,6 +182,15 @@ export const ApplyActivity = () => {
       setError("Please paste a valid YouTube link (e.g. https://youtube.com/watch?v=...).");
       return;
     }
+    const trimmedMeetingLink = form.meeting_link.trim();
+    if (!trimmedMeetingLink) {
+      setError("Please add a meeting link for your live experience.");
+      return;
+    }
+    if (!/^https?:\/\//i.test(trimmedMeetingLink)) {
+      setError("Meeting link must start with http:// or https://.");
+      return;
+    }
     const highlightsArray = form.video_highlights
       .split("\n")
       .map((s) => s.trim())
@@ -203,6 +213,7 @@ export const ApplyActivity = () => {
           sample_video_url: trimmedVideoUrl || null,
           video_description: form.video_description.trim() || null,
           video_highlights: highlightsArray.length ? highlightsArray : null,
+          meeting_link: trimmedMeetingLink,
         },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -363,6 +374,17 @@ export const ApplyActivity = () => {
 
         <label className="aa-label">Description*</label>
         <textarea className="aa-textarea" name="description" rows="5" value={form.description} onChange={handleChange} />
+
+        <label className="aa-label">Meeting link*</label>
+        <input
+          className="aa-input"
+          type="url"
+          name="meeting_link"
+          value={form.meeting_link}
+          onChange={handleChange}
+          placeholder="https://meet.google.com/... or https://zoom.us/j/..."
+        />
+        <div className="aa-hint">Visitors will join your live experience using this link.</div>
 
         <label className="aa-label">Cover image*</label>
         <input type="file" accept="image/*" onChange={(e) => handleImageUpload(e.target.files[0])} disabled={uploading} />

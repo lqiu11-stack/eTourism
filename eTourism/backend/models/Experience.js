@@ -14,19 +14,20 @@ const Experience = {
     latitude, longitude, date_time, duration_minutes, max_visitors,
     price, price_discounted, cover_image, gender_preference, allows_piggyback,
     sample_video_url, video_description, video_highlights, language = 'English',
+    meeting_link,
   }) {
     const { rows } = await pool.query(
       `INSERT INTO experiences
          (ehost_id, title, description, category, country, continent, location_name,
           latitude, longitude, date_time, duration_minutes, max_visitors,
           price, price_discounted, cover_image, gender_preference, allows_piggyback,
-          sample_video_url, video_description, video_highlights, language)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21)
+          sample_video_url, video_description, video_highlights, language, meeting_link)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22)
        RETURNING *`,
       [ehost_id, title, description, category, country, continent, location_name,
        latitude, longitude, date_time, duration_minutes, max_visitors,
        price, price_discounted, cover_image, gender_preference, allows_piggyback,
-       sample_video_url, video_description, video_highlights, language]
+       sample_video_url, video_description, video_highlights, language, meeting_link]
     );
     return rows[0];
   },
