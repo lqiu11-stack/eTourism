@@ -1,0 +1,271 @@
+.register-page {
+  background: #ffffff;
+  min-height: 100vh;
+}
+
+
+
+.register-title {
+  font-size: 35px;
+  font-weight: 400;
+  margin-left: 30px;
+}
+
+/* form */
+.register-container {
+  width: 420px;
+
+  margin-left: auto;
+  margin-right: 20px;
+  transform: translateX(-80px);
+}
+
+.register-form {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  margin: 20px auto;
+  width: 400px;
+  z-index:10;
+}
+
+.register-form input,
+.register-form textarea {
+  padding: 10px;
+  border-radius: 10px;
+  border: 1px solid #ccc;
+}
+
+.register-form textarea {
+  min-height: 80px;
+}
+
+.register-btn {
+  background: #cfa8a0;
+  border: none;
+  padding: 12px;
+  border-radius: 20px;
+  cursor: pointer;
+}
+
+.register-btn:hover {
+  background: #caa59d;
+}
+
+.join-e-host-step-right {
+  padding-top: 70px;
+  position: relative;
+  z-index: 2;
+  width: clamp(500px, 45vw, 800px);
+  color: white;
+}
+
+
+/* Inputs (same style as reset page) */
+.vdiv, .vrectangle-2, .vrectangle-3 {
+  height: 48px;
+  width: 450px;
+  border-radius: 999px;
+  padding: 0 1rem;
+  font-size: 16px;
+
+  border: none;
+  outline: none;
+
+  background: rgba(255, 255, 255, 0.559);
+  color: white;
+}
+.vrectangle-4{
+  height: 100px;
+  width: 450px;
+  border-radius: 30px;
+  padding: 1rem 1rem;
+  font-size: 16px;
+
+  border: none;
+  outline: none;
+
+  background: rgba(255, 255, 255, 0.559);
+  color: white;
+}
+
+.vp, 
+.vtext-wrapper-3, 
+.vtext-wrapper-4, 
+.vtext-wrapper-5 {
+  font-size: 15px;
+  margin: 0.35rem 0 0.2rem;
+}
+
+.vdiv::placeholder,
+.vrectangle-2::placeholder,
+.vrectangle-3::placeholder {
+  color: white;
+  opacity: 1;
+}
+textarea.vrectangle-4::placeholder {
+  color: white;
+  opacity: 1;
+
+}
+
+.vtext-wrapper {
+  font-size: 30px;
+  margin: 0 0 10px;
+  font-weight: 400;
+}
+
+.visitor-submit {
+  height: auto;
+  width: 200px;
+  justify-content: center;
+  background: #a64a4ac4;
+  color: white;
+  border: none;
+  padding: 12px 14px;
+  border-radius: 20px;
+  cursor: pointer;
+  font-size: 14px;
+  margin: 30px 0px;
+}
+
+.visitor-register-form {
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-start;
+  width: 100%;
+  position: relative;
+  z-index: 2;
+}
+
+.visitor-agreements {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 18px;
+  margin-bottom: 12px;
+  width: 450px;
+  font-size: 14px;
+  line-height: 1.4;
+  color: white;
+}
+
+.visitor-agreements .agreement-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  cursor: pointer;
+}
+
+.visitor-agreements input[type="checkbox"] {
+  margin-top: 4px;
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  accent-color: #a64a4ac4;
+  cursor: pointer;
+}
+
+.visitor-agreements a {
+  color: white;
+  text-decoration: underline;
+}
+
+.visitor-register-error {
+  color: #ffd6d6;
+  background: rgba(166, 74, 74, 0.35);
+  border-radius: 12px;
+  padding: 10px 14px;
+  font-size: 14px;
+  margin: 12px 0 0;
+  width: 422px;
+}
+
+.visitor-inline-error {
+  color: #ffd6d6;
+  font-size: 13px;
+  margin: 4px 0 0;
+}
+
+.visitor-file-input {
+  color: white;
+  font-size: 14px;
+  margin: 4px 0;
+}
+
+.visitor-upload-progress {
+  width: 220px;
+  height: 8px;
+  margin-top: 6px;
+}
+
+.visitor-profile-preview {
+  display: block;
+  width: 96px;
+  height: 96px;
+  object-fit: cover;
+  border-radius: 50%;
+  margin-top: 8px;
+  border: 2px solid rgba(255, 255, 255, 0.6);
+}
+
+.terms-link-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  color: white;
+  text-decoration: underline;
+  cursor: pointer;
+  font: inherit;
+}
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 999;
+}
+
+.modal {
+  position: relative;
+  background: white;
+  color: #333;
+  padding: 30px;
+  border-radius: 16px;
+  width: 800px;
+  max-width: 90%;
+  max-height: 500px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+  display: flex;
+  flex-direction: column;
+}
+
+.modal h2 {
+  margin: 0;
+  color: #2b2d42;
+}
+
+.modal p {
+  font-size: 14px;
+}
+
+.modal-content {
+  overflow-y: auto;
+  margin: 15px 0;
+  flex: 1;
+}
+
+.modal-close {
+  position: absolute;
+  top: 8px;
+  right: 14px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-size: 24px;
+  line-height: 1;
+  color: #555;
+}

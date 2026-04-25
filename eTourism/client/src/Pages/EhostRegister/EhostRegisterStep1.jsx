@@ -3,10 +3,10 @@ import arrowRight from "../icon/arrow-right.png";
 import backIcon from "../icon/back.png";
 import "./style.css";
 import { useNavigate } from "react-router-dom";
-import { StepProgress } from "../EhostRegistrate/Step.jsx";
+import { StepProgress } from "./Step.jsx";
 import { COUNTRIES } from "../../utils/countries";
 
-export const Eregistrate1 = () => {
+export const EhostRegisterStep1 = () => {
   const navigate = useNavigate();
   const [form, setForm] = useState(() => {
     const saved = JSON.parse(sessionStorage.getItem("ehost_step1") || "{}");
@@ -32,7 +32,7 @@ export const Eregistrate1 = () => {
       return;
     }
     sessionStorage.setItem("ehost_step1", JSON.stringify(form));
-    navigate("/Eregistrate2");
+    navigate("/register/ehost/step2");
   };
 
   return (

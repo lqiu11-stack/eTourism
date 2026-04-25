@@ -141,7 +141,12 @@ export const DetailPage = () => {
                         alert('E-hosts cannot book experiences. Please sign in as a visitor.');
                         return;
                       }
-                      if (!unavailable) navigate(`/PaymentPage?id=${searchParams.get("id")}`);
+                      if (unavailable) return;
+                      if (!isLoggedIn) {
+                        navigate(`/login?redirect=/PaymentPage?id=${searchParams.get("id")}`);
+                        return;
+                      }
+                      navigate(`/PaymentPage?id=${searchParams.get("id")}`);
                     }}
                   >
                     Book it now!

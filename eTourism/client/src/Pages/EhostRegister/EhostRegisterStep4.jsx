@@ -8,7 +8,7 @@ import axios from "axios";
 
 const API_BASE = import.meta.env.VITE_API_URL;
 
-export const Eregistrate4 = () => {
+export const EhostRegisterStep4 = () => {
   const navigate = useNavigate();
   const [agreed, setAgreed] = useState(false);
   const [error, setError] = useState("");
@@ -53,7 +53,7 @@ export const Eregistrate4 = () => {
       <button
         type="button"
         className="back-btn"
-        onClick={() => navigate("/Eregistrate3")}
+        onClick={() => navigate("/register/ehost/step3")}
         aria-label="Back"
       >
         <img src={backIcon} alt="Back" className="back-icon" />

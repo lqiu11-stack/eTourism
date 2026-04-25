@@ -1,10 +1,10 @@
 import { Routes, Route } from "react-router-dom";
 import { LoginPage } from "./Pages/Login/LoginPage.jsx";
 import { PassWordReset } from "./Pages/PasswordReset/PassWordReset.jsx";
-import { Eregistrate1 } from "./Pages/EhostRegistrate/EhostRstep1.jsx";
-import { Eregistrate2 } from "./Pages/EhostRegistrate/EhostRstep2.jsx";
-import { Eregistrate3 } from "./Pages/EhostRegistrate/EhostRstep3.jsx";
-import { Eregistrate4 } from "./Pages/EhostRegistrate/EhostRstep4.jsx";
+import { EhostRegisterStep1 } from "./Pages/EhostRegister/EhostRegisterStep1.jsx";
+import { EhostRegisterStep2 } from "./Pages/EhostRegister/EhostRegisterStep2.jsx";
+import { EhostRegisterStep3 } from "./Pages/EhostRegister/EhostRegisterStep3.jsx";
+import { EhostRegisterStep4 } from "./Pages/EhostRegister/EhostRegisterStep4.jsx";
 import { MainPage } from "./Pages/MainPage/MainPage.jsx";
 import { DetailPage } from "./Pages/DetailPage/DetailPage.jsx";
 import { PaymentPage } from "./Pages/PaymentPage/PaymentPage.jsx";
@@ -18,7 +18,7 @@ import { EhostDashboard } from "./Pages/EhostDashboard/EhostDashboard.jsx";
 import { ApplyActivity } from "./Pages/ApplyActivity/ApplyActivity.jsx";
 import { EhostProfile } from "./Pages/EhostProfile/EhostProfile.jsx";
 import { ContinentPage } from "./Pages/ContinentPage/ContinentPage.jsx";
-import { VisitorRegistrate } from "./Pages/VisitorRegistrate/VisitorRegistrate.jsx";
+import { VisitorRegister } from "./Pages/VisitorRegister/VisitorRegister.jsx";
 
 
 
@@ -30,10 +30,10 @@ function App() {
         <Route path="/" element={<MainPage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/reset" element={<PassWordReset />} />
-        <Route path="/Eregistrate1" element={<Eregistrate1 />} />
-        <Route path="/Eregistrate2" element={<Eregistrate2 />} />
-        <Route path="/Eregistrate3" element={<Eregistrate3 />} />
-        <Route path="/Eregistrate4" element={<Eregistrate4 />} />
+        <Route path="/register/ehost/step1" element={<EhostRegisterStep1 />} />
+        <Route path="/register/ehost/step2" element={<EhostRegisterStep2 />} />
+        <Route path="/register/ehost/step3" element={<EhostRegisterStep3 />} />
+        <Route path="/register/ehost/step4" element={<EhostRegisterStep4 />} />
         <Route path="/MainPage" element={<MainPage />} />
         <Route path="/DetailPage" element={<DetailPage />} />
         <Route path="/PaymentPage" element={<PaymentPage />} />
@@ -47,7 +47,7 @@ function App() {
         <Route path="/ApplyActivity" element={<ApplyActivity />} />
         <Route path="/EhostProfile" element={<EhostProfile />} />
         <Route path="/continent/:continent" element={<ContinentPage />} />
-        <Route path="/VisitorRegistrate" element={<VisitorRegistrate />} />
+        <Route path="/register/visitor" element={<VisitorRegister />} />
       </Routes>
   );
 }
