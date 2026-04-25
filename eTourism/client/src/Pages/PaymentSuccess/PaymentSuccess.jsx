@@ -7,8 +7,6 @@ import link2Icon from "../icon/link-2.png";
 import approveIcon from "../icon/approve.png";
 import enjoyIcon from "../icon/enjoy.png";
 import success from "../icon/success.png";
-import { getCountryImage } from "../../utils/countryImages";
-
 const API_BASE = import.meta.env.VITE_API_URL;
 
 const formatDate = (dt) => {
@@ -96,7 +94,7 @@ export const PaymentSuccessPage = () => {
     }
   }, [sessionId, paypalToken, token]);
 
-  const coverImage = getCountryImage(experience?.country);
+  const coverImage = experience?.cover_image;
   const now = new Date();
   const eventDate = experience?.date_time ? new Date(experience.date_time) : null;
   const hoursUntilEvent = eventDate ? (eventDate - now) / 36e5 : null;

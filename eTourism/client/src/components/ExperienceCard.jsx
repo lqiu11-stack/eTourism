@@ -1,5 +1,4 @@
 import { useNavigate } from "react-router-dom";
-import { getCountryImage } from "../utils/countryImages";
 import { formatDate } from "../utils/formatDate";
 
 export const ExperienceCard = ({ experience, linkState }) => {
@@ -12,7 +11,6 @@ export const ExperienceCard = ({ experience, linkState }) => {
       style={{ cursor: "pointer" }}
     >
       <div className="tour-image">
-        {/* <img src={getCountryImage(experience.country)} alt={experience.title} /> */}
         <img src={experience.cover_image} alt={experience.title} />
         <div className="image-overlay">
           <h3>{experience.title}</h3>

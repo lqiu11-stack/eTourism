@@ -1,6 +1,5 @@
 import "./RefundPage.css";
 import backIcon from "../icon/back.png";
-import thailandImg from "../icon/thai.png"; 
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useEffect, useState } from "react";
 import axios from "axios";
@@ -176,7 +175,7 @@ const refundAmount = Number(booking?.amount_paid || 0) * refundRate;
 
       {/* ===== BOOKING CARD ===== */}
       <div className="refund-booking-card">
-        <img src={thailandImg} alt="trip" />
+        <img src={experience?.cover_image} alt={experience?.title ?? "trip"} />
 
         <div className="refund-booking-info">
           <h2>{experience?.title ?? "Loading..."}</h2>

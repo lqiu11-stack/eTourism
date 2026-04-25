@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import applyIcon from "../icon/approve.png";
-import profileIcon from "../icon/customer-review.png";
+import profileIcon from "../icon/profile.png";
 import { RejectionModal } from "./RejectionModal.jsx";
 import "./EhostDashboard.css";
 
@@ -182,12 +182,14 @@ export const EhostDashboard = () => {
             </button>
           )}
           {button}
-          <button
-            className="eh-row-btn eh-row-btn-danger"
-            onClick={stop(() => handleDelete(exp.id))}
-          >
-            Delete
-          </button>
+          {exp.status !== "approved" && (
+            <button
+              className="eh-row-btn eh-row-btn-danger"
+              onClick={stop(() => handleDelete(exp.id))}
+            >
+              Delete
+            </button>
+          )}
         </div>
       </div>
     );

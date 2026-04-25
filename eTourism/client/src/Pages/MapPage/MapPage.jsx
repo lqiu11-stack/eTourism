@@ -10,7 +10,6 @@ import axios from "axios";
 import "./MapPage.css";
 import backIcon from "../icon/back.png";
 import { useNavigate, Link } from "react-router-dom";
-import { getCountryImage } from "../../utils/countryImages";
 
 const API_BASE = import.meta.env.VITE_API_URL;
 const DEFAULT_CENTER = { lat: 51.5101, lng: -0.1340 };
@@ -256,7 +255,7 @@ export const MapPage = () => {
               >
                 <div className="map-info-card">
                 <img
-                    src={getCountryImage(selected?.country)}
+                    src={selected?.cover_image}
                     alt="tour"
                     className="map-info-img"
                 />

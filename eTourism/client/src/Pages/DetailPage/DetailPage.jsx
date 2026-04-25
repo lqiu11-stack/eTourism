@@ -1,16 +1,11 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
 import "./DetailPage.css";
-
 import videoImg from "../icon/livecover.png";
 import head from "../icon/head.png";
-import photo2 from "../icon/london1.jpg";
-import photo3 from "../icon/london2.jpg";
-import photo4 from "../icon/london3.jpg";
 import { useNavigate, useSearchParams, Link, useLocation } from "react-router-dom";
 import backIcon from "../icon/back.png";
 import blog from "../icon/blogger.png";
-import { getCountryImage } from "../../utils/countryImages";
 import { toYouTubeEmbed } from "../../utils/youtube";
 
 const API_BASE = import.meta.env.VITE_API_URL;
@@ -70,7 +65,7 @@ export const DetailPage = () => {
       {/* HERO */}
       <section
         className="detail-hero"
-        style={{ backgroundImage: `url(${experience?.cover_image || getCountryImage(experience?.country)})` }}
+        style={{ backgroundImage: `url(${experience?.cover_image})` }}
       >
         <div className="detail-hero-overlay"/>
 
@@ -253,48 +248,23 @@ export const DetailPage = () => {
 
       {/* REFUND */}
       <section className="detail-refund-section">
-
         <h3>Refund policy</h3>
-
         <div className="detail-refund-card">
           Free cancellation up to 24 hours before live start. If you miss the
           session, a replay will be available for 24 hours.
         </div>
-
       </section>
 
-
-      {/* PHOTOS */}
-      {/* <section className="detail-photo-section">
-
-        <h3>More photo</h3>
-
-        <div className="detail-photo-grid">
-
-          <img src={photo2}/>
-          <img src={photo2}/>
-          <img src={photo3}/>
-          <img src={photo4}/>
-
-        </div>
-
-      </section> */}
-
-
       <section className="detail-newsletter">
-
         <div className="newsletter-overlay"></div>
-
         <div className="newsletter-content">
           <h2>Get Your Travel Inspiration</h2>
           <p>Straight to Your Inbox</p>
-
           <div className="newsletter-form">
             <input type="email" placeholder="Email address"/>
             <button>Subscribe</button>
           </div>
         </div>
-
       </section>
 
 

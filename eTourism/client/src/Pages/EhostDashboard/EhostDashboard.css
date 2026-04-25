@@ -208,15 +208,6 @@
   justify-content: flex-end;
 }
 
-.eh-row-btn-danger {
-  background: #c47878;
-  color: #fff;
-}
-
-.eh-row-btn-danger:hover:not(:disabled) {
-  background: #a86060;
-}
-
 .eh-row-btn {
   background: #c5a7a7;
   color: #2b2d42;
@@ -235,6 +226,15 @@
 .eh-row-btn:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+}
+
+.eh-row-btn.eh-row-btn-danger {
+  background: #c47878;
+  color: #fff;
+}
+
+.eh-row-btn.eh-row-btn-danger:hover:not(:disabled) {
+  background: #a86060;
 }
 
 .eh-empty {
