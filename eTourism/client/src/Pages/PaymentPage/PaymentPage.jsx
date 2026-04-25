@@ -216,7 +216,7 @@ export const PaymentPage = () => {
           <div className="ticket">
             <div>
               <p className="ticket-title">
-                Normal ticket <span>{normalPrice}£ / per ticket</span>
+                Normal ticket <span>£{normalPrice} / per ticket</span>
               </p>
               <span className="small-text">(include Q&A)</span>
             </div>
@@ -232,7 +232,7 @@ export const PaymentPage = () => {
           <div className="ticket">
             <div>
               <p className="ticket-title">
-                Watch-only ticket <span>{discountedPrice}£ / per ticket</span>
+                Watch-only ticket <span>£{discountedPrice} / per ticket</span>
               </p>
               <span className="small-text">(no Q&A, stream only)</span>
               <Link className="ticket-link" onClick={() => setShowWatchOnlyTerms(true)}>click to see the detail</Link>
@@ -271,7 +271,7 @@ export const PaymentPage = () => {
           {/* Total */}
           <div className="total">
             <h3>Total</h3>
-            <div className="price">{total.toFixed(2)}£</div>
+            <div className="price">£{total.toFixed(2)}</div>
           </div>
         </div>
 

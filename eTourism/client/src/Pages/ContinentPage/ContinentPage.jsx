@@ -322,7 +322,7 @@ export const ContinentPage = () => {
                 </div>
                 <div className="tour-info">
                   <p>{formatDate(exp.date_time)}</p>
-                  <p>{exp.price}£ / per ticket</p>
+                  <p>£{exp.price} / per ticket</p>
                   <button className="book-btn">Click to book &gt;&gt;</button>
                 </div>
               </div>

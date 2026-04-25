@@ -159,7 +159,7 @@ export const MapPage = () => {
         />
 
         <h3>Your budget</h3>
-        <p>0£ - {price}£</p>
+        <p>£0 - £{price}</p>
 
         <input
           type="range"
