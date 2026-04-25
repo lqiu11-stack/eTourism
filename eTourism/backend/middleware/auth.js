@@ -42,7 +42,7 @@ function requireRole(...roles) {
 Middleware for validating eHost application form data */
 const validateApplication = (req, res, next) => {
   const {
-    name, birthday, country, email,
+    name, birthday, country, email, password,
     hasExperience, preferredCountry,
     description, videoLink, isContractAgreed
   } = req.body;
@@ -50,6 +50,10 @@ const validateApplication = (req, res, next) => {
 
   if (!name || !birthday || !country || !email) {
     return res.status(400).json({ message: "Please fill in all required personal details." });
+  }
+
+  if (!password || typeof password !== 'string' || password.length < 8) {
+    return res.status(400).json({ message: "Password must be at least 8 characters." });
   }
 
   if (hasExperience === undefined || !preferredCountry) {

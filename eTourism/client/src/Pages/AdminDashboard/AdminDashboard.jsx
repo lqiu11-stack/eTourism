@@ -257,12 +257,12 @@ export const Dashboard = () => {
 
   const handleApproveApplication = async (id) => {
     try {
-      const { data } = await axios.patch(
+      await axios.patch(
         `${API_BASE}/admin/applications/${id}/approve`,
         {},
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      alert(`Application approved!\nTemporary password: ${data.temp_password}\nPlease share this with the new ehost.`);
+      alert("Application approved. The ehost can now log in with the password they set during registration.");
       fetchApplications(appStatusFilter);
       setShowAppModal(false);
     } catch (e) {
@@ -840,15 +840,23 @@ const Reports = ({ analytics, loading }) => {
     }],
   };
 
-  const countryChartData = {
-    labels: analytics.visitorCountries.map((c) => c.country),
+  const revenueChartData = {
+    labels: analytics.revenueByCategory.map((c) => c.category || "Uncategorised"),
     datasets: [{
-      data: analytics.visitorCountries.map((c) => Number(c.visitor_count)),
+      data: analytics.revenueByCategory.map((c) => Number(c.revenue)),
       backgroundColor: "#8bb897",
       borderColor: "#6a9a78",
       borderWidth: 1,
       borderRadius: 4,
     }],
+  };
+
+  const revenueBarOptions = {
+    ...barOptions(),
+    plugins: {
+      ...barOptions().plugins,
+      tooltip: { callbacks: { label: (ctx) => ` £${Number(ctx.parsed.x).toFixed(2)}` } },
+    },
   };
 
   const categoryChartData = {
@@ -873,7 +881,7 @@ const Reports = ({ analytics, loading }) => {
   const CHART_HEIGHT = 300;
   const expBarHeight = Math.max(CHART_HEIGHT, analytics.topExperiences.length * 36);
   const hostBarHeight = Math.max(CHART_HEIGHT, analytics.topHosts.length * 36);
-  const countryBarHeight = Math.max(CHART_HEIGHT, analytics.visitorCountries.length * 36);
+  const revenueBarHeight = Math.max(CHART_HEIGHT, analytics.revenueByCategory.length * 36);
 
   return (
     <div className="reports-wrapper">
@@ -903,12 +911,12 @@ const Reports = ({ analytics, loading }) => {
 
       <div className="report-charts-row">
         <div className="report-section report-section-wide">
-          <h3 className="report-heading">Visitor Countries of Origin</h3>
-          {analytics.visitorCountries.length === 0 ? (
-            <p className="report-empty">No visitor country data yet.</p>
+          <h3 className="report-heading">Revenue by Category</h3>
+          {analytics.revenueByCategory.length === 0 ? (
+            <p className="report-empty">No revenue recorded yet.</p>
           ) : (
-            <div style={{ height: countryBarHeight }}>
-              <Bar data={countryChartData} options={barOptions()} />
+            <div style={{ height: revenueBarHeight }}>
+              <Bar data={revenueChartData} options={revenueBarOptions} />
             </div>
           )}
         </div>

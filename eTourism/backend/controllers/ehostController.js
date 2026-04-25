@@ -1,4 +1,5 @@
 const pool = require('../config/db');
+const bcrypt = require('bcrypt');
 const User = require('../models/User');
 const { CATEGORIES, LANGUAGES, CONTINENTS, GENDER_PREFERENCES } = require('../constants/enums');
 
@@ -1060,7 +1061,7 @@ const submitApplication = async (req, res) => {
   try {
     
     const {
-      name, birthday, country, email,
+      name, birthday, country, email, password,
       hasExperience, yearsOfExperience, preferredCountry,
       description, videoLink
     } = req.body;
@@ -1075,17 +1076,20 @@ const submitApplication = async (req, res) => {
       return res.status(409).json({ message: "This email has already submitted an application. Please wait for the review." });
     }
 
+    const password_hash = await bcrypt.hash(password, 10);
+
     // !!!Save the data into the database.
     const { rows: newAppRows } = await pool.query(
       `INSERT INTO ehost_applications
-      (name, birthday, country, email, has_experience, years_of_experience, preferred_country, description, video_link, status)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'pending')
+      (name, birthday, country, email, password_hash, has_experience, years_of_experience, preferred_country, description, video_link, status)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 'pending')
       RETURNING id`,
       [
         name,
         birthday,
         country,
         email,
+        password_hash,
         hasExperience,
         yearsOfExperience || 0,
         preferredCountry,

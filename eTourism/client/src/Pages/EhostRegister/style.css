@@ -217,13 +217,16 @@
 .join-box input{
   color: white;
 }
-input[type="date"]{
+input[type="date"]:invalid,
+input[type="date"]:invalid::-webkit-datetime-edit{
   color: white;
   -webkit-text-fill-color: white;
 }
 
-input[type="date"]::-webkit-datetime-edit{
-  color: white;
+input[type="date"]:valid,
+input[type="date"]:valid::-webkit-datetime-edit{
+  color: black;
+  -webkit-text-fill-color: black;
 }
 
 input[type="date"]::-webkit-calendar-picker-indicator{

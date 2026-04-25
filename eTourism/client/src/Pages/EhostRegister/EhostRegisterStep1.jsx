@@ -15,6 +15,7 @@ export const EhostRegisterStep1 = () => {
       birthday: saved.birthday || "",
       country: saved.country || "",
       email: saved.email || "",
+      password: saved.password || "",
     };
   });
   const [error, setError] = useState("");
@@ -23,12 +24,16 @@ export const EhostRegisterStep1 = () => {
 
   const handleNext = (e) => {
     e.preventDefault();
-    if (!form.name || !form.birthday || !form.country || !form.email) {
+    if (!form.name || !form.birthday || !form.country || !form.email || !form.password) {
       setError("Please fill in all required fields.");
       return;
     }
     if (!COUNTRIES.includes(form.country)) {
       setError("Please select a country from the list.");
+      return;
+    }
+    if (form.password.length < 8) {
+      setError("Password must be at least 8 characters.");
       return;
     }
     sessionStorage.setItem("ehost_step1", JSON.stringify(form));
@@ -56,7 +61,7 @@ export const EhostRegisterStep1 = () => {
           <input className="div" type="text" name="name" placeholder="Enter your name" value={form.name} onChange={handleChange} />
 
           <label className="text-wrapper-3">Please tell us your birthday*</label>
-          <input className="rectangle-2" type="date" name="birthday" value={form.birthday} onChange={handleChange} />
+          <input className="rectangle-2" type="date" name="birthday" value={form.birthday} onChange={handleChange} required />
 
           <label className="text-wrapper-4">Please tell us your country*</label>
           <input
@@ -74,9 +79,12 @@ export const EhostRegisterStep1 = () => {
           </datalist>
 
           <label className="text-wrapper-5">Please tell us your E-mail*</label>
+          <input className="rectangle-3" type="email" name="email" placeholder="Enter email" value={form.email} onChange={handleChange} />
+
+          <label className="text-wrapper-5">Choose a password*</label>
           {error && <div className="error-text">{error}</div>}
           <div className="email-wrapper">
-            <input className="rectangle-4" type="email" name="email" placeholder="Enter email" value={form.email} onChange={handleChange} />
+            <input className="rectangle-4" type="password" name="password" placeholder="At least 8 characters" value={form.password} onChange={handleChange} />
             <button type="submit" className="next-btn">
               <img src={arrowRight} alt="Next" className="next-icon" />
             </button>
