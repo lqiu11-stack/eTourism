@@ -1,5 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
-import axios from "axios";
+import { useState } from "react";
 import { useNavigate, useParams, useSearchParams, Link } from "react-router-dom";
 import "../MainPage/Mainstyle.css";
 import "./ContinentPage.css";
@@ -8,29 +7,20 @@ import continentIcon from "../icon/continents.png";
 import dateIcon from "../icon/calendar.png";
 import filterIcon from "../icon/filter.png";
 import backIcon from "../icon/back.png";
-import { getCountryImage } from "../../utils/countryImages";
+import { CONTINENTS } from "../../constants/enums";
+import { useExperiences } from "../../hooks/useExperiences";
+import { useAuth } from "../../utils/auth";
+import { formatDate } from "../../utils/formatDate";
+import { ExperienceCard } from "../../components/ExperienceCard";
 
-const API_BASE = import.meta.env.VITE_API_URL;
-const VALID_CONTINENTS = ["Africa", "Asia", "Europe", "North America", "South America", "Oceania"];
+const VALID_CONTINENTS = CONTINENTS.filter(c => c !== "Antarctica");
 const ALL_VALUE = "all";
-
-const getImage = (exp) => getCountryImage(exp.country);
-
-const formatDate = (dt) => {
-  if (!dt) return "Choose a date...";
-  const d = new Date(dt);
-  const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
-  return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
-};
 
 export const ContinentPage = () => {
   const navigate = useNavigate();
   const { continent } = useParams();
   const [searchParams] = useSearchParams();
-  const token = localStorage.getItem("token");
-  const isLoggedIn = !!token;
-  const user = JSON.parse(localStorage.getItem("user") || "{}");
-  const isEhost = user.role === "ehost";
+  const { isLoggedIn, isEhost, logout } = useAuth();
 
   const isAll = continent === ALL_VALUE;
   const lockedContinent = isAll
@@ -39,7 +29,7 @@ export const ContinentPage = () => {
 
   const parseList = (value) => (value ? value.split(",").map(v => v.trim()).filter(Boolean) : []);
 
-  const [experiences, setExperiences] = useState([]);
+  const { experiences } = useExperiences();
   const [searchLocation, setSearchLocation] = useState(searchParams.get("q") || "");
   const [searchDate, setSearchDate] = useState(searchParams.get("date") || "");
 
@@ -56,15 +46,6 @@ export const ContinentPage = () => {
 
   const toggleIn = (list, value) =>
     list.includes(value) ? list.filter(v => v !== value) : [...list, value];
-
-  const fetchExperiences = useCallback(async () => {
-    try {
-      const { data } = await axios.get(`${API_BASE}/visitor/experiences`);
-      setExperiences(data);
-    } catch {}
-  }, []);
-
-  useEffect(() => { fetchExperiences(); }, [fetchExperiences]);
 
   const filtered = experiences.filter(e => {
     if (lockedContinent && e.continent !== lockedContinent) return false;
@@ -90,11 +71,7 @@ export const ContinentPage = () => {
     setAppliedDate(searchDate);
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
-    navigate("/login");
-  };
+  const handleLogout = () => logout(navigate);
 
   const resetAll = () => {
     setActiveContinents([]);
@@ -308,24 +285,11 @@ export const ContinentPage = () => {
         ) : (
           <div className="continent-grid">
             {filtered.map(exp => (
-              <div
+              <ExperienceCard
                 key={exp.id}
-                className="tour-card"
-                onClick={() => navigate(`/DetailPage?id=${exp.id}`, { state: { from: "continent", continent: lockedContinent || "all" } })}
-                style={{ cursor: "pointer" }}
-              >
-                <div className="tour-image">
-                  <img src={getImage(exp)} alt={exp.title} />
-                  <div className="image-overlay">
-                    <h3>{exp.title}</h3>
-                  </div>
-                </div>
-                <div className="tour-info">
-                  <p>{formatDate(exp.date_time)}</p>
-                  <p>£{exp.price} / per ticket</p>
-                  <button className="book-btn">Click to book &gt;&gt;</button>
-                </div>
-              </div>
+                experience={exp}
+                linkState={{ from: "continent", continent: lockedContinent || "all" }}
+              />
             ))}
           </div>
         )}

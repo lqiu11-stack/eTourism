@@ -4,7 +4,6 @@ import axios from "axios";
 import applyIcon from "../icon/approve.png";
 import profileIcon from "../icon/customer-review.png";
 import { RejectionModal } from "./RejectionModal.jsx";
-import { getCountryImage } from "../../utils/countryImages";
 import "./EhostDashboard.css";
 
 const API_BASE = import.meta.env.VITE_API_URL;
@@ -150,7 +149,7 @@ export const EhostDashboard = () => {
           }
         }}
       >
-        <img src={exp.cover_image || getCountryImage(exp.country)} alt={exp.title || "experience"} className="eh-row-image" />
+        <img src={exp.cover_image} alt={exp.title || "experience"} className="eh-row-image" />
         <div className="eh-row-body">
           <div className="eh-row-title-line">
             <span className="eh-row-title">{exp.title || exp.location_name}</span>
