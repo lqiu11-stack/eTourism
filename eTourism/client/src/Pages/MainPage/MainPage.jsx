@@ -330,7 +330,7 @@ export const MainPage = () => {
               <h2 className="section-title">New event!</h2>
               <p className="section-subtitle">Don't know what to choose? Check out our new activity!</p>
             </div>
-            <button className="more-btn">Click here to check more</button>
+            <button className="more-btn" onClick={() => navigate("/continent/all")}>Click here to check more</button>
           </div>
           <div className="card-list">
             {newEvents.length > 0

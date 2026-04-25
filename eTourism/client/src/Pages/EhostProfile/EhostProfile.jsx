@@ -4,6 +4,7 @@ import axios from "axios";
 import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
 import { storage } from "../../firebase";
 import { LANGUAGES } from "../../constants/enums";
+import { convertToWebp } from "../../utils/imageConvert";
 import "./EhostProfile.css";
 
 const API_BASE = import.meta.env.VITE_API_URL;
@@ -75,13 +76,21 @@ export const EhostProfile = () => {
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
-  const handleProfileImageUpload = (file) => {
+  const handleProfileImageUpload = async (file) => {
     if (!file) return;
     setUploading(true);
     setUploadProgress(0);
     setError("");
-    const storageRef = ref(storage, `profile_images/${Date.now()}_${file.name}`);
-    const task = uploadBytesResumable(storageRef, file);
+    let uploadFile;
+    try {
+      uploadFile = await convertToWebp(file);
+    } catch {
+      setError("Failed to process image. Please try a different file.");
+      setUploading(false);
+      return;
+    }
+    const storageRef = ref(storage, `profile_images/${Date.now()}_${uploadFile.name}`);
+    const task = uploadBytesResumable(storageRef, uploadFile);
     task.on(
       "state_changed",
       (snap) => setUploadProgress(Math.round((snap.bytesTransferred / snap.totalBytes) * 100)),

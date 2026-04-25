@@ -16,6 +16,7 @@ import {
 } from "../../constants/enums";
 import { isYouTubeUrl } from "../../utils/youtube";
 import { COUNTRIES } from "../../utils/countries";
+import { convertToWebp } from "../../utils/imageConvert";
 import "./ApplyActivity.css";
 
 const API_BASE = import.meta.env.VITE_API_URL;
@@ -112,13 +113,21 @@ export const ApplyActivity = () => {
     setForm((prev) => ({ ...prev, [name]: type === "checkbox" ? checked : value }));
   };
 
-  const handleImageUpload = (file) => {
+  const handleImageUpload = async (file) => {
     if (!file) return;
     setUploading(true);
     setUploadProgress(0);
     setError("");
-    const storageRef = ref(storage, `cover_images/${Date.now()}_${file.name}`);
-    const task = uploadBytesResumable(storageRef, file);
+    let uploadFile;
+    try {
+      uploadFile = await convertToWebp(file);
+    } catch {
+      setError("Failed to process image. Please try a different file.");
+      setUploading(false);
+      return;
+    }
+    const storageRef = ref(storage, `cover_images/${Date.now()}_${uploadFile.name}`);
+    const task = uploadBytesResumable(storageRef, uploadFile);
     task.on(
       "state_changed",
       (snap) => {

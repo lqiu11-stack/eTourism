@@ -154,7 +154,7 @@ export const EhostDashboard = () => {
           <div className="eh-row-title-line">
             <span className="eh-row-title">{exp.title || exp.location_name}</span>
             {exp.status === "approved" && isFuture && (
-              <span className="eh-row-title-tag">Approve</span>
+              <span className="eh-row-title-tag">Approved</span>
             )}
           </div>
           <div className="eh-row-datetime">{formatDateTime(exp.date_time) || "Date TBC"}</div>
