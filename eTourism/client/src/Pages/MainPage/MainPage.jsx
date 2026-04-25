@@ -14,6 +14,10 @@ import { useNavigate, Link } from "react-router-dom";
 
 const API_BASE = import.meta.env.VITE_API_URL;
 
+
+
+
+
 const formatDate = (dt) => {
   if (!dt) return 'Choose a date...';
   const d = new Date(dt);
@@ -43,6 +47,8 @@ export const MainPage = () => {
   const [showRegionMenu,  setShowRegionMenu]  = useState(false);
   const [showCategoryMenu,setShowCategoryMenu]= useState(false);
   const [showLanguageMenu,setShowLanguageMenu]= useState(false);
+
+  const [filtered, setFiltered] = useState([]);
 
   const toggleIn = (list, value) =>
     list.includes(value) ? list.filter(v => v !== value) : [...list, value];
@@ -88,6 +94,9 @@ export const MainPage = () => {
     if (e.continent) acc[e.continent] = (acc[e.continent] || 0) + 1;
     return acc;
   }, {});
+
+  const soldOut = filtered.filter(e => e.max_visitors <= 15);
+
 
   return (
     <div className="main-page">
@@ -362,6 +371,46 @@ export const MainPage = () => {
           </div>
         </div>
       </section>
+
+      {/* Almost Sold Out */}
+      <section className="popular">
+        <div className="destination-section">
+          <div className="where-header">
+            <div>
+              <h2 className="section-title">Almost sold out!</h2>
+              <p className="section-subtitle">Grab your last chance to explore the world with us.</p>
+            </div>
+            <button className="more-btn">Click here to check more</button>
+          </div>
+          <div className="card-list">
+            {soldOut.length > 0
+                ? soldOut.map(renderCard)
+                : <p style={{color:'#666'}}>No experiences found.</p>
+            }
+          </div>
+        </div>
+      </section>
+
+      {/* Top Choice This Month */}
+      <section className="popular">
+        <div className="destination-section">
+          <div className="where-header">
+            <div>
+              <h2 className="section-title">Top choice this month!</h2>
+              <p className="section-subtitle">Don't know what to choose? Check our monthly recommendation</p>
+            </div>
+            <button className="more-btn">Click here to check more</button>
+          </div>
+          <div className="card-list">
+            {/* { monthly.length > 0
+                ? monthly.map(renderCard)
+                : <p style={{color:'#666'}}>No experiences found.</p>
+            } */}
+          </div>
+        </div>
+      </section>
+
+
 
       {/* Newsletter */}
       <section className="newsletter">
