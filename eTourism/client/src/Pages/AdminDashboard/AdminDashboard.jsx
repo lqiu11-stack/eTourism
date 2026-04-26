@@ -582,6 +582,8 @@ const STATUS_COLORS = {
   refunded:       { background: "#d3d3d3", color: "#444" },
   cancelled:      { background: "#e0a3a3", color: "#5a1a1a" },
   rescheduled:    { background: "#a3c4e0", color: "#1a3c5a" },
+  active:         { background: "#a8d5b3", color: "#1f4d2c" },
+  suspended:      { background: "#e0a3a3", color: "#5a1a1a" },
 };
 
 const getStatusStyle = (status) =>
@@ -730,14 +732,29 @@ const UserData = ({
             <div>{item.email}</div>
             <div>{item.role}</div>
             <div>
-              <span style={{ color: item.status === "suspended" ? "red" : "green" }}>{item.status}</span>
+              <span
+                style={{
+                  ...getStatusStyle(item.status),
+                  padding: "4px 10px",
+                  borderRadius: "20px",
+                  fontSize: "12px",
+                  display: "inline-block",
+                }}
+              >
+                {item.status}
+              </span>
             </div>
             <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
-              <button className="sort-btn" onClick={() => { setSelectedUser({ ...item }); setShowUserModal(true); }}>
+              <button
+                className="sort-btn"
+                style={{ padding: "4px 10px", fontSize: "12px" }}
+                onClick={() => { setSelectedUser({ ...item }); setShowUserModal(true); }}
+              >
                 Edit
               </button>
               <button
                 className="sort-btn"
+                style={{ padding: "4px 10px", fontSize: "12px" }}
                 onClick={() => onUpdateStatus(item.id, item.status === "active" ? "suspended" : "active")}
               >
                 {item.status === "active" ? "Suspend" : "Activate"}
