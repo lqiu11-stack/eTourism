@@ -88,6 +88,7 @@ export const ApplyActivity = () => {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+  const [meetingLinkOnly, setMeetingLinkOnly] = useState(false);
   const minDateTime = toDateTimeLocal(new Date(Date.now() + 60 * 1000));
 
   useEffect(() => {
@@ -100,11 +101,12 @@ export const ApplyActivity = () => {
         });
         const exp = data?.data;
         if (!exp || cancelled) return;
-        if (exp.status !== "pending") {
-          alert("This experience can no longer be edited (already reviewed).");
+        if (exp.status !== "pending" && exp.status !== "approved") {
+          alert("This experience can no longer be edited.");
           navigate("/EhostDashboard");
           return;
         }
+        setMeetingLinkOnly(exp.status === "approved");
         const highlights = Array.isArray(exp.video_highlights)
           ? exp.video_highlights.join("\n")
           : (exp.video_highlights || "");
@@ -228,6 +230,32 @@ export const ApplyActivity = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (uploading) return;
+    if (meetingLinkOnly) {
+      const trimmedMeetingLink = form.meeting_link.trim();
+      if (!trimmedMeetingLink) {
+        setError("Please add a meeting link for your live experience.");
+        return;
+      }
+      if (!/^https?:\/\//i.test(trimmedMeetingLink)) {
+        setError("Meeting link must start with http:// or https://.");
+        return;
+      }
+      setError("");
+      setSubmitting(true);
+      try {
+        await axios.put(
+          `${API_BASE}/ehost/experiences/${editId}`,
+          { meeting_link: trimmedMeetingLink },
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        navigate("/EhostDashboard");
+      } catch (err) {
+        setError(err.response?.data?.message || "Failed to update meeting link. Please try again.");
+      } finally {
+        setSubmitting(false);
+      }
+      return;
+    }
     if (!form.title || !form.location_name || !form.country || !form.price || !form.description) {
       setError("Please fill in all required fields.");
       return;
@@ -312,18 +340,23 @@ export const ApplyActivity = () => {
         <button className="aa-back" type="button" onClick={() => navigate("/EhostDashboard")}>
           ← Back
         </button>
-        <h1 className="aa-title">{isEdit ? "Edit experience" : "Apply for new experience"}</h1>
+        <h1 className="aa-title">{meetingLinkOnly ? "Edit meeting link" : isEdit ? "Edit experience" : "Apply for new experience"}</h1>
         <span />
       </header>
 
       <form className="aa-form" onSubmit={handleSubmit}>
+        {meetingLinkOnly && (
+          <div className="aa-hint">
+            This experience has been approved. Only the meeting link can be edited.
+          </div>
+        )}
         <label className="aa-label">Title*</label>
-        <input className="aa-input" name="title" value={form.title} onChange={handleChange} placeholder="e.g. Thailand Religious Tourism" />
+        <input className="aa-input" name="title" value={form.title} onChange={handleChange} placeholder="e.g. Thailand Religious Tourism" disabled={meetingLinkOnly} />
 
         <div className="aa-grid">
           <div>
             <label className="aa-label">Location name*</label>
-            <input className="aa-input" name="location_name" value={form.location_name} onChange={handleChange} />
+            <input className="aa-input" name="location_name" value={form.location_name} onChange={handleChange} disabled={meetingLinkOnly} />
           </div>
           <div>
             <label className="aa-label">Country*</label>
@@ -335,6 +368,7 @@ export const ApplyActivity = () => {
               placeholder="Start typing your country..."
               value={form.country}
               onChange={handleChange}
+              disabled={meetingLinkOnly}
             />
             <datalist id="aa-country-options">
               {COUNTRIES.map((c) => <option key={c} value={c} />)}
@@ -345,7 +379,7 @@ export const ApplyActivity = () => {
         <div className="aa-grid">
           <div>
             <label className="aa-label">Continent</label>
-            <select className="aa-input" name="continent" value={form.continent} onChange={handleChange}>
+            <select className="aa-input" name="continent" value={form.continent} onChange={handleChange} disabled={meetingLinkOnly}>
               <option value="">— select —</option>
               {CONTINENTS.map((c) => (
                 <option key={c} value={c}>{c}</option>
@@ -354,7 +388,7 @@ export const ApplyActivity = () => {
           </div>
           <div>
             <label className="aa-label">Category</label>
-            <select className="aa-input" name="category" value={form.category} onChange={handleChange}>
+            <select className="aa-input" name="category" value={form.category} onChange={handleChange} disabled={meetingLinkOnly}>
               <option value="">— select —</option>
               {CATEGORIES.map((c) => (
                 <option key={c} value={c}>{c}</option>
@@ -366,7 +400,7 @@ export const ApplyActivity = () => {
         <div className="aa-grid">
           <div>
             <label className="aa-label">Language</label>
-            <select className="aa-input" name="language" value={form.language} onChange={handleChange}>
+            <select className="aa-input" name="language" value={form.language} onChange={handleChange} disabled={meetingLinkOnly}>
               {LANGUAGES.map((l) => (
                 <option key={l} value={l}>{l}</option>
               ))}
@@ -374,40 +408,42 @@ export const ApplyActivity = () => {
           </div>
           <div>
             <label className="aa-label">Date & time*</label>
-            <input className="aa-input" name="date_time" type="datetime-local" min={minDateTime} value={form.date_time} onChange={handleChange} />
+            <input className="aa-input" name="date_time" type="datetime-local" min={minDateTime} value={form.date_time} onChange={handleChange} disabled={meetingLinkOnly} />
           </div>
         </div>
 
         <div className="aa-grid">
           <div>
             <label className="aa-label">Price (USD)*</label>
-            <input className="aa-input" name="price" type="number" min="0" step="0.01" value={form.price} onChange={handleChange} />
+            <input className="aa-input" name="price" type="number" min="0" step="0.01" value={form.price} onChange={handleChange} disabled={meetingLinkOnly} />
           </div>
           <div>
             <label className="aa-label">Discounted price (optional)</label>
-            <input className="aa-input" name="price_discounted" type="number" min="0" step="0.01" value={form.price_discounted} onChange={handleChange} />
+            <input className="aa-input" name="price_discounted" type="number" min="0" step="0.01" value={form.price_discounted} onChange={handleChange} disabled={meetingLinkOnly} />
           </div>
         </div>
 
         <div className="aa-grid">
           <div>
             <label className="aa-label">Duration (minutes)</label>
-            <input className="aa-input" name="duration_minutes" type="number" min="15" value={form.duration_minutes} onChange={handleChange} />
+            <input className="aa-input" name="duration_minutes" type="number" min="15" value={form.duration_minutes} onChange={handleChange} disabled={meetingLinkOnly} />
           </div>
           <div>
             <label className="aa-label">Max visitors</label>
-            <input className="aa-input" name="max_visitors" type="number" min="1" value={form.max_visitors} onChange={handleChange} />
+            <input className="aa-input" name="max_visitors" type="number" min="1" value={form.max_visitors} onChange={handleChange} disabled={meetingLinkOnly} />
           </div>
         </div>
 
         <label className="aa-label">Pin the location on the map*</label>
         {mapIsLoaded ? (
           <>
-            <gmp-place-autocomplete
-              ref={autocompleteRef}
-              class="aa-input"
-              placeholder="Search a place (e.g. Eiffel Tower)"
-            ></gmp-place-autocomplete>
+            {!meetingLinkOnly && (
+              <gmp-place-autocomplete
+                ref={autocompleteRef}
+                class="aa-input"
+                placeholder="Search a place (e.g. Eiffel Tower)"
+              ></gmp-place-autocomplete>
+            )}
             <GoogleMap
               mapContainerStyle={mapContainerStyle}
               center={
@@ -416,13 +452,13 @@ export const ApplyActivity = () => {
                   : DEFAULT_MAP_CENTER
               }
               zoom={form.latitude !== "" && form.longitude !== "" ? 14 : 2}
-              onClick={onMapClick}
+              onClick={meetingLinkOnly ? undefined : onMapClick}
             >
               {form.latitude !== "" && form.longitude !== "" && (
                 <Marker
                   position={{ lat: Number(form.latitude), lng: Number(form.longitude) }}
-                  draggable
-                  onDragEnd={onMarkerDragEnd}
+                  draggable={!meetingLinkOnly}
+                  onDragEnd={meetingLinkOnly ? undefined : onMarkerDragEnd}
                 />
               )}
             </GoogleMap>
@@ -439,7 +475,7 @@ export const ApplyActivity = () => {
         <div className="aa-grid">
           <div>
             <label className="aa-label">Gender preference</label>
-            <select className="aa-input" name="gender_preference" value={form.gender_preference} onChange={handleChange}>
+            <select className="aa-input" name="gender_preference" value={form.gender_preference} onChange={handleChange} disabled={meetingLinkOnly}>
               {GENDER_PREFERENCES.map((g) => (
                 <option key={g} value={g}>{g.replace("_", " ")}</option>
               ))}
@@ -447,14 +483,14 @@ export const ApplyActivity = () => {
           </div>
           <div className="aa-checkbox-row">
             <label className="aa-checkbox">
-              <input type="checkbox" name="allows_piggyback" checked={form.allows_piggyback} onChange={handleChange} />
+              <input type="checkbox" name="allows_piggyback" checked={form.allows_piggyback} onChange={handleChange} disabled={meetingLinkOnly} />
               Allow piggyback bookings
             </label>
           </div>
         </div>
 
         <label className="aa-label">Description*</label>
-        <textarea className="aa-textarea" name="description" rows="5" value={form.description} onChange={handleChange} />
+        <textarea className="aa-textarea" name="description" rows="5" value={form.description} onChange={handleChange} disabled={meetingLinkOnly} />
 
         <label className="aa-label">Meeting link*</label>
         <input
@@ -468,7 +504,7 @@ export const ApplyActivity = () => {
         <div className="aa-hint">Visitors will join your live experience using this link.</div>
 
         <label className="aa-label">Cover image*</label>
-        <input type="file" accept="image/*" onChange={(e) => handleImageUpload(e.target.files[0])} disabled={uploading} />
+        <input type="file" accept="image/*" onChange={(e) => handleImageUpload(e.target.files[0])} disabled={uploading || meetingLinkOnly} />
         {uploading && <div className="aa-hint">Uploading… {uploadProgress}%</div>}
         {coverImage && !uploading && (
           <img src={coverImage} alt="cover preview" className="aa-preview" />
@@ -482,6 +518,7 @@ export const ApplyActivity = () => {
           value={form.sample_video_url}
           onChange={handleChange}
           placeholder="https://youtube.com/watch?v=..."
+          disabled={meetingLinkOnly}
         />
 
         <label className="aa-label">Video description</label>
@@ -492,6 +529,7 @@ export const ApplyActivity = () => {
           value={form.video_description}
           onChange={handleChange}
           placeholder="A short paragraph or two about what visitors will see in the sample video. Separate paragraphs with a blank line."
+          disabled={meetingLinkOnly}
         />
 
         <label className="aa-label">Video highlights</label>
@@ -502,12 +540,13 @@ export const ApplyActivity = () => {
           value={form.video_highlights}
           onChange={handleChange}
           placeholder={"One highlight per line, e.g.\nVisit the oldest temple in the city\nMeet local artisans\nTaste street food"}
+          disabled={meetingLinkOnly}
         />
 
         {error && <div className="aa-error">{error}</div>}
 
         <button className="aa-submit" type="submit" disabled={uploading || submitting}>
-          {submitting ? "Submitting…" : isEdit ? "Save changes" : "Submit experience"}
+          {submitting ? "Submitting…" : meetingLinkOnly ? "Save meeting link" : isEdit ? "Save changes" : "Submit experience"}
         </button>
       </form>
     </div>

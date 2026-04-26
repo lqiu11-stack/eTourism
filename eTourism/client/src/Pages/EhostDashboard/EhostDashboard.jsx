@@ -190,7 +190,7 @@ export const EhostDashboard = () => {
           {statusNode}
         </div>
         <div className="eh-row-action">
-          {exp.status === "pending" && (
+          {(exp.status === "pending" || (exp.status === "approved" && isFuture)) && (
             <button
               className="eh-row-btn"
               onClick={stop(() => navigate(`/EditActivity/${exp.id}`))}

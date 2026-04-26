@@ -329,8 +329,28 @@ const updateExperience = async (req, res) => {
     if (checkRows.length === 0) {
         return res.status(404).json({ success: false, message: 'This experience was not found or you do not have permission to modify it.' });
     }
-    if (checkRows[0].status !== 'pending') {
-        return res.status(403).json({ success: false, message: 'Experience can only be edited while pending admin approval.' });
+    const currentStatus = checkRows[0].status;
+    if (currentStatus !== 'pending' && currentStatus !== 'approved') {
+        return res.status(403).json({ success: false, message: 'Experience can only be edited while pending or approved.' });
+    }
+
+    if (currentStatus === 'approved') {
+        const { meeting_link } = req.body;
+        if (!meeting_link || typeof meeting_link !== 'string' || !meeting_link.trim()) {
+            return res.status(400).json({ success: false, message: 'Meeting link is required.' });
+        }
+        const normalizedMeetingLink = meeting_link.trim();
+        if (!/^https?:\/\//i.test(normalizedMeetingLink)) {
+            return res.status(400).json({ success: false, message: 'Meeting link must start with http:// or https://.' });
+        }
+        const { rows: meetingLinkRows } = await pool.query(
+            `UPDATE experiences
+             SET meeting_link = $1
+             WHERE id = $2 AND ehost_id = $3
+             RETURNING *`,
+            [normalizedMeetingLink, experienceId, ehostId]
+        );
+        return res.status(200).json({ success: true, data: meetingLinkRows[0] });
     }
 
     const {
