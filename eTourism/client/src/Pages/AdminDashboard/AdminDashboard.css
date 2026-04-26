@@ -141,12 +141,14 @@
   font-weight: bold;
   border-bottom: 1px solid black;
   padding-bottom: 10px;
+  font-size: 13px;
 }
 .table-row {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
   align-items: center;
   padding: 10px 0;
+  font-size: 13px;
 }
 
 .user-table-header {
@@ -155,18 +157,21 @@
   font-weight: bold;
   border-bottom: 1px solid black;
   padding-bottom: 10px;
+  font-size: 13px;
 }
 .user-table-row{
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   align-items: center;
   padding: 10px 0;
+  font-size: 13px;
 }
 .request-row{
   display: grid;
   grid-template-columns: repeat(5, 1fr);
   align-items: center;
   padding: 10px 0;
+  font-size: 13px;
 }
 .report-row{
   display: grid;
@@ -591,7 +596,7 @@
   display: grid;
   grid-template-columns: 0.3fr 2fr 1.5fr 1.5fr 2fr;
   font-weight: 700;
-  font-size: 12px;
+  font-size: 13px;
   color: #666;
   border-bottom: 1px solid #e8dada;
   padding-bottom: 6px;
