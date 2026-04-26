@@ -5,6 +5,7 @@ import { useState, useEffect } from "react";
 import axios from "axios";
 import { useLocation } from "react-router-dom";
 import { useLayoutEffect } from "react";
+import { saveBookingToCalendar } from "../../utils/calendar";
 
 export const BookingDetail = () => {
   const location = useLocation();
@@ -122,7 +123,12 @@ export const MyBooking = () => {
           {/* <button className="Mybooking-small-btn" onClick={(e) => { stop(e); navigate(`/booking/${b.id}/reschedule`); }}>
             Reschedule
           </button> */}
-          <button className="Mybooking-calendar-btn" onClick={stop}>Save to calendar</button>
+          <button
+            className="Mybooking-calendar-btn"
+            onClick={(e) => { stop(e); saveBookingToCalendar(b, b); }}
+          >
+            Save to calendar
+          </button>
         </div>
       </>
     );

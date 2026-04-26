@@ -7,6 +7,7 @@ import link2Icon from "../icon/link-2.png";
 import approveIcon from "../icon/approve.png";
 import enjoyIcon from "../icon/enjoy.png";
 import { useLayoutEffect } from "react";
+import { saveBookingToCalendar } from "../../utils/calendar";
 
 
 
@@ -249,7 +250,12 @@ export const MyBookingDetail = () => {
                 booking.status !== "refund_pending" &&
                 booking.status !== "cancelled" &&
                 booking.status !== "refunded" && (
-                  <button className="calendar-btn">Save to calendar</button>
+                  <button
+                    className="calendar-btn"
+                    onClick={() => saveBookingToCalendar(booking, experience)}
+                  >
+                    Save to calendar
+                  </button>
                 )}
 
               </div>
