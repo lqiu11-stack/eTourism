@@ -192,32 +192,6 @@ export const Dashboard = () => {
     }
   }, [token]);
 
-  const handleApproveExperience = async (id) => {
-    try {
-      await axios.patch(
-        `${API_BASE}/admin/experiences/${id}/approve`,
-        {},
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      fetchExperiences(expStatusFilter);
-    } catch (e) {
-      alert(e.response?.data?.message || "Failed to approve.");
-    }
-  };
-
-  const handleRejectExperience = async (id) => {
-    try {
-      await axios.patch(
-        `${API_BASE}/admin/experiences/${id}/reject`,
-        {},
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      fetchExperiences(expStatusFilter);
-    } catch (e) {
-      alert(e.response?.data?.message || "Failed to reject.");
-    }
-  };
-
   const handleDeleteExperience = (id) => {
     setConfirmModal({
       open: true,
@@ -317,7 +291,6 @@ export const Dashboard = () => {
     if (activeTab === "request") fetchExperiences(expStatusFilter);
     if (activeTab === "EhostJoin") fetchApplications(appStatusFilter);
     if (activeTab === "reports") fetchAnalytics();
-    if (activeTab === "suitability") fetchSuitExps(suitStatusFilter);
     if (activeTab === "network") fetchNetworkSummary();
   }, [activeTab, networkWindow]);
 
@@ -339,10 +312,7 @@ export const Dashboard = () => {
     }
   }, [token]);
 
-  // ── Suitability Review ───────────────────────────────────────────────
-  const [suitExps, setSuitExps] = useState([]);
-  const [suitLoading, setSuitLoading] = useState(false);
-  const [suitStatusFilter, setSuitStatusFilter] = useState("pending");
+  // ── Suitability Review (panel state, lives inside Experiences tab) ───
   const [showSuitPanel, setShowSuitPanel] = useState(false);
   const [selectedSuitExp, setSelectedSuitExp] = useState(null);
   const [suitScores, setSuitScores] = useState([]);
@@ -350,21 +320,6 @@ export const Dashboard = () => {
   const [suitResult, setSuitResult] = useState("pass");
   const [suitComment, setSuitComment] = useState("");
   const [suitSubmitting, setSuitSubmitting] = useState(false);
-
-  const fetchSuitExps = useCallback(async (status) => {
-    setSuitLoading(true);
-    try {
-      const { data } = await axios.get(
-        `${API_BASE}/admin/experiences?status=${status}`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      setSuitExps(Array.isArray(data) ? data : []);
-    } catch {
-      setSuitExps([]);
-    } finally {
-      setSuitLoading(false);
-    }
-  }, [token]);
 
   const fetchSuitScores = useCallback(async (id) => {
     setSuitScoresLoading(true);
@@ -403,7 +358,7 @@ export const Dashboard = () => {
       );
       alert(`Experience marked as ${suitResult === "pass" ? "suitable" : "unsuitable"}.`);
       setShowSuitPanel(false);
-      fetchSuitExps(suitStatusFilter);
+      fetchExperiences(expStatusFilter, expSearch);
     } catch (e) {
       alert(e.response?.data?.message || "Failed to submit review.");
     } finally {
@@ -441,7 +396,6 @@ export const Dashboard = () => {
           { key: "booking", label: "Bookings" },
           { key: "user", label: "Users" },
           { key: "reports", label: "Reports" },
-          { key: "suitability", label: "Suitability review" },
           { key: "request", label: "Experiences" },
           { key: "EhostJoin", label: "E-hosts" },
           { key: "network", label: "Network issues" },
@@ -498,12 +452,22 @@ export const Dashboard = () => {
             loading={expLoading}
             statusFilter={expStatusFilter}
             setStatusFilter={(s) => { setExpStatusFilter(s); setExpSearch(""); fetchExperiences(s, ""); }}
-            onApprove={handleApproveExperience}
-            onReject={handleRejectExperience}
+            onReview={handleOpenSuitPanel}
             onDelete={handleDeleteExperience}
             expSearch={expSearch}
             setExpSearch={setExpSearch}
             onSearch={() => fetchExperiences(expStatusFilter, expSearch)}
+            showPanel={showSuitPanel}
+            setShowPanel={setShowSuitPanel}
+            selectedExp={selectedSuitExp}
+            scores={suitScores}
+            scoresLoading={suitScoresLoading}
+            result={suitResult}
+            setResult={setSuitResult}
+            comment={suitComment}
+            setComment={setSuitComment}
+            submitting={suitSubmitting}
+            onSubmitScore={handleScoreExperience}
           />
         )}
         {activeTab === "EhostJoin" && (
@@ -525,26 +489,6 @@ export const Dashboard = () => {
         )}
         {activeTab === "reports" && (
           <Reports analytics={analytics} loading={analyticsLoading} />
-        )}
-        {activeTab === "suitability" && (
-          <SuitabilityReview
-            experiences={suitExps}
-            loading={suitLoading}
-            statusFilter={suitStatusFilter}
-            setStatusFilter={(s) => { setSuitStatusFilter(s); fetchSuitExps(s); }}
-            showPanel={showSuitPanel}
-            setShowPanel={setShowSuitPanel}
-            selectedExp={selectedSuitExp}
-            scores={suitScores}
-            scoresLoading={suitScoresLoading}
-            result={suitResult}
-            setResult={setSuitResult}
-            comment={suitComment}
-            setComment={setSuitComment}
-            submitting={suitSubmitting}
-            onOpenPanel={handleOpenSuitPanel}
-            onSubmitScore={handleScoreExperience}
-          />
         )}
         {activeTab === "network" && (
           <NetworkIssues
@@ -819,7 +763,12 @@ const UserData = ({
   );
 };
 
-const ExperienceRequests = ({ experiences, loading, statusFilter, setStatusFilter, onApprove, onReject, onDelete, expSearch, setExpSearch, onSearch }) => (
+const ExperienceRequests = ({
+  experiences, loading, statusFilter, setStatusFilter,
+  onReview, onDelete, expSearch, setExpSearch, onSearch,
+  showPanel, setShowPanel, selectedExp, scores, scoresLoading,
+  result, setResult, comment, setComment, submitting, onSubmitScore,
+}) => (
   <div>
     <div className="booking-top">
       <div className="search-wrapper">
@@ -840,35 +789,85 @@ const ExperienceRequests = ({ experiences, loading, statusFilter, setStatusFilte
     </div>
 
     <div className="table-box">
-      <div className="table-header" style={{ display: "grid", gridTemplateColumns: "1fr 2fr 1fr 2fr", fontWeight: "bold", borderBottom: "1px solid black", paddingBottom: "10px" }}>
-        <span>ID</span>
-        <span>Title</span>
-        <span>Status</span>
-        <span>Actions</span>
+      <div className="suit-table-header">
+        <span>ID</span><span>Title</span><span>Host</span><span>Category</span><span>Country</span><span>Status</span><span>Action</span>
       </div>
       {loading && <p style={{ padding: "12px" }}>Loading...</p>}
       {!loading && experiences.length === 0 && <p style={{ padding: "12px" }}>No experiences found.</p>}
       {experiences.map((item) => (
-        <div className="table-row" key={item.id} style={{ display: "grid", gridTemplateColumns: "1fr 2fr 1fr 2fr", alignItems: "center", padding: "10px 0", borderBottom: "1px solid #eee" }}>
-          <div>#{item.id}</div>
-          <div>{item.title}</div>
-          <div>
+        <div className="suit-table-row" key={item.id}>
+          <span>#{item.id}</span>
+          <span>{item.title}</span>
+          <span>{item.ehost_first_name ? `${item.ehost_first_name} ${item.ehost_last_name}` : "—"}</span>
+          <span>{item.category || "—"}</span>
+          <span>{item.country || "—"}</span>
+          <span>
             <span style={{ color: item.status === "approved" ? "green" : item.status === "rejected" ? "red" : "#b8860b" }}>
               {item.status}
             </span>
-          </div>
-          <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
-            {item.status === "pending" && (
-              <>
-                <button className="sort-btn" onClick={() => onApprove(item.id)}>Approve</button>
-                <button className="sort-btn" onClick={() => onReject(item.id)}>Reject</button>
-              </>
-            )}
+          </span>
+          <span style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
+            <button className="sort-btn" onClick={() => onReview(item)}>Review</button>
             <button type="button" className="sort-btn" style={{ background: "#e57373", color: "white" }} onClick={() => onDelete(item.id)}>Delete</button>
-          </div>
+          </span>
         </div>
       ))}
     </div>
+
+    {showPanel && selectedExp && (
+      <div className="refund-overlay">
+        <div className="suit-panel">
+          <button className="close-btn" onClick={() => setShowPanel(false)}>✕</button>
+
+          <div className="suit-panel-left">
+            <h3>{selectedExp.title}</h3>
+            <p><strong>Category:</strong> {selectedExp.category || "—"}</p>
+            <p><strong>Country:</strong> {selectedExp.country || "—"}</p>
+            <p><strong>Language:</strong> {selectedExp.language || "—"}</p>
+            <p><strong>Status:</strong> {selectedExp.status}</p>
+            {selectedExp.description && (
+              <p style={{ marginTop: "8px", fontSize: "13px" }}>{selectedExp.description}</p>
+            )}
+          </div>
+
+          <div className="suit-panel-right">
+            <h4>Suitability Review</h4>
+            <div className="suit-radio-group">
+              <label className={`suit-radio ${result === "pass" ? "suit-radio-selected" : ""}`}>
+                <input type="radio" value="pass" checked={result === "pass"} onChange={() => setResult("pass")} />
+                Suitable
+              </label>
+              <label className={`suit-radio ${result === "fail" ? "suit-radio-selected" : ""}`}>
+                <input type="radio" value="fail" checked={result === "fail"} onChange={() => setResult("fail")} />
+                Unsuitable
+              </label>
+            </div>
+            <textarea
+              className="suit-textarea"
+              placeholder={result === "fail" ? "Reason for rejection (required)" : "Notes (optional)"}
+              value={comment}
+              onChange={(e) => setComment(e.target.value)}
+            />
+            <button className="save-btn" onClick={onSubmitScore} disabled={submitting}>
+              {submitting ? "Submitting..." : "Submit review"}
+            </button>
+
+            <div className="suit-history">
+              <h5>Review History</h5>
+              {scoresLoading && <p style={{ fontSize: "12px" }}>Loading...</p>}
+              {!scoresLoading && scores.length === 0 && <p style={{ fontSize: "12px", color: "#999" }}>No previous reviews.</p>}
+              {scores.map((s) => (
+                <div key={s.id} className="suit-history-item">
+                  <span className={`result-badge ${s.result}`}>{s.result === "pass" ? "Suitable" : "Unsuitable"}</span>
+                  <span className="suit-history-date">{new Date(s.scored_at).toLocaleDateString()}</span>
+                  {s.comment && <p className="suit-history-comment">{s.comment}</p>}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    )}
   </div>
 );
 
@@ -1025,108 +1024,6 @@ const Reports = ({ analytics, loading }) => {
     </div>
   );
 };
-
-const SuitabilityReview = ({
-  experiences, loading, statusFilter, setStatusFilter,
-  showPanel, setShowPanel, selectedExp, scores, scoresLoading,
-  result, setResult, comment, setComment, submitting,
-  onOpenPanel, onSubmitScore,
-}) => (
-  <div>
-    <div className="booking-top">
-      {["approved", "pending", "rejected"].map((s) => (
-        <button
-          key={s}
-          className="sort-btn"
-          style={statusFilter === s ? { background: "#a88b8b", color: "white" } : {}}
-          onClick={() => setStatusFilter(s)}
-        >
-          {s.charAt(0).toUpperCase() + s.slice(1)}
-        </button>
-      ))}
-    </div>
-
-    <div className="table-box">
-      <div className="suit-table-header">
-        <span>ID</span><span>Title</span><span>Host</span><span>Category</span><span>Country</span><span>Status</span><span>Action</span>
-      </div>
-      {loading && <p style={{ padding: "12px" }}>Loading...</p>}
-      {!loading && experiences.length === 0 && <p style={{ padding: "12px" }}>No experiences found.</p>}
-      {experiences.map((item) => (
-        <div className="suit-table-row" key={item.id}>
-          <span>#{item.id}</span>
-          <span>{item.title}</span>
-          <span>{item.ehost_first_name ? `${item.ehost_first_name} ${item.ehost_last_name}` : "—"}</span>
-          <span>{item.category || "—"}</span>
-          <span>{item.country || "—"}</span>
-          <span>
-            <span style={{ color: item.status === "approved" ? "green" : item.status === "rejected" ? "red" : "#b8860b" }}>
-              {item.status}
-            </span>
-          </span>
-          <span>
-            <button className="sort-btn" onClick={() => onOpenPanel(item)}>Review</button>
-          </span>
-        </div>
-      ))}
-    </div>
-
-    {showPanel && selectedExp && (
-      <div className="refund-overlay">
-        <div className="suit-panel">
-          <button className="close-btn" onClick={() => setShowPanel(false)}>✕</button>
-
-          <div className="suit-panel-left">
-            <h3>{selectedExp.title}</h3>
-            <p><strong>Category:</strong> {selectedExp.category || "—"}</p>
-            <p><strong>Country:</strong> {selectedExp.country || "—"}</p>
-            <p><strong>Language:</strong> {selectedExp.language || "—"}</p>
-            <p><strong>Status:</strong> {selectedExp.status}</p>
-            {selectedExp.description && (
-              <p style={{ marginTop: "8px", fontSize: "13px" }}>{selectedExp.description}</p>
-            )}
-          </div>
-
-          <div className="suit-panel-right">
-            <h4>Suitability Review</h4>
-            <div className="suit-radio-group">
-              <label className={`suit-radio ${result === "pass" ? "suit-radio-selected" : ""}`}>
-                <input type="radio" value="pass" checked={result === "pass"} onChange={() => setResult("pass")} />
-                Suitable
-              </label>
-              <label className={`suit-radio ${result === "fail" ? "suit-radio-selected" : ""}`}>
-                <input type="radio" value="fail" checked={result === "fail"} onChange={() => setResult("fail")} />
-                Unsuitable
-              </label>
-            </div>
-            <textarea
-              className="suit-textarea"
-              placeholder={result === "fail" ? "Reason for rejection (required)" : "Notes (optional)"}
-              value={comment}
-              onChange={(e) => setComment(e.target.value)}
-            />
-            <button className="save-btn" onClick={onSubmitScore} disabled={submitting}>
-              {submitting ? "Submitting..." : "Submit review"}
-            </button>
-
-            <div className="suit-history">
-              <h5>Review History</h5>
-              {scoresLoading && <p style={{ fontSize: "12px" }}>Loading...</p>}
-              {!scoresLoading && scores.length === 0 && <p style={{ fontSize: "12px", color: "#999" }}>No previous reviews.</p>}
-              {scores.map((s) => (
-                <div key={s.id} className="suit-history-item">
-                  <span className={`result-badge ${s.result}`}>{s.result === "pass" ? "Suitable" : "Unsuitable"}</span>
-                  <span className="suit-history-date">{new Date(s.scored_at).toLocaleDateString()}</span>
-                  {s.comment && <p className="suit-history-comment">{s.comment}</p>}
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
-    )}
-  </div>
-);
 
 const EhostApplications = ({
   applications, loading, statusFilter, setStatusFilter,

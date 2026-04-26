@@ -174,7 +174,9 @@ const scoreExperience = async (req, res) => {
       comment: comment?.trim() || null,
     });
 
-    if (result === 'fail') {
+    if (result === 'pass') {
+      await Experience.update(req.params.id, { status: 'approved' });
+    } else {
       await Experience.update(req.params.id, { status: 'rejected' });
     }
 

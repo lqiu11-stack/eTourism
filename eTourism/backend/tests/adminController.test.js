@@ -1005,9 +1005,10 @@ describe('scoreExperience()', () => {
     assert.match(res.json.mock.calls[0].arguments[0].message, /comment/i);
   });
 
-  it('200 : pass result creates score only', async () => {
+  it('200 : pass result creates score and approves experience', async () => {
     const score = { id: 1, result: 'pass' };
     mockExperienceScore.create.mock.mockImplementation(async () => score);
+    mockExperience.update.mock.mockImplementation(async () => ({ id: 1, status: 'approved' }));
 
     const req = makeReq({ result: 'pass' }, { id: '1' }, {}, { id: 99 });
     const res = makeRes();
@@ -1016,7 +1017,8 @@ describe('scoreExperience()', () => {
     const body = res.json.mock.calls[0].arguments[0];
     assert.match(body.message, /pass/i);
     assert.deepEqual(body.score, score);
-    assert.equal(mockExperience.update.mock.callCount(), 0);
+    assert.equal(mockExperience.update.mock.callCount(), 1);
+    assert.equal(mockExperience.update.mock.calls[0].arguments[1].status, 'approved');
   });
 
   it('200 : fail result creates score and rejects experience', async () => {
