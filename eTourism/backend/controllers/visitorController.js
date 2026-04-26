@@ -504,21 +504,13 @@ const createReview = async (req, res) => {
       });
     }
 
-    const { rows: existing } = await pool.query(
-      `SELECT id FROM reviews WHERE visitor_id = $1 AND experience_id = $2 LIMIT 1`,
-      [visitor_id, experience_id]
-    );
-    if (existing.length > 0) {
-      return res.status(409).json({ message: 'You have already reviewed this experience.' });
-    }
-
-    const review = await Review.create({
+    const { review, updated } = await Review.upsert({
       visitor_id,
       experience_id,
       rating: ratingInt,
       comment: trimmedComment,
     });
-    return res.status(201).json(review);
+    return res.status(updated ? 200 : 201).json({ ...review, updated });
   } catch (err) {
     return res.status(500).json({ message: 'Server error', error: String(err) });
   }

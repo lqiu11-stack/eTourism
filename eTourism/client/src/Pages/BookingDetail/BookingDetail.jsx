@@ -24,6 +24,7 @@ export const MyBookingDetail = () => {
   const [quality, setQuality] = useState("");
   const [reviewComment, setReviewComment] = useState("");
   const [reviewStatus, setReviewStatus] = useState({ state: "idle", message: "" });
+  const [reviewPopup, setReviewPopup] = useState(null);
   const navigate = useNavigate();
   const location = useLocation();
   useLayoutEffect(() => {
@@ -149,7 +150,7 @@ export const MyBookingDetail = () => {
     if (reviewComment.trim()) commentParts.push(reviewComment.trim());
     setReviewStatus({ state: "submitting", message: "" });
     try {
-      await axios.post(
+      const { data } = await axios.post(
         `${API_BASE}/visitor/reviews`,
         {
           experience_id: booking.experience_id,
@@ -158,11 +159,23 @@ export const MyBookingDetail = () => {
         },
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      setReviewStatus({ state: "success", message: "Thanks for your review!" });
+      const wasUpdated = data?.updated === true;
+      const successMessage = wasUpdated
+        ? "Your previous review was updated."
+        : "Thanks for your review!";
+      setReviewStatus({ state: "success", message: successMessage });
+      setReviewPopup({
+        title: wasUpdated ? "Review updated" : "Review submitted",
+        message: successMessage,
+        tone: "success",
+      });
     } catch (err) {
-      setReviewStatus({
-        state: "error",
-        message: err?.response?.data?.message || "Failed to submit review. Please try again.",
+      const message = err?.response?.data?.message || "Failed to submit review. Please try again.";
+      setReviewStatus({ state: "error", message });
+      setReviewPopup({
+        title: "Submission failed",
+        message,
+        tone: "error",
       });
     }
   };
@@ -409,6 +422,27 @@ export const MyBookingDetail = () => {
           </div>
         </div>
       </section>
+
+      {reviewPopup && (
+        <div className="review-popup-overlay" onClick={() => setReviewPopup(null)}>
+          <div
+            className={`review-popup-card review-popup-card--${reviewPopup.tone}`}
+            onClick={(e) => e.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
+          >
+            <h3 className="review-popup-title">{reviewPopup.title}</h3>
+            <p className="review-popup-message">{reviewPopup.message}</p>
+            <button
+              className="review-popup-btn"
+              type="button"
+              onClick={() => setReviewPopup(null)}
+            >
+              OK
+            </button>
+          </div>
+        </div>
+      )}
 
       <footer className="footer">
         <div className="footer-container">

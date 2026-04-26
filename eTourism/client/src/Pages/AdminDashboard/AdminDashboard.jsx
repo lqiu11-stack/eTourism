@@ -342,7 +342,7 @@ export const Dashboard = () => {
   // ── Suitability Review ───────────────────────────────────────────────
   const [suitExps, setSuitExps] = useState([]);
   const [suitLoading, setSuitLoading] = useState(false);
-  const [suitStatusFilter, setSuitStatusFilter] = useState("approved");
+  const [suitStatusFilter, setSuitStatusFilter] = useState("pending");
   const [showSuitPanel, setShowSuitPanel] = useState(false);
   const [selectedSuitExp, setSelectedSuitExp] = useState(null);
   const [suitScores, setSuitScores] = useState([]);
@@ -438,8 +438,8 @@ export const Dashboard = () => {
       {/* ===== Tabs ===== */}
       <div className="tabs">
         {[
-          { key: "booking", label: "Manage booking" },
-          { key: "user", label: "User data" },
+          { key: "booking", label: "Bookings" },
+          { key: "user", label: "Users" },
           { key: "reports", label: "Reports" },
           { key: "suitability", label: "Suitability review" },
           { key: "request", label: "Experiences" },
@@ -544,9 +544,6 @@ export const Dashboard = () => {
             submitting={suitSubmitting}
             onOpenPanel={handleOpenSuitPanel}
             onSubmitScore={handleScoreExperience}
-            onApprove={handleApproveExperience}
-            onReject={handleRejectExperience}
-            onAfterAction={() => { setShowSuitPanel(false); fetchSuitExps(suitStatusFilter); }}
           />
         )}
         {activeTab === "network" && (
@@ -573,6 +570,33 @@ export const Dashboard = () => {
       )}
     </div>
   );
+};
+
+const STATUS_COLORS = {
+  pending:        { background: "#f4d58d", color: "#5a4012" },
+  confirmed:      { background: "#a8d5b3", color: "#1f4d2c" },
+  refund_pending: { background: "#f5b97a", color: "#5a3210" },
+  refunded:       { background: "#d3d3d3", color: "#444" },
+  cancelled:      { background: "#e0a3a3", color: "#5a1a1a" },
+  rescheduled:    { background: "#a3c4e0", color: "#1a3c5a" },
+  active:         { background: "#a8d5b3", color: "#1f4d2c" },
+  suspended:      { background: "#e0a3a3", color: "#5a1a1a" },
+};
+
+const getStatusStyle = (status) =>
+  STATUS_COLORS[status] || { background: "#eee", color: "#333" };
+
+const formatLastActive = (iso) => {
+  if (!iso) return "Never";
+  const diffMs = Date.now() - new Date(iso).getTime();
+  const min = Math.round(diffMs / 60000);
+  if (min < 1) return "Just now";
+  if (min < 60) return `${min}m ago`;
+  const hr = Math.round(min / 60);
+  if (hr < 24) return `${hr}h ago`;
+  const days = Math.round(hr / 24);
+  if (days < 30) return `${days}d ago`;
+  return new Date(iso).toLocaleDateString();
 };
 
 const Booking = ({
@@ -621,9 +645,21 @@ const Booking = ({
           <div style={{ fontSize: "13px" }}>{item.payment_method || "—"}</div>
           <div>
             {item.status === "refund_pending" ? (
-              <button className="sort-btn" onClick={() => handleRefund(item)}>refund pending</button>
+              <button
+                className="sort-btn"
+                style={{ ...getStatusStyle(item.status), padding: "4px 10px", fontSize: "12px" }}
+                onClick={() => handleRefund(item)}
+              >
+                refund pending
+              </button>
             ) : (
-              <button className="sort-btn" disabled>{item.status}</button>
+              <button
+                className="sort-btn"
+                style={{ ...getStatusStyle(item.status), padding: "4px 10px", fontSize: "12px" }}
+                disabled
+              >
+                {item.status}
+              </button>
             )}
           </div>
           <div>£{Number(item.amount_paid || 0).toFixed(2)}</div>
@@ -693,27 +729,46 @@ const UserData = ({
       </div>
 
       <div className="table-box">
-        <div className="table-header" style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr", fontWeight: "bold", borderBottom: "1px solid black", paddingBottom: "10px" }}>
+        <div className="table-header" style={{ display: "grid", gridTemplateColumns: "1.4fr 2fr 0.8fr 1fr 1fr 1.2fr", fontWeight: "bold", borderBottom: "1px solid black", paddingBottom: "10px" }}>
+          <span>Name</span>
           <span>Email</span>
           <span>Role</span>
           <span>Status</span>
+          <span>Last active</span>
           <span>Actions</span>
         </div>
         {loading && <p style={{ padding: "12px" }}>Loading...</p>}
         {!loading && filtered.length === 0 && <p style={{ padding: "12px" }}>No users found.</p>}
         {filtered.map((item) => (
-          <div className="table-row" key={item.id} style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr", alignItems: "center", padding: "10px 0", borderBottom: "1px solid #eee" }}>
+          <div className="table-row" key={item.id} style={{ display: "grid", gridTemplateColumns: "1.4fr 2fr 0.8fr 1fr 1fr 1.2fr", alignItems: "center", padding: "10px 0", borderBottom: "1px solid #eee" }}>
+            <div>{`${item.first_name ?? ""} ${item.last_name ?? ""}`.trim() || "—"}</div>
             <div>{item.email}</div>
             <div>{item.role}</div>
             <div>
-              <span style={{ color: item.status === "suspended" ? "red" : "green" }}>{item.status}</span>
+              <span
+                style={{
+                  ...getStatusStyle(item.status),
+                  padding: "4px 10px",
+                  borderRadius: "20px",
+                  fontSize: "12px",
+                  display: "inline-block",
+                }}
+              >
+                {item.status}
+              </span>
             </div>
+            <div>{formatLastActive(item.last_active)}</div>
             <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
-              <button className="sort-btn" onClick={() => { setSelectedUser({ ...item }); setShowUserModal(true); }}>
+              <button
+                className="sort-btn"
+                style={{ padding: "4px 10px", fontSize: "12px" }}
+                onClick={() => { setSelectedUser({ ...item }); setShowUserModal(true); }}
+              >
                 Edit
               </button>
               <button
                 className="sort-btn"
+                style={{ padding: "4px 10px", fontSize: "12px" }}
                 onClick={() => onUpdateStatus(item.id, item.status === "active" ? "suspended" : "active")}
               >
                 {item.status === "active" ? "Suspend" : "Activate"}
@@ -975,7 +1030,7 @@ const SuitabilityReview = ({
   experiences, loading, statusFilter, setStatusFilter,
   showPanel, setShowPanel, selectedExp, scores, scoresLoading,
   result, setResult, comment, setComment, submitting,
-  onOpenPanel, onSubmitScore, onApprove, onReject, onAfterAction,
+  onOpenPanel, onSubmitScore,
 }) => (
   <div>
     <div className="booking-top">
@@ -1030,14 +1085,6 @@ const SuitabilityReview = ({
             {selectedExp.description && (
               <p style={{ marginTop: "8px", fontSize: "13px" }}>{selectedExp.description}</p>
             )}
-            <div style={{ marginTop: "12px", display: "flex", gap: "8px" }}>
-              {selectedExp.status !== "approved" && (
-                <button className="save-btn" onClick={() => onApprove(selectedExp.id).then(onAfterAction)}>Approve</button>
-              )}
-              {selectedExp.status !== "rejected" && (
-                <button className="action-btn" onClick={() => onReject(selectedExp.id).then(onAfterAction)}>Reject</button>
-              )}
-            </div>
           </div>
 
           <div className="suit-panel-right">

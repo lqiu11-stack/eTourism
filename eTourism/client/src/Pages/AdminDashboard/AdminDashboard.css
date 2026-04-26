@@ -23,7 +23,7 @@
   border: none;
   background: #c9b5b5;
   cursor: pointer;
-  font-size: 16px;
+  font-size: 13px;
 }
 /* nav */
 .admin-navbar{
@@ -81,13 +81,13 @@
   background: #a88b8b;
   color: white;
   cursor: pointer;
-  font-size: 16px;
+  font-size: 13px;
 }
 
 .tab.active {
   background: #d8c5c5;
   color: black;
-  font-size: 16px;
+  font-size: 13px;
 }
 
 /* ===== Content ===== */
@@ -125,7 +125,7 @@
   border: none;
   background: #eee;
   cursor: pointer;
-  font-size: 16px;
+  font-size: 13px;
 }
 
 /* Table */
@@ -141,12 +141,14 @@
   font-weight: bold;
   border-bottom: 1px solid black;
   padding-bottom: 10px;
+  font-size: 13px;
 }
 .table-row {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
   align-items: center;
   padding: 10px 0;
+  font-size: 13px;
 }
 
 .user-table-header {
@@ -155,18 +157,21 @@
   font-weight: bold;
   border-bottom: 1px solid black;
   padding-bottom: 10px;
+  font-size: 13px;
 }
 .user-table-row{
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   align-items: center;
   padding: 10px 0;
+  font-size: 13px;
 }
 .request-row{
   display: grid;
   grid-template-columns: repeat(5, 1fr);
   align-items: center;
   padding: 10px 0;
+  font-size: 13px;
 }
 .report-row{
   display: grid;
@@ -419,13 +424,13 @@
   padding: 10px;
   border-radius: 15px;
   cursor: pointer;
-  font-size: 14px;
+  font-size: 13px;
 }
 
 .action-btn.active {
   background: #b97b77;
   color: white;
-  font-size: 14px;
+  font-size: 13px;
 }
 
 .refund-right textarea {
@@ -443,7 +448,7 @@
   padding: 10px;
   border-radius: 15px;
   color: white;
-  font-size: 14px;
+  font-size: 13px;
   cursor: pointer;
   transition: background 0.2s, transform 0.1s;
 }
@@ -591,7 +596,7 @@
   display: grid;
   grid-template-columns: 0.3fr 2fr 1.5fr 1.5fr 2fr;
   font-weight: 700;
-  font-size: 12px;
+  font-size: 13px;
   color: #666;
   border-bottom: 1px solid #e8dada;
   padding-bottom: 6px;
@@ -858,7 +863,7 @@
   }
   .tab {
     padding: 10px 20px;
-    font-size: 14px;
+    font-size: 13px;
     white-space: nowrap;
   }
   .booking-top {

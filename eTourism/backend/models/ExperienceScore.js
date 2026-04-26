@@ -9,21 +9,12 @@ const ExperienceScore = {
     return rows;
   },
 
-  async create({
-    experience_id, admin_id, wifi_score, safety_score, legal_score,
-    content_score, accessibility_score, description_score, pricing_score,
-    total_score, result, comment,
-  }) {
+  async create({ experience_id, admin_id, result, comment }) {
     const { rows } = await pool.query(
-      `INSERT INTO experience_scores
-         (experience_id, admin_id, wifi_score, safety_score, legal_score,
-          content_score, accessibility_score, description_score, pricing_score,
-          total_score, result, comment)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
+      `INSERT INTO experience_scores (experience_id, admin_id, result, comment)
+       VALUES ($1,$2,$3,$4)
        RETURNING *`,
-      [experience_id, admin_id, wifi_score, safety_score, legal_score,
-       content_score, accessibility_score, description_score, pricing_score,
-       total_score, result, comment]
+      [experience_id, admin_id, result, comment]
     );
     return rows[0];
   },

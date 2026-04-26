@@ -40,10 +40,21 @@ const User = {
   },
 
   async findAll({ role, status } = {}) {
-    let query = 'SELECT id, email, role, first_name, last_name, status, created_at FROM users WHERE 1=1';
+    let query = `
+      SELECT u.id, u.email, u.role, u.first_name, u.last_name, u.status, u.created_at,
+             nl.last_active
+      FROM users u
+      LEFT JOIN (
+        SELECT user_id, MAX(logged_at) AS last_active
+        FROM network_logs
+        GROUP BY user_id
+      ) nl ON nl.user_id = u.id
+      WHERE 1=1
+    `;
     const values = [];
-    if (role) { values.push(role); query += ` AND role = $${values.length}`; }
-    if (status) { values.push(status); query += ` AND status = $${values.length}`; }
+    if (role) { values.push(role); query += ` AND u.role = $${values.length}`; }
+    if (status) { values.push(status); query += ` AND u.status = $${values.length}`; }
+    query += ' ORDER BY u.id ASC';
     const { rows } = await pool.query(query, values);
     return rows;
   },

@@ -252,7 +252,7 @@ export const DetailPage = () => {
             <div className="detail-video-left">
               <h3>Recommended by Travel Bloggers</h3>
               <p>Book the ticket and join us!</p>
-              <img src={blog} alt="blogger"/>
+              {/* <img src={blog} alt="blogger"/> */}
             </div>
           </section>
 
