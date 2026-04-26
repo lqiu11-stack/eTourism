@@ -107,7 +107,6 @@ export const MainPage = () => {
         <div className="hero-overlay" />
 
         <div className="hero-content">
-
           <nav className="navbar">
             <div className="nav-links">
               <a className="Text">

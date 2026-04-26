@@ -6,7 +6,7 @@
 /* Card */
 .Mybooking-hero {
   height: 250px;
-  background-image: url("../icon/mainback.png");
+  /* background-image: url("../icon/mainback.png"); */
   background-size: cover;
   background-position: center;
   position: relative;

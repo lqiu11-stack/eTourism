@@ -9,7 +9,7 @@
 .hero{
   position:relative;
   height:650px;
-  background-image:url("../icon/mainback.png");
+  /* background-image:url("../icon/mainback.png"); */
   background-size:cover;
   background-position:center;
 }
@@ -582,7 +582,7 @@
 
 .big-card{
   height: 390px;
-  background-image: url("../icon/thai.png");
+  background-image: url("../icon/asia.jpg");
   background-size: cover;
   background-position: center 20%;
   position: relative;
@@ -636,11 +636,11 @@
 }
 
 .tall-card:nth-child(1){
-  background-image: url("../icon/museum.png");
+  background-image: url("../icon/europe.jpeg");
 }
 
 .tall-card:nth-child(2){
-  background-image: url("../icon/zoo.png");
+  background-image: url("../icon/african.jpg");
 }
 
 .tall-card::before{
