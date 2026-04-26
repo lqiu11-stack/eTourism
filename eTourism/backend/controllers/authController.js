@@ -157,7 +157,17 @@ const login = async (req, res) => {
   }
 };
 
-const googleLogin = async (req, res) => {
+const LEGACY_PLACEHOLDER_DOB = '2000-01-01';
+
+const dobIsLegacyPlaceholder = (dob) => {
+  if (!dob) return false;
+  if (dob instanceof Date) {
+    return dob.toISOString().slice(0, 10) === LEGACY_PLACEHOLDER_DOB;
+  }
+  return String(dob).slice(0, 10) === LEGACY_PLACEHOLDER_DOB;
+};
+
+const oauthLogin = (provider) => async (req, res) => {
   try {
     if (!process.env.DATABASE_URL) {
       return res.status(503).json({ error: 'DATABASE_URL is not configured' });
@@ -167,24 +177,23 @@ const googleLogin = async (req, res) => {
     }
     const { email, name } = req.body;
     if (!email) {
-      return res.status(400).json({ error: 'Email is required' });
+      const msg = provider === 'facebook'
+        ? 'Email is required. Please ensure your Facebook account is linked to an email.'
+        : 'Email is required';
+      return res.status(400).json({ error: msg });
     }
-    let user = await User.findByEmail(email);
+
+    const user = await User.findByEmail(email);
     if (!user) {
-      const nameParts = name ? String(name).trim().split(' ') : ['Google', 'User'];
-      const first_name = nameParts[0];
-      const last_name = nameParts.length > 1 ? nameParts.slice(1).join(' ') : '';
-      user = await User.create({
-        email,
-        password_hash: 'GOOGLE_AUTH_NO_PASSWORD',
-        role: 'visitor',
-        first_name,
-        last_name,
-        date_of_birth: '2000-01-01',
-        country: null,
-        language: null,
-      });
+      return res.json({ status: 'profile_required', email, name: name || '', provider });
     }
+
+    const agreement = await UserAgreement.findByUser(user.id);
+    const ageVerified = Boolean(agreement && agreement.is_over_18) && !dobIsLegacyPlaceholder(user.date_of_birth);
+    if (!ageVerified) {
+      return res.json({ status: 'profile_required', email, name: name || '', provider });
+    }
+
     const token = jwt.sign(
       { userId: user.id, role: user.role },
       process.env.JWT_SECRET,
@@ -193,13 +202,16 @@ const googleLogin = async (req, res) => {
     const { password_hash, ...userInfo } = user;
     res.json({ token, user: userInfo });
   } catch (err) {
-    console.error('[googleLogin]', err);
-    const message = err.message || 'Google login failed';
+    console.error(`[${provider}Login]`, err);
+    const message = err.message || `${provider} login failed`;
     res.status(500).json({ error: message });
   }
 };
 
-const facebookLogin = async (req, res) => {
+const googleLogin = oauthLogin('google');
+const facebookLogin = oauthLogin('facebook');
+
+const completeOAuthProfile = async (req, res) => {
   try {
     if (!process.env.DATABASE_URL) {
       return res.status(503).json({ error: 'DATABASE_URL is not configured' });
@@ -207,38 +219,105 @@ const facebookLogin = async (req, res) => {
     if (!process.env.JWT_SECRET) {
       return res.status(503).json({ error: 'JWT_SECRET is not configured' });
     }
-    const { email, name } = req.body;
-    
+    const {
+      email,
+      provider,
+      first_name: firstNameInput,
+      last_name: lastNameInput,
+      date_of_birth,
+      country,
+      bio,
+      profile_image,
+      accepted_terms,
+      accepted_behaviour,
+      accepted_recording,
+      payment_method_on_file,
+    } = req.body;
+
     if (!email) {
-      return res.status(400).json({ error: 'Email is required. Please ensure your Facebook account is linked to an email.' });
+      return res.status(400).json({ error: 'Email is required' });
     }
-    
+    if (provider !== 'google' && provider !== 'facebook') {
+      return res.status(400).json({ error: 'Unsupported provider' });
+    }
+    const first_name = firstNameInput ? String(firstNameInput).trim() : '';
+    const last_name = lastNameInput ? String(lastNameInput).trim() : '';
+    if (!first_name) {
+      return res.status(400).json({ error: 'First name is required' });
+    }
+    if (!date_of_birth) {
+      return res.status(400).json({ error: 'Date of birth is required' });
+    }
+    const age = calculateAge(date_of_birth);
+    if (age === null) {
+      return res.status(400).json({ error: 'Invalid date of birth' });
+    }
+    if (age < 18) {
+      return res.status(400).json({ error: 'You must be at least 18 years old to register' });
+    }
+    if (!accepted_terms || !accepted_behaviour || !accepted_recording) {
+      return res.status(400).json({
+        error: 'You must accept the terms, behaviour rules, and recording consent to register',
+      });
+    }
+    if (!payment_method_on_file) {
+      return res.status(400).json({
+        error: 'You must confirm you have a valid payment method on file',
+      });
+    }
+
+    const placeholderHash = `${provider.toUpperCase()}_AUTH_NO_PASSWORD`;
     let user = await User.findByEmail(email);
-    if (!user) {
-      const nameParts = name ? String(name).trim().split(' ') : ['Facebook', 'User'];
-      const first_name = nameParts[0];
-      const last_name = nameParts.length > 1 ? nameParts.slice(1).join(' ') : '';
+    if (user) {
+      user = await User.update(user.id, {
+        first_name,
+        last_name,
+        date_of_birth,
+        country: country || null,
+        bio: bio || null,
+        profile_image: profile_image || null,
+        auth_provider: provider,
+      });
+    } else {
       user = await User.create({
         email,
-        password_hash: 'FACEBOOK_AUTH_NO_PASSWORD',
+        password_hash: placeholderHash,
         role: 'visitor',
         first_name,
         last_name,
-        date_of_birth: '2000-01-01',
-        country: null,
+        date_of_birth,
+        country: country || null,
         language: null,
+        bio: bio || null,
+        profile_image: profile_image || null,
+        auth_provider: provider,
       });
     }
+
+    try {
+      await UserAgreement.upsert({
+        user_id: user.id,
+        is_over_18: true,
+        accepted_terms: true,
+        accepted_behaviour: true,
+        accepted_recording: true,
+        payment_method_on_file: Boolean(payment_method_on_file),
+      });
+    } catch (agreementErr) {
+      console.error('[completeOAuthProfile agreement]', agreementErr);
+      return res.status(500).json({ error: 'Failed to record user agreement' });
+    }
+
     const token = jwt.sign(
       { userId: user.id, role: user.role },
       process.env.JWT_SECRET,
       { expiresIn: '7d' }
     );
     const { password_hash, ...userInfo } = user;
-    res.json({ token, user: userInfo });
+    res.status(201).json({ token, user: userInfo });
   } catch (err) {
-    console.error('[facebookLogin]', err);
-    const message = err.message || 'Facebook login failed';
+    console.error('[completeOAuthProfile]', err);
+    const message = err.message || 'Profile completion failed';
     res.status(500).json({ error: message });
   }
 };
@@ -293,5 +372,5 @@ const resetPassword = async (req, res) => {
   }
 };
 
-module.exports = { register, login, resetPassword, googleLogin, facebookLogin, checkEmail };
+module.exports = { register, login, resetPassword, googleLogin, facebookLogin, completeOAuthProfile, checkEmail };
 

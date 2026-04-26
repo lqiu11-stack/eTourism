@@ -1,5 +1,5 @@
 const router = require('express').Router();
-const { register, login, resetPassword, googleLogin,facebookLogin, checkEmail } = require('../controllers/authController');
+const { register, login, resetPassword, googleLogin, facebookLogin, completeOAuthProfile, checkEmail } = require('../controllers/authController');
 
 // POST /api/auth/register
 router.post('/register', register);
@@ -18,5 +18,8 @@ router.post('/google', googleLogin);
 
 // POST /api/auth/facebookLogin
 router.post('/facebook', facebookLogin);
+
+// POST /api/auth/complete-oauth-profile
+router.post('/complete-oauth-profile', completeOAuthProfile);
 
 module.exports = router;
