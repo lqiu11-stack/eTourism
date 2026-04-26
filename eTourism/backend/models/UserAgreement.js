@@ -30,6 +30,27 @@ const UserAgreement = {
     );
     return rows[0] || null;
   },
+
+  async upsert({ user_id, is_over_18, accepted_terms, accepted_behaviour, accepted_recording, payment_method_on_file }) {
+    const existing = await this.findByUser(user_id);
+    if (existing) {
+      return this.update(user_id, {
+        is_over_18,
+        accepted_terms,
+        accepted_behaviour,
+        accepted_recording,
+        payment_method_on_file,
+      });
+    }
+    return this.create({
+      user_id,
+      is_over_18,
+      accepted_terms,
+      accepted_behaviour,
+      accepted_recording,
+      payment_method_on_file,
+    });
+  },
 };
 
 module.exports = UserAgreement;

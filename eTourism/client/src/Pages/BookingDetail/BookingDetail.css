@@ -67,6 +67,12 @@
   margin:10px 5px;
   font-size: 20px;
 }
+.booking-title-link {
+  cursor: pointer;
+}
+.booking-title-link:hover {
+  text-decoration: underline;
+}
 .booking-info p{
   margin:10px 5px;
   font-size: 18px;

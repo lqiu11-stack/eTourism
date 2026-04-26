@@ -182,7 +182,7 @@ const refundAmount = Number(booking?.amount_paid || 0) * refundRate;
           <p>{experience?.date_time ? formatDate(experience.date_time) : ""}</p>
         </div>
 
-        <button className="service-btn">customer service</button>
+        {/* <button className="service-btn">customer service</button> */}
       </div>
 
       {/* ===== REFUND SECTION ===== */}
@@ -245,7 +245,7 @@ const refundAmount = Number(booking?.amount_paid || 0) * refundRate;
 
               <button
                 className="cancel-btn"
-                disabled={!agreed || submitting}
+                disabled={!agreed || submitting || refundStatus === "none"}
                 onClick={handleSubmitRefund}
               >
                 {submitting ? "Submitting..." : "Cancel booking"}

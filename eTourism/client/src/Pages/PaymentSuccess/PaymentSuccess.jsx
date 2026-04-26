@@ -7,6 +7,7 @@ import link2Icon from "../icon/link-2.png";
 import approveIcon from "../icon/approve.png";
 import enjoyIcon from "../icon/enjoy.png";
 import success from "../icon/success.png";
+import { saveBookingToCalendar } from "../../utils/calendar";
 const API_BASE = import.meta.env.VITE_API_URL;
 
 const formatDate = (dt) => {
@@ -147,7 +148,12 @@ export const PaymentSuccessPage = () => {
 
               <div className="schedual">
                 <p>Stream start at {formatDate(experience.date_time)}</p>
-                <button className="calendar-btn">Save to calendar</button>
+                <button
+                  className="calendar-btn"
+                  onClick={() => saveBookingToCalendar(booking, experience)}
+                >
+                  Save to calendar
+                </button>
               </div>
 
               {booking.contact_name && (
@@ -215,8 +221,8 @@ export const PaymentSuccessPage = () => {
                   ? 'Already refunded'
                   : 'Apply for the refund'}
               </button>
-              <button>Reschedule</button>
-              <button>Contact customer service</button>
+              {/* <button>Reschedule</button> */}
+              {/* <button>Contact customer service</button> */}
             </div>
           </div>
         </div>

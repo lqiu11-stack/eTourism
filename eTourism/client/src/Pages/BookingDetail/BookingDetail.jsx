@@ -7,6 +7,7 @@ import link2Icon from "../icon/link-2.png";
 import approveIcon from "../icon/approve.png";
 import enjoyIcon from "../icon/enjoy.png";
 import { useLayoutEffect } from "react";
+import { saveBookingToCalendar } from "../../utils/calendar";
 
 
 
@@ -226,7 +227,21 @@ export const MyBookingDetail = () => {
             <img src={coverImage} className="booking-img" alt={experience.title} />
 
             <div className="booking-info">
-              <h4>{experience.title}</h4>
+              <h4
+                className="booking-title-link"
+                role="button"
+                tabIndex={0}
+                onClick={() => { navigate(`/DetailPage?id=${booking.experience_id}`); window.scrollTo(0, 0); }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    navigate(`/DetailPage?id=${booking.experience_id}`);
+                    window.scrollTo(0, 0);
+                  }
+                }}
+              >
+                {experience.title}
+              </h4>
 
               <div className="schedual">
                 <p>Stream start at {formatDate(experience.date_time)}</p>
@@ -235,7 +250,12 @@ export const MyBookingDetail = () => {
                 booking.status !== "refund_pending" &&
                 booking.status !== "cancelled" &&
                 booking.status !== "refunded" && (
-                  <button className="calendar-btn">Save to calendar</button>
+                  <button
+                    className="calendar-btn"
+                    onClick={() => saveBookingToCalendar(booking, experience)}
+                  >
+                    Save to calendar
+                  </button>
                 )}
 
               </div>
@@ -259,9 +279,7 @@ export const MyBookingDetail = () => {
                   </span>
                 ) : (
                   isPast ? (
-                    <button className="primary-btn">
-                      Contact customer service
-                    </button>
+                    null /* <button className="primary-btn">Contact customer service</button> */
                   ) : isWithin2h && booking.meeting_link ? (
                     <a
                       href={booking.meeting_link}
@@ -329,9 +347,9 @@ export const MyBookingDetail = () => {
                   ? 'Already refunded'
                   : 'Apply for refund'}
               </button>
-              <button
+              {/* <button
                 disabled={['refund_pending', 'refunded'].includes(booking?.status)}
-              >Reschedule</button>
+              >Reschedule</button> */}
             </div>
           </div>
         </div>
