@@ -71,22 +71,12 @@ export const EhostDashboard = () => {
     navigate("/login");
   };
 
-  const handleJoinStream = async (experienceId) => {
-    try {
-      const { data } = await axios.get(`${API_BASE}/ehost/bookings`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const bookings = Array.isArray(data?.data) ? data.data : [];
-      const match = bookings.find(
-        (b) => Number(b.experience_id) === Number(experienceId) && b.meeting_config?.link
-      );
-      if (match?.meeting_config?.link) {
-        window.open(match.meeting_config.link, "_blank", "noopener,noreferrer");
-      } else {
-        alert("No meeting link configured yet. Please set one for this experience's booking.");
-      }
-    } catch {
-      alert("Failed to load bookings. Please try again.");
+  const handleJoinStream = (exp) => {
+    const link = exp?.meeting_link;
+    if (link) {
+      window.open(link, "_blank", "noopener,noreferrer");
+    } else {
+      alert("No meeting link configured yet. Please edit this experience to add one.");
     }
   };
 
@@ -146,7 +136,7 @@ export const EhostDashboard = () => {
     } else if (exp.status === "approved" && isFuture) {
       statusNode = null;
       button = (
-        <button className="eh-row-btn" onClick={stop(() => handleJoinStream(exp.id))}>
+        <button className="eh-row-btn" onClick={stop(() => handleJoinStream(exp))}>
           Join the stream
         </button>
       );
