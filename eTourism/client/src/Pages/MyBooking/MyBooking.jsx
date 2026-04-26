@@ -184,7 +184,7 @@ export const MyBooking = () => {
         ))}
       </div>
 
-      <section className="detail-newsletter">
+      <section className="newsletter">
         <div className="newsletter-overlay"></div>
         <div className="newsletter-content">
           <h2>Get Your Travel Inspiration</h2>

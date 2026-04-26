@@ -10,7 +10,7 @@
   min-height: 100vh;
   overflow: hidden;
 
-  background-image: url("../icon/loginback.png");
+  background-image: url("../icon/ehost.jpg");
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
@@ -47,7 +47,7 @@
 .join-box{
   display: flex;
   flex-direction: column;
-  gap: 1rem;                 /* spacing between items */
+  gap: 0.8rem;                 /* spacing between items */
   padding: 4rem 0rem 1.5rem 1rem;    
 }
 
