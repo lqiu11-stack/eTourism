@@ -215,7 +215,7 @@ export const PaymentSuccessPage = () => {
                   ? 'Already refunded'
                   : 'Apply for the refund'}
               </button>
-              <button>Reschedule</button>
+              {/* <button>Reschedule</button> */}
               <button>Contact customer service</button>
             </div>
           </div>

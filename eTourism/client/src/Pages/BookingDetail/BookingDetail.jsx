@@ -329,9 +329,9 @@ export const MyBookingDetail = () => {
                   ? 'Already refunded'
                   : 'Apply for refund'}
               </button>
-              <button
+              {/* <button
                 disabled={['refund_pending', 'refunded'].includes(booking?.status)}
-              >Reschedule</button>
+              >Reschedule</button> */}
             </div>
           </div>
         </div>
