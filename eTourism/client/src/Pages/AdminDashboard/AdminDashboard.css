@@ -23,7 +23,7 @@
   border: none;
   background: #c9b5b5;
   cursor: pointer;
-  font-size: 16px;
+  font-size: 13px;
 }
 /* nav */
 .admin-navbar{
@@ -81,13 +81,13 @@
   background: #a88b8b;
   color: white;
   cursor: pointer;
-  font-size: 16px;
+  font-size: 13px;
 }
 
 .tab.active {
   background: #d8c5c5;
   color: black;
-  font-size: 16px;
+  font-size: 13px;
 }
 
 /* ===== Content ===== */
@@ -125,7 +125,7 @@
   border: none;
   background: #eee;
   cursor: pointer;
-  font-size: 16px;
+  font-size: 13px;
 }
 
 /* Table */
@@ -424,13 +424,13 @@
   padding: 10px;
   border-radius: 15px;
   cursor: pointer;
-  font-size: 14px;
+  font-size: 13px;
 }
 
 .action-btn.active {
   background: #b97b77;
   color: white;
-  font-size: 14px;
+  font-size: 13px;
 }
 
 .refund-right textarea {
@@ -448,7 +448,7 @@
   padding: 10px;
   border-radius: 15px;
   color: white;
-  font-size: 14px;
+  font-size: 13px;
   cursor: pointer;
   transition: background 0.2s, transform 0.1s;
 }
@@ -863,7 +863,7 @@
   }
   .tab {
     padding: 10px 20px;
-    font-size: 14px;
+    font-size: 13px;
     white-space: nowrap;
   }
   .booking-top {

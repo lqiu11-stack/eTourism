@@ -575,6 +575,18 @@ export const Dashboard = () => {
   );
 };
 
+const STATUS_COLORS = {
+  pending:        { background: "#f4d58d", color: "#5a4012" },
+  confirmed:      { background: "#a8d5b3", color: "#1f4d2c" },
+  refund_pending: { background: "#f5b97a", color: "#5a3210" },
+  refunded:       { background: "#d3d3d3", color: "#444" },
+  cancelled:      { background: "#e0a3a3", color: "#5a1a1a" },
+  rescheduled:    { background: "#a3c4e0", color: "#1a3c5a" },
+};
+
+const getStatusStyle = (status) =>
+  STATUS_COLORS[status] || { background: "#eee", color: "#333" };
+
 const Booking = ({
   bookings, loading,
   showRefundPanel, selectedBooking, action, rejectReason,
@@ -621,9 +633,21 @@ const Booking = ({
           <div style={{ fontSize: "13px" }}>{item.payment_method || "—"}</div>
           <div>
             {item.status === "refund_pending" ? (
-              <button className="sort-btn" onClick={() => handleRefund(item)}>refund pending</button>
+              <button
+                className="sort-btn"
+                style={{ ...getStatusStyle(item.status), padding: "4px 10px", fontSize: "12px" }}
+                onClick={() => handleRefund(item)}
+              >
+                refund pending
+              </button>
             ) : (
-              <button className="sort-btn" disabled>{item.status}</button>
+              <button
+                className="sort-btn"
+                style={{ ...getStatusStyle(item.status), padding: "4px 10px", fontSize: "12px" }}
+                disabled
+              >
+                {item.status}
+              </button>
             )}
           </div>
           <div>£{Number(item.amount_paid || 0).toFixed(2)}</div>
