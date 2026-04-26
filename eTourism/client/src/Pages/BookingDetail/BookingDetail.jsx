@@ -273,9 +273,7 @@ export const MyBookingDetail = () => {
                   </span>
                 ) : (
                   isPast ? (
-                    <button className="primary-btn">
-                      Contact customer service
-                    </button>
+                    null /* <button className="primary-btn">Contact customer service</button> */
                   ) : isWithin2h && booking.meeting_link ? (
                     <a
                       href={booking.meeting_link}

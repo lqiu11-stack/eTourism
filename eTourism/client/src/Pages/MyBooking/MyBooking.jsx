@@ -76,7 +76,7 @@ export const MyBooking = () => {
       return (
         <div className="Mybooking-card-actions" onClick={stop}>
           <button className="Mybooking-small-btn">Check the refund process</button>
-          <button className="Mybooking-small-btn">Customer service</button>
+          {/* <button className="Mybooking-small-btn">Customer service</button> */}
         </div>
       );
     }
@@ -86,7 +86,7 @@ export const MyBooking = () => {
       return (
         <div className="Mybooking-card-actions" onClick={stop}>
           <button className="Mybooking-small-btn">Tell us your feedback</button>
-          <button className="Mybooking-small-btn">Customer service</button>
+          {/* <button className="Mybooking-small-btn">Customer service</button> */}
         </div>
       );
     }
