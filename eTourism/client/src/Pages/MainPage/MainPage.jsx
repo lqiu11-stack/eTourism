@@ -189,6 +189,7 @@ export const MainPage = () => {
                     className="textbox-word"
                     type="date"
                     value={searchDate}
+                    min={new Date().toISOString().split("T")[0]}
                     onChange={(e) => setSearchDate(e.target.value)}
                     style={{ position: "absolute", opacity: 0, pointerEvents: "none" }}
                   />

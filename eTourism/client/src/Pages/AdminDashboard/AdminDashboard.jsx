@@ -292,7 +292,26 @@ export const Dashboard = () => {
     if (activeTab === "EhostJoin") fetchApplications(appStatusFilter);
     if (activeTab === "reports") fetchAnalytics();
     if (activeTab === "suitability") fetchSuitExps(suitStatusFilter);
+    if (activeTab === "network") fetchNetworkSummary();
   }, [activeTab]);
+
+  // ── Network issues ───────────────────────────────────────────────────
+  const [networkSummary, setNetworkSummary] = useState(null);
+  const [networkLoading, setNetworkLoading] = useState(false);
+
+  const fetchNetworkSummary = useCallback(async () => {
+    setNetworkLoading(true);
+    try {
+      const { data } = await axios.get(`${API_BASE}/network-logs/admin/summary`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setNetworkSummary(data);
+    } catch {
+      setNetworkSummary(null);
+    } finally {
+      setNetworkLoading(false);
+    }
+  }, [token]);
 
   // ── Analytics / Reports ──────────────────────────────────────────────
   const [analytics, setAnalytics] = useState(null);
@@ -417,6 +436,7 @@ export const Dashboard = () => {
           { key: "suitability", label: "Suitability review" },
           { key: "request", label: "Experiences" },
           { key: "EhostJoin", label: "E-hosts" },
+          { key: "network", label: "Network issues" },
         ].map(({ key, label }) => (
           <button
             key={key}
@@ -520,6 +540,9 @@ export const Dashboard = () => {
             onReject={handleRejectExperience}
             onAfterAction={() => { setShowSuitPanel(false); fetchSuitExps(suitStatusFilter); }}
           />
+        )}
+        {activeTab === "network" && (
+          <NetworkIssues summary={networkSummary} loading={networkLoading} />
         )}
       </div>
 
@@ -1127,3 +1150,76 @@ const EhostApplications = ({
     )}
   </div>
 );
+
+const NetworkIssues = ({ summary, loading }) => {
+  if (loading) return <div className="ad-network-empty">Loading network issues…</div>;
+  if (!summary) return <div className="ad-network-empty">Failed to load network issues.</div>;
+
+  const { users = [], experiences = [], window_hours = 168 } = summary;
+  const days = Math.round(window_hours / 24);
+
+  return (
+    <div className="ad-network">
+      <p className="ad-network-intro">
+        Connection issues recorded in the last {days} day{days === 1 ? "" : "s"}.
+        Rows flagged in orange exceed the unreliable-connection threshold.
+      </p>
+
+      <h3 className="ad-network-section-title">Top users with issues</h3>
+      {users.length === 0 ? (
+        <div className="ad-network-empty">No user issues recorded.</div>
+      ) : (
+        <table className="ad-network-table">
+          <thead>
+            <tr>
+              <th>User</th>
+              <th>Email</th>
+              <th>Role</th>
+              <th>Issues</th>
+              <th>Total</th>
+              <th>Ratio</th>
+            </tr>
+          </thead>
+          <tbody>
+            {users.map((u) => (
+              <tr key={u.user_id} className={u.is_poor ? "ad-network-row-warn" : ""}>
+                <td>{[u.first_name, u.last_name].filter(Boolean).join(" ") || `User ${u.user_id}`}</td>
+                <td>{u.email || "—"}</td>
+                <td>{u.role || "—"}</td>
+                <td>{u.poor_count}</td>
+                <td>{u.total}</td>
+                <td>{Math.round(u.poor_ratio * 100)}%</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+
+      <h3 className="ad-network-section-title">Top experiences with issues</h3>
+      {experiences.length === 0 ? (
+        <div className="ad-network-empty">No experience issues recorded.</div>
+      ) : (
+        <table className="ad-network-table">
+          <thead>
+            <tr>
+              <th>Experience</th>
+              <th>Issues</th>
+              <th>Total</th>
+              <th>Ratio</th>
+            </tr>
+          </thead>
+          <tbody>
+            {experiences.map((e) => (
+              <tr key={e.experience_id} className={e.is_poor ? "ad-network-row-warn" : ""}>
+                <td>{e.title || `Experience ${e.experience_id}`}</td>
+                <td>{e.poor_count}</td>
+                <td>{e.total}</td>
+                <td>{Math.round(e.poor_ratio * 100)}%</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+    </div>
+  );
+};

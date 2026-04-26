@@ -375,3 +375,35 @@
     padding: 20px;
   }
 }
+
+.eh-network-tile {
+  margin-top: 16px;
+  padding: 14px 16px;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 10px;
+}
+
+.eh-network-tile--warn {
+  background: #fff7ed;
+  border-color: #fed7aa;
+}
+
+.eh-network-tile-title {
+  font-weight: 600;
+  font-size: 14px;
+  color: #1f2937;
+  margin-bottom: 4px;
+}
+
+.eh-network-tile-stats {
+  font-size: 13px;
+  color: #374151;
+}
+
+.eh-network-tile-hint {
+  margin-top: 8px;
+  font-size: 12px;
+  color: #9a3412;
+  line-height: 1.4;
+}

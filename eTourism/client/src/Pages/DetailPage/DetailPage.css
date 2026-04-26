@@ -426,3 +426,14 @@
     font-size: 44px;
   }
 }
+
+.detail-network-warning {
+  margin: 8px 0;
+  padding: 10px 12px;
+  background: #fff7ed;
+  border: 1px solid #fed7aa;
+  border-radius: 6px;
+  color: #9a3412;
+  font-size: 13px;
+  line-height: 1.4;
+}

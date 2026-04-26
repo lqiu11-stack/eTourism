@@ -6,6 +6,7 @@ const visitorRoutes = require('./visitor');
 const ehostRoutes = require('./ehost');
 const reviewsRoutes = require('./reviews');
 const experiencesRoutes = require('./experiences');
+const networkLogsRoutes = require('./networkLogs');
 
 router.use('/auth', authRoutes);
 router.use('/admin', adminRoutes);
@@ -13,5 +14,6 @@ router.use('/visitor', visitorRoutes);
 router.use('/ehost', ehostRoutes);
 router.use('/reviews', reviewsRoutes);
 router.use('/experiences', experiencesRoutes);
+router.use('/network-logs', networkLogsRoutes);
 
 module.exports = router;

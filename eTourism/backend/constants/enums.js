@@ -260,6 +260,11 @@ const USER_ROLES = ['visitor', 'ehost', 'admin'];
 
 const USER_STATUSES = ['active', 'suspended'];
 
+const NETWORK_QUALITIES = ['good', 'slow', 'failed', 'offline'];
+const NETWORK_POOR_QUALITIES = ['slow', 'failed', 'offline'];
+const NETWORK_POOR_RATIO_THRESHOLD = 0.3;
+const NETWORK_POOR_MIN_SAMPLES = 5;
+
 module.exports = {
   CATEGORIES,
   LANGUAGES,
@@ -275,4 +280,8 @@ module.exports = {
   APPLICATION_STATUSES,
   USER_ROLES,
   USER_STATUSES,
+  NETWORK_QUALITIES,
+  NETWORK_POOR_QUALITIES,
+  NETWORK_POOR_RATIO_THRESHOLD,
+  NETWORK_POOR_MIN_SAMPLES,
 };

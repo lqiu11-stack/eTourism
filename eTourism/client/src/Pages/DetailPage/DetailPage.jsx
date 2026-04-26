@@ -5,8 +5,9 @@ import videoImg from "../icon/livecover.png";
 import head from "../icon/head.png";
 import { useNavigate, useSearchParams, Link, useLocation } from "react-router-dom";
 import backIcon from "../icon/back.png";
-import blog from "../icon/blogger.png";
+// import blog from "../icon/blogger.png";
 import { toYouTubeEmbed } from "../../utils/youtube";
+import { setExperienceContext } from "../../utils/networkMonitor";
 
 const API_BASE = import.meta.env.VITE_API_URL;
 
@@ -40,6 +41,7 @@ export const DetailPage = () => {
 
   const [experience, setExperience] = useState(null);
   const [reviews, setReviews] = useState([]);
+  const [networkWarning, setNetworkWarning] = useState(null);
 
   const handleLogout = () => {
     localStorage.removeItem("token");
@@ -51,13 +53,30 @@ export const DetailPage = () => {
     window.scrollTo(0, 0);
     const id = searchParams.get("id");
     if (!id) return;
+    setExperienceContext(id);
     axios.get(`${API_BASE}/visitor/experiences/${id}`)
       .then(({ data }) => setExperience(data))
       .catch(() => {});
     axios.get(`${API_BASE}/visitor/reviews?experience_id=${id}`)
       .then(({ data }) => setReviews(data))
       .catch(() => {});
-  }, [searchParams]);
+    if (token) {
+      axios.get(`${API_BASE}/network-logs/experience/${id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+        .then(({ data }) => {
+          if (data?.experience?.is_poor || data?.ehost?.is_poor) {
+            setNetworkWarning(
+              "Heads up: this host has had connection issues recently. Sessions may be interrupted."
+            );
+          } else {
+            setNetworkWarning(null);
+          }
+        })
+        .catch(() => {});
+    }
+    return () => setExperienceContext(null);
+  }, [searchParams, token]);
 
   return (
     <div className="tour-page">
@@ -114,6 +133,12 @@ export const DetailPage = () => {
             <h3>Live Start</h3>
             <p>{experience ? new Date(experience.date_time).toLocaleString() : ""}</p>
             <p>{experience ? `£${experience.price} / per ticket` : ""}</p>
+
+            {networkWarning && (
+              <p className="detail-network-warning" role="status">
+                {networkWarning}
+              </p>
+            )}
 
             {(() => {
               const isPast = experience?.date_time && new Date(experience.date_time).getTime() <= Date.now();

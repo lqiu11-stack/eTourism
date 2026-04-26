@@ -29,6 +29,7 @@ export const EhostDashboard = () => {
   const [loading, setLoading] = useState(false);
   const [rejectionModal, setRejectionModal] = useState({ open: false, reason: "", title: "" });
   const [deleteModal, setDeleteModal] = useState({ open: false, id: null, title: "" });
+  const [networkQuality, setNetworkQuality] = useState(null);
 
   useEffect(() => {
     if (!token || user.role !== "ehost") {
@@ -54,6 +55,15 @@ export const EhostDashboard = () => {
   useEffect(() => {
     fetchExperiences();
   }, [fetchExperiences]);
+
+  useEffect(() => {
+    if (!token) return;
+    axios.get(`${API_BASE}/network-logs/me`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then(({ data }) => setNetworkQuality(data))
+      .catch(() => {});
+  }, [token]);
 
   const handleLogout = () => {
     localStorage.removeItem("token");
@@ -226,6 +236,26 @@ export const EhostDashboard = () => {
             <span>Update profile</span>
           </button>
         </div>
+        {networkQuality && networkQuality.total > 0 && (
+          <div
+            className={`eh-network-tile${networkQuality.is_poor ? " eh-network-tile--warn" : ""}`}
+          >
+            <div className="eh-network-tile-title">Connection quality (last 7 days)</div>
+            <div className="eh-network-tile-stats">
+              {networkQuality.poor_count} issue{networkQuality.poor_count === 1 ? "" : "s"}
+              {" out of "}
+              {networkQuality.total} request{networkQuality.total === 1 ? "" : "s"}
+              {" ("}
+              {Math.round(networkQuality.poor_ratio * 100)}%{")"}
+            </div>
+            {networkQuality.is_poor && (
+              <div className="eh-network-tile-hint">
+                Your sessions have been unstable. Consider switching to a wired
+                connection or moving closer to your router before going live.
+              </div>
+            )}
+          </div>
+        )}
       </section>
 
       <section className="eh-section">

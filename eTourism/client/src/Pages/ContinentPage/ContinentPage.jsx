@@ -7,6 +7,9 @@ import continentIcon from "../icon/continents.png";
 import dateIcon from "../icon/calendar.png";
 import filterIcon from "../icon/filter.png";
 import backIcon from "../icon/back.png";
+import africanImg from "../icon/african.jpg";
+import asiaImg from "../icon/asia.jpg";
+import europeImg from "../icon/europe.jpeg";
 import { CONTINENTS } from "../../constants/enums";
 import { useExperiences } from "../../hooks/useExperiences";
 import { useAuth } from "../../utils/auth";
@@ -15,6 +18,12 @@ import { ExperienceCard } from "../../components/ExperienceCard";
 
 const VALID_CONTINENTS = CONTINENTS.filter(c => c !== "Antarctica");
 const ALL_VALUE = "all";
+
+const CONTINENT_BG = {
+  Africa: africanImg,
+  Asia: asiaImg,
+  Europe: europeImg,
+};
 
 export const ContinentPage = () => {
   const navigate = useNavigate();
@@ -26,6 +35,7 @@ export const ContinentPage = () => {
   const lockedContinent = isAll
     ? null
     : VALID_CONTINENTS.includes(continent) ? continent : null;
+  const heroBg = lockedContinent ? CONTINENT_BG[lockedContinent] : null;
 
   const parseList = (value) => (value ? value.split(",").map(v => v.trim()).filter(Boolean) : []);
 
@@ -89,7 +99,10 @@ export const ContinentPage = () => {
   return (
     <div className="main-page continent-page">
 
-      <section className="hero">
+      <section
+        className="hero"
+        style={heroBg ? { backgroundImage: `url(${heroBg})` } : undefined}
+      >
         <div className="hero-overlay" />
 
         <div className="hero-content">
