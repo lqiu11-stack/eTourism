@@ -66,9 +66,19 @@ async function getExperienceQuality(req, res) {
   }
 }
 
+const ALLOWED_WINDOW_HOURS = new Set([24, 168, 720]);
+
 async function getAdminSummary(req, res) {
   try {
-    const summary = await NetworkLog.adminSummary({ limit: 50 });
+    let sinceHours = 168;
+    if (req.query.hours !== undefined) {
+      const parsed = parseInt(req.query.hours, 10);
+      if (!ALLOWED_WINDOW_HOURS.has(parsed)) {
+        return res.status(400).json({ error: 'Invalid hours value' });
+      }
+      sinceHours = parsed;
+    }
+    const summary = await NetworkLog.adminSummary({ limit: 50, sinceHours });
     res.json(summary);
   } catch (err) {
     console.error('getAdminSummary error:', err);

@@ -1,5 +1,6 @@
 const pool = require('../config/db');
 const {
+  NETWORK_QUALITIES,
   NETWORK_POOR_QUALITIES,
   NETWORK_POOR_RATIO_THRESHOLD,
   NETWORK_POOR_MIN_SAMPLES,
@@ -82,6 +83,8 @@ const NetworkLog = {
   },
 
   async adminSummary({ limit = 50, sinceHours = DEFAULT_WINDOW_HOURS } = {}) {
+    const bucket = sinceHours <= 24 ? 'hour' : 'day';
+
     const usersQuery = pool.query(
       `SELECT
          nl.user_id,
@@ -115,11 +118,63 @@ const NetworkLog = {
       [NETWORK_POOR_QUALITIES, sinceHours, limit]
     );
 
-    const [users, experiences] = await Promise.all([usersQuery, experiencesQuery]);
+    const breakdownQuery = pool.query(
+      `SELECT connection_quality, COUNT(*)::int AS count
+       FROM network_logs
+       WHERE logged_at > now() - ($1 || ' hours')::interval
+       GROUP BY connection_quality`,
+      [sinceHours]
+    );
+
+    const seriesQuery = pool.query(
+      `SELECT
+         date_trunc($1, logged_at) AS bucket,
+         COUNT(*)::int AS total,
+         COUNT(*) FILTER (WHERE connection_quality = ANY($2::text[]))::int AS poor_count
+       FROM network_logs
+       WHERE logged_at > now() - ($3 || ' hours')::interval
+       GROUP BY bucket
+       ORDER BY bucket ASC`,
+      [bucket, NETWORK_POOR_QUALITIES, sinceHours]
+    );
+
+    const [users, experiences, breakdown, series] = await Promise.all([
+      usersQuery, experiencesQuery, breakdownQuery, seriesQuery,
+    ]);
+
+    const quality_breakdown = NETWORK_QUALITIES.reduce((acc, q) => {
+      acc[q] = 0;
+      return acc;
+    }, {});
+    for (const row of breakdown.rows) {
+      if (quality_breakdown[row.connection_quality] !== undefined) {
+        quality_breakdown[row.connection_quality] = row.count;
+      }
+    }
+
+    const events = Object.values(quality_breakdown).reduce((a, b) => a + b, 0);
+    const poor_events = NETWORK_POOR_QUALITIES.reduce(
+      (acc, q) => acc + (quality_breakdown[q] || 0), 0
+    );
+
     return {
       users: users.rows.map(decorate),
       experiences: experiences.rows.map(decorate),
       window_hours: sinceHours,
+      bucket,
+      quality_breakdown,
+      time_series: series.rows.map((r) => ({
+        bucket: r.bucket,
+        total: r.total,
+        poor_count: r.poor_count,
+      })),
+      totals: {
+        events,
+        poor_events,
+        poor_ratio: events > 0 ? poor_events / events : 0,
+        affected_users: users.rows.length,
+        affected_experiences: experiences.rows.length,
+      },
     };
   },
 };

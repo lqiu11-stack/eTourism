@@ -9,14 +9,20 @@ import {
   CategoryScale,
   LinearScale,
   BarElement,
+  LineElement,
+  PointElement,
+  Filler,
   Title,
   Tooltip,
   Legend,
   ArcElement,
 } from "chart.js";
-import { Bar, Doughnut } from "react-chartjs-2";
+import { Bar, Doughnut, Line } from "react-chartjs-2";
 
-ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ArcElement);
+ChartJS.register(
+  CategoryScale, LinearScale, BarElement, LineElement, PointElement, Filler,
+  Title, Tooltip, Legend, ArcElement
+);
 
 const API_BASE = import.meta.env.VITE_API_URL;
 
@@ -285,6 +291,26 @@ export const Dashboard = () => {
     }
   };
 
+  // ── Network issues ───────────────────────────────────────────────────
+  const [networkSummary, setNetworkSummary] = useState(null);
+  const [networkLoading, setNetworkLoading] = useState(false);
+  const [networkWindow, setNetworkWindow] = useState(168);
+
+  const fetchNetworkSummary = useCallback(async () => {
+    setNetworkLoading(true);
+    try {
+      const { data } = await axios.get(
+        `${API_BASE}/network-logs/admin/summary?hours=${networkWindow}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setNetworkSummary(data);
+    } catch {
+      setNetworkSummary(null);
+    } finally {
+      setNetworkLoading(false);
+    }
+  }, [token, networkWindow]);
+
   useEffect(() => {
     if (activeTab === "booking") fetchBookings();
     if (activeTab === "user") fetchUsers();
@@ -293,25 +319,7 @@ export const Dashboard = () => {
     if (activeTab === "reports") fetchAnalytics();
     if (activeTab === "suitability") fetchSuitExps(suitStatusFilter);
     if (activeTab === "network") fetchNetworkSummary();
-  }, [activeTab]);
-
-  // ── Network issues ───────────────────────────────────────────────────
-  const [networkSummary, setNetworkSummary] = useState(null);
-  const [networkLoading, setNetworkLoading] = useState(false);
-
-  const fetchNetworkSummary = useCallback(async () => {
-    setNetworkLoading(true);
-    try {
-      const { data } = await axios.get(`${API_BASE}/network-logs/admin/summary`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      setNetworkSummary(data);
-    } catch {
-      setNetworkSummary(null);
-    } finally {
-      setNetworkLoading(false);
-    }
-  }, [token]);
+  }, [activeTab, networkWindow]);
 
   // ── Analytics / Reports ──────────────────────────────────────────────
   const [analytics, setAnalytics] = useState(null);
@@ -542,7 +550,12 @@ export const Dashboard = () => {
           />
         )}
         {activeTab === "network" && (
-          <NetworkIssues summary={networkSummary} loading={networkLoading} />
+          <NetworkIssues
+            summary={networkSummary}
+            loading={networkLoading}
+            windowHours={networkWindow}
+            onWindowChange={setNetworkWindow}
+          />
         )}
       </div>
 
@@ -924,8 +937,7 @@ const Reports = ({ analytics, loading }) => {
           <h3 className="report-heading">Most Popular eHosts</h3>
           {analytics.topHosts.length === 0 ? (
             <p className="report-empty">No bookings recorded yet.</p>
-          ) : (
-            <div style={{ height: hostBarHeight }}>
+          ) : ( <div style={{ height: hostBarHeight }}>
               <Bar data={hostChartData} options={barOptions()} />
             </div>
           )}
@@ -1151,75 +1163,339 @@ const EhostApplications = ({
   </div>
 );
 
-const NetworkIssues = ({ summary, loading }) => {
-  if (loading) return <div className="ad-network-empty">Loading network issues…</div>;
-  if (!summary) return <div className="ad-network-empty">Failed to load network issues.</div>;
+const NETWORK_QUALITY_COLORS = {
+  good: "#8bb897",
+  slow: "#c4a05a",
+  failed: "#b87b7b",
+  offline: "#7b8794",
+};
 
-  const { users = [], experiences = [], window_hours = 168 } = summary;
-  const days = Math.round(window_hours / 24);
+const WINDOW_OPTIONS = [
+  { value: 24, label: "Last 24 hours" },
+  { value: 168, label: "Last 7 days" },
+  { value: 720, label: "Last 30 days" },
+];
+
+const formatBucket = (iso, bucket) => {
+  const d = new Date(iso);
+  if (bucket === "hour") {
+    return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  }
+  return d.toLocaleDateString([], { month: "short", day: "numeric" });
+};
+
+const userLabel = (u) =>
+  [u.first_name, u.last_name].filter(Boolean).join(" ") || `User ${u.user_id}`;
+
+const NetworkIssues = ({ summary, loading, windowHours, onWindowChange }) => {
+  const [showDetails, setShowDetails] = useState(false);
+
+  const windowSelector = (
+    <select
+      className="ad-network-window"
+      value={windowHours}
+      onChange={(e) => onWindowChange(Number(e.target.value))}
+    >
+      {WINDOW_OPTIONS.map((o) => (
+        <option key={o.value} value={o.value}>{o.label}</option>
+      ))}
+    </select>
+  );
+
+  if (loading) {
+    return (
+      <div className="ad-network">
+        <div className="ad-network-header">
+          <p className="ad-network-intro">Loading network issues…</p>
+          {windowSelector}
+        </div>
+      </div>
+    );
+  }
+  if (!summary) {
+    return (
+      <div className="ad-network">
+        <div className="ad-network-header">
+          <p className="ad-network-intro">Failed to load network issues.</p>
+          {windowSelector}
+        </div>
+      </div>
+    );
+  }
+
+  const {
+    users = [],
+    experiences = [],
+    quality_breakdown = { good: 0, slow: 0, failed: 0, offline: 0 },
+    time_series = [],
+    bucket = "day",
+    totals = { events: 0, poor_events: 0, poor_ratio: 0, affected_users: 0, affected_experiences: 0 },
+  } = summary;
+
+  const hasEvents = totals.events > 0;
+  const topUsers = users.slice(0, 10);
+  const topExps = experiences.slice(0, 10);
+
+  const breakdownLabels = Object.keys(quality_breakdown);
+  const breakdownData = {
+    labels: breakdownLabels,
+    datasets: [{
+      data: breakdownLabels.map((q) => quality_breakdown[q]),
+      backgroundColor: breakdownLabels.map((q) => NETWORK_QUALITY_COLORS[q]),
+      borderColor: "#fff",
+      borderWidth: 1,
+    }],
+  };
+  const breakdownOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { position: "right", labels: { font: { size: 12 }, padding: 12 } },
+      tooltip: { callbacks: { label: (ctx) => ` ${ctx.label}: ${ctx.parsed} event${ctx.parsed !== 1 ? "s" : ""}` } },
+    },
+  };
+
+  const trendData = {
+    labels: time_series.map((p) => formatBucket(p.bucket, bucket)),
+    datasets: [
+      {
+        label: "Total events",
+        data: time_series.map((p) => p.total),
+        borderColor: "#7b9eb8",
+        backgroundColor: "rgba(123,158,184,0.15)",
+        fill: true,
+        tension: 0.3,
+        pointRadius: 3,
+      },
+      {
+        label: "Poor events",
+        data: time_series.map((p) => p.poor_count),
+        borderColor: "#b87b7b",
+        backgroundColor: "rgba(184,123,123,0.15)",
+        fill: true,
+        tension: 0.3,
+        pointRadius: 3,
+      },
+    ],
+  };
+  const trendOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { position: "top", labels: { font: { size: 12 } } },
+    },
+    scales: {
+      x: { grid: { display: false } },
+      y: { beginAtZero: true, ticks: { precision: 0 }, grid: { color: "#f0e8e8" } },
+    },
+  };
+
+  const issueBarOptions = (suffix) => ({
+    indexAxis: "y",
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { display: false },
+      tooltip: { callbacks: { label: (ctx) => ` ${ctx.parsed.x} ${suffix}${ctx.parsed.x !== 1 ? "s" : ""}` } },
+    },
+    scales: {
+      x: { beginAtZero: true, ticks: { stepSize: 1, precision: 0 }, grid: { color: "#f0e8e8" } },
+      y: {
+        grid: { display: false },
+        ticks: {
+          font: { size: 12 },
+          autoSkip: false,
+          callback: function (value) {
+            const label = this.getLabelForValue(value);
+            const max = window.innerWidth < 640 ? 14 : window.innerWidth < 900 ? 20 : 28;
+            return label.length > max ? label.slice(0, max - 1) + "…" : label;
+          },
+        },
+      },
+    },
+  });
+
+  const usersChartData = {
+    labels: topUsers.map(userLabel),
+    datasets: [{
+      data: topUsers.map((u) => u.poor_count),
+      backgroundColor: "#b87b7b",
+      borderColor: "#8b5a5a",
+      borderWidth: 1,
+      borderRadius: 4,
+    }],
+  };
+  const expsChartData = {
+    labels: topExps.map((e) => e.title || `Experience ${e.experience_id}`),
+    datasets: [{
+      data: topExps.map((e) => e.poor_count),
+      backgroundColor: "#7b9eb8",
+      borderColor: "#5a7e9b",
+      borderWidth: 1,
+      borderRadius: 4,
+    }],
+  };
+
+  const CHART_HEIGHT = 280;
+  const usersBarHeight = Math.max(CHART_HEIGHT, topUsers.length * 32);
+  const expsBarHeight = Math.max(CHART_HEIGHT, topExps.length * 32);
 
   return (
     <div className="ad-network">
-      <p className="ad-network-intro">
-        Connection issues recorded in the last {days} day{days === 1 ? "" : "s"}.
-        Rows flagged in orange exceed the unreliable-connection threshold.
-      </p>
+      <div className="ad-network-header">
+        <p className="ad-network-intro">
+          Connection issues captured from client telemetry. Rows flagged in orange exceed the
+          unreliable-connection threshold.
+        </p>
+        {windowSelector}
+      </div>
 
-      <h3 className="ad-network-section-title">Top users with issues</h3>
-      {users.length === 0 ? (
-        <div className="ad-network-empty">No user issues recorded.</div>
+      <div className="ad-network-kpis">
+        <div className="ad-network-kpi">
+          <span className="ad-network-kpi-label">Total events</span>
+          <span className="ad-network-kpi-value">{totals.events}</span>
+        </div>
+        <div className="ad-network-kpi">
+          <span className="ad-network-kpi-label">Poor events</span>
+          <span className="ad-network-kpi-value">{totals.poor_events}</span>
+        </div>
+        <div className="ad-network-kpi">
+          <span className="ad-network-kpi-label">Poor ratio</span>
+          <span className="ad-network-kpi-value">
+            {totals.events > 0 ? `${Math.round(totals.poor_ratio * 100)}%` : "—"}
+          </span>
+        </div>
+        <div className="ad-network-kpi">
+          <span className="ad-network-kpi-label">Affected users / experiences</span>
+          <span className="ad-network-kpi-value">
+            {totals.affected_users} / {totals.affected_experiences}
+          </span>
+        </div>
+      </div>
+
+      {!hasEvents ? (
+        <div className="ad-network-empty">No network events recorded in this window.</div>
       ) : (
-        <table className="ad-network-table">
-          <thead>
-            <tr>
-              <th>User</th>
-              <th>Email</th>
-              <th>Role</th>
-              <th>Issues</th>
-              <th>Total</th>
-              <th>Ratio</th>
-            </tr>
-          </thead>
-          <tbody>
-            {users.map((u) => (
-              <tr key={u.user_id} className={u.is_poor ? "ad-network-row-warn" : ""}>
-                <td>{[u.first_name, u.last_name].filter(Boolean).join(" ") || `User ${u.user_id}`}</td>
-                <td>{u.email || "—"}</td>
-                <td>{u.role || "—"}</td>
-                <td>{u.poor_count}</td>
-                <td>{u.total}</td>
-                <td>{Math.round(u.poor_ratio * 100)}%</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <>
+          <div className="ad-network-charts-row">
+            <div className="ad-network-chart">
+              <h3 className="ad-network-section-title">Quality breakdown</h3>
+              <div style={{ height: CHART_HEIGHT }}>
+                <Doughnut data={breakdownData} options={breakdownOptions} />
+              </div>
+            </div>
+            <div className="ad-network-chart ad-network-chart-wide">
+              <h3 className="ad-network-section-title">
+                Issues over time ({bucket === "hour" ? "hourly" : "daily"})
+              </h3>
+              {time_series.length === 0 ? (
+                <div className="ad-network-empty">No events in this window.</div>
+              ) : (
+                <div style={{ height: CHART_HEIGHT }}>
+                  <Line data={trendData} options={trendOptions} />
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="ad-network-charts-row">
+            <div className="ad-network-chart">
+              <h3 className="ad-network-section-title">Top users with issues</h3>
+              {topUsers.length === 0 ? (
+                <div className="ad-network-empty">No user issues recorded.</div>
+              ) : (
+                <div style={{ height: usersBarHeight }}>
+                  <Bar data={usersChartData} options={issueBarOptions("issue")} />
+                </div>
+              )}
+            </div>
+            <div className="ad-network-chart">
+              <h3 className="ad-network-section-title">Top experiences with issues</h3>
+              {topExps.length === 0 ? (
+                <div className="ad-network-empty">No experience issues recorded.</div>
+              ) : (
+                <div style={{ height: expsBarHeight }}>
+                  <Bar data={expsChartData} options={issueBarOptions("issue")} />
+                </div>
+              )}
+            </div>
+          </div>
+        </>
       )}
 
-      <h3 className="ad-network-section-title">Top experiences with issues</h3>
-      {experiences.length === 0 ? (
-        <div className="ad-network-empty">No experience issues recorded.</div>
-      ) : (
-        <table className="ad-network-table">
-          <thead>
-            <tr>
-              <th>Experience</th>
-              <th>Issues</th>
-              <th>Total</th>
-              <th>Ratio</th>
-            </tr>
-          </thead>
-          <tbody>
-            {experiences.map((e) => (
-              <tr key={e.experience_id} className={e.is_poor ? "ad-network-row-warn" : ""}>
-                <td>{e.title || `Experience ${e.experience_id}`}</td>
-                <td>{e.poor_count}</td>
-                <td>{e.total}</td>
-                <td>{Math.round(e.poor_ratio * 100)}%</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
+      <div className="ad-network-details">
+        <button
+          type="button"
+          className="ad-network-details-toggle"
+          onClick={() => setShowDetails((v) => !v)}
+        >
+          {showDetails ? "Hide details" : "Show details"}
+        </button>
+
+        {showDetails && (
+          <>
+            <h3 className="ad-network-section-title">User details</h3>
+            {users.length === 0 ? (
+              <div className="ad-network-empty">No user issues recorded.</div>
+            ) : (
+              <div className="ad-network-table-wrap">
+              <table className="ad-network-table">
+                <thead>
+                  <tr>
+                    <th>User</th>
+                    <th>Email</th>
+                    <th>Role</th>
+                    <th>Issues</th>
+                    <th>Total</th>
+                    <th>Ratio</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {users.map((u) => (
+                    <tr key={u.user_id} className={u.is_poor ? "ad-network-row-warn" : ""}>
+                      <td>{userLabel(u)}</td>
+                      <td>{u.email || "—"}</td>
+                      <td>{u.role || "—"}</td>
+                      <td>{u.poor_count}</td>
+                      <td>{u.total}</td>
+                      <td>{Math.round(u.poor_ratio * 100)}%</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              </div>
+            )}
+
+            <h3 className="ad-network-section-title">Experience details</h3>
+            {experiences.length === 0 ? (
+              <div className="ad-network-empty">No experience issues recorded.</div>
+            ) : (
+              <div className="ad-network-table-wrap">
+              <table className="ad-network-table">
+                <thead>
+                  <tr>
+                    <th>Experience</th>
+                    <th>Issues</th>
+                    <th>Total</th>
+                    <th>Ratio</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {experiences.map((e) => (
+                    <tr key={e.experience_id} className={e.is_poor ? "ad-network-row-warn" : ""}>
+                      <td>{e.title || `Experience ${e.experience_id}`}</td>
+                      <td>{e.poor_count}</td>
+                      <td>{e.total}</td>
+                      <td>{Math.round(e.poor_ratio * 100)}%</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              </div>
+            )}
+          </>
+        )}
+      </div>
     </div>
   );
 };
