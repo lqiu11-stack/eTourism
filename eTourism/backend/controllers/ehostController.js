@@ -1062,7 +1062,7 @@ const submitApplication = async (req, res) => {
     
     const {
       name, birthday, country, email, password,
-      hasExperience, yearsOfExperience, preferredCountry,
+      hasExperience, yearsOfExperience,
       description, videoLink
     } = req.body;
 
@@ -1076,13 +1076,18 @@ const submitApplication = async (req, res) => {
       return res.status(409).json({ message: "This email has already submitted an application. Please wait for the review." });
     }
 
+    const existingUser = await User.findByEmail(email);
+    if (existingUser) {
+      return res.status(409).json({ message: "This email is already registered. Please use a different email." });
+    }
+
     const password_hash = await bcrypt.hash(password, 10);
 
     // !!!Save the data into the database.
     const { rows: newAppRows } = await pool.query(
       `INSERT INTO ehost_applications
-      (name, birthday, country, email, password_hash, has_experience, years_of_experience, preferred_country, description, video_link, status)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 'pending')
+      (name, birthday, country, email, password_hash, has_experience, years_of_experience, description, video_link, status)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'pending')
       RETURNING id`,
       [
         name,
@@ -1092,7 +1097,6 @@ const submitApplication = async (req, res) => {
         password_hash,
         hasExperience,
         yearsOfExperience || 0,
-        preferredCountry,
         description,
         videoLink
       ]
@@ -1110,7 +1114,8 @@ const submitApplication = async (req, res) => {
 
   } catch (error) {
     console.error("Application submission failed:", error);
-    res.status(500).json({ message: "Internal server error, please try again later" });
+    const detail = error.detail || error.message || "Unknown error";
+    res.status(500).json({ message: `Submission failed: ${detail}` });
   }
 };
 

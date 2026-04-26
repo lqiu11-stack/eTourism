@@ -262,7 +262,7 @@ const approveApplication = async (req, res) => {
       first_name,
       last_name,
       date_of_birth: application.birthday,
-      country: application.preferred_country,
+      country: application.country,
       language: null,
     });
 

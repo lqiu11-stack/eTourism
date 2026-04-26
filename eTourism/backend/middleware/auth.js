@@ -43,7 +43,7 @@ Middleware for validating eHost application form data */
 const validateApplication = (req, res, next) => {
   const {
     name, birthday, country, email, password,
-    hasExperience, preferredCountry,
+    hasExperience,
     description, videoLink, isContractAgreed
   } = req.body;
 
@@ -56,7 +56,7 @@ const validateApplication = (req, res, next) => {
     return res.status(400).json({ message: "Password must be at least 8 characters." });
   }
 
-  if (hasExperience === undefined || !preferredCountry) {
+  if (hasExperience === undefined) {
     return res.status(400).json({ message: "Please fill in all required experience details." });
   }
 

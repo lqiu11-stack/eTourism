@@ -1108,7 +1108,6 @@ const EhostApplications = ({
             <p><strong>Name:</strong> {selectedApp.name}</p>
             <p><strong>Email:</strong> {selectedApp.email}</p>
             <p><strong>Country:</strong> {selectedApp.country}</p>
-            <p><strong>Preferred country:</strong> {selectedApp.preferred_country}</p>
             <p><strong>Has experience:</strong> {selectedApp.has_experience ? "Yes" : "No"}</p>
             {selectedApp.years_of_experience > 0 && <p><strong>Years:</strong> {selectedApp.years_of_experience}</p>}
             <p><strong>Description:</strong> {selectedApp.description}</p>

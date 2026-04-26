@@ -13,6 +13,7 @@ export const EhostRegisterStep4 = () => {
   const [agreed, setAgreed] = useState(false);
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [popup, setPopup] = useState({ open: false, kind: "success", message: "" });
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -36,15 +37,29 @@ export const EhostRegisterStep4 = () => {
     setError("");
     try {
       await axios.post(`${API_BASE}/ehost/apply`, payload);
+      setPopup({
+        open: true,
+        kind: "success",
+        message: "After submitting the application form, your information will be checked by our admin. A confirmation email will be sent to your email within 2-3 working days.",
+      });
+    } catch (err) {
+      console.error("[ehost step4 submit]", err);
+      const msg = err.response?.data?.error || err.response?.data?.message || err.message || "Submission failed. Please try again.";
+      setPopup({ open: true, kind: "error", message: msg });
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handlePopupOk = () => {
+    if (popup.kind === "success") {
       sessionStorage.removeItem("ehost_step1");
       sessionStorage.removeItem("ehost_step2");
       sessionStorage.removeItem("ehost_step3");
-      navigate("/");
-    } catch (err) {
-      const msg = err.response?.data?.message || "Submission failed. Please try again.";
-      setError(msg);
-    } finally {
-      setSubmitting(false);
+      setPopup({ open: false, kind: "success", message: "" });
+      navigate("/EhostDashboard");
+    } else {
+      setPopup({ open: false, kind: "error", message: "" });
     }
   };
 
@@ -122,13 +137,23 @@ export const EhostRegisterStep4 = () => {
           {error && <div className="error-text">{error}</div>}
 
           <div className="email-wrapper">
-            <span className="space">After submitting the application form, your information will be checked by our admin. A confirmation email will be sent to your email within 2-3 working days.</span>
+            {/* <span className="space">After submitting the application form, your information will be checked by our admin. A confirmation email will be sent to your email within 2-3 working days.</span> */}
             <button type="submit" className="next-btn" disabled={submitting}>
               <img src={arrowRight} alt="Submit" className="next-icon" />
             </button>
           </div>
         </form>
       </div>
+
+      {popup.open && (
+        <div className="ehost-popup-overlay" role="dialog" aria-modal="true">
+          <div className="ehost-popup-card">
+            <h3>{popup.kind === "success" ? "Application submitted" : "Submission failed"}</h3>
+            <p>{popup.message}</p>
+            <button type="button" className="ehost-popup-ok" onClick={handlePopupOk}>OK</button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
