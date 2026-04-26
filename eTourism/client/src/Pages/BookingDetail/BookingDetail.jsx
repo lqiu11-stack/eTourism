@@ -226,7 +226,21 @@ export const MyBookingDetail = () => {
             <img src={coverImage} className="booking-img" alt={experience.title} />
 
             <div className="booking-info">
-              <h4>{experience.title}</h4>
+              <h4
+                className="booking-title-link"
+                role="button"
+                tabIndex={0}
+                onClick={() => { navigate(`/DetailPage?id=${booking.experience_id}`); window.scrollTo(0, 0); }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    navigate(`/DetailPage?id=${booking.experience_id}`);
+                    window.scrollTo(0, 0);
+                  }
+                }}
+              >
+                {experience.title}
+              </h4>
 
               <div className="schedual">
                 <p>Stream start at {formatDate(experience.date_time)}</p>
