@@ -169,15 +169,7 @@ const scoreExperience = async (req, res) => {
 
     const score = await ExperienceScore.create({
       experience_id: req.params.id,
-      admin_id: req.user.id,
-      wifi_score: null,
-      safety_score: null,
-      legal_score: null,
-      content_score: null,
-      accessibility_score: null,
-      description_score: null,
-      pricing_score: null,
-      total_score: null,
+      admin_id: req.userId,
       result,
       comment: comment?.trim() || null,
     });

@@ -19,6 +19,26 @@ const Review = {
     return rows[0];
   },
 
+  async upsert({ visitor_id, experience_id, rating, comment }) {
+    const updated = await pool.query(
+      `UPDATE reviews
+          SET rating = $3, comment = $4, created_at = NOW()
+        WHERE visitor_id = $1 AND experience_id = $2
+        RETURNING *`,
+      [visitor_id, experience_id, rating, comment]
+    );
+    if (updated.rows.length > 0) {
+      return { review: updated.rows[0], updated: true };
+    }
+    const inserted = await pool.query(
+      `INSERT INTO reviews (visitor_id, experience_id, rating, comment)
+       VALUES ($1, $2, $3, $4)
+       RETURNING *`,
+      [visitor_id, experience_id, rating, comment]
+    );
+    return { review: inserted.rows[0], updated: false };
+  },
+
   async findByExperience(experience_id) {
     const { rows } = await pool.query(
       `SELECT r.*, u.first_name, u.country
