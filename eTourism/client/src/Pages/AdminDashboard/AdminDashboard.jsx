@@ -356,7 +356,6 @@ export const Dashboard = () => {
         { result: suitResult, comment: suitComment.trim() },
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      alert(`Experience marked as ${suitResult === "pass" ? "suitable" : "unsuitable"}.`);
       setShowSuitPanel(false);
       fetchExperiences(expStatusFilter, expSearch);
     } catch (e) {
