@@ -3,23 +3,26 @@ const pool = require('../config/db');
 const Booking = {
   async findById(id) {
     const { rows } = await pool.query(
-      'SELECT * FROM bookings WHERE id = $1',
+      `SELECT b.*, e.meeting_link
+       FROM bookings b
+       LEFT JOIN experiences e ON e.id = b.experience_id
+       WHERE b.id = $1`,
       [id]
     );
     return rows[0] || null;
   },
 
   async create({
-    visitor_id, experience_id, amount_paid, booking_type, meeting_link,
+    visitor_id, experience_id, amount_paid, booking_type,
     qty_normal = 1, qty_discounted = 0, contact_name, contact_email,
   }) {
     const { rows } = await pool.query(
       `INSERT INTO bookings
-         (visitor_id, experience_id, amount_paid, booking_type, meeting_link,
+         (visitor_id, experience_id, amount_paid, booking_type,
           qty_normal, qty_discounted, contact_name, contact_email)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
        RETURNING *`,
-      [visitor_id, experience_id, amount_paid, booking_type, meeting_link,
+      [visitor_id, experience_id, amount_paid, booking_type,
        qty_normal, qty_discounted, contact_name, contact_email]
     );
     return rows[0];
@@ -69,7 +72,7 @@ const Booking = {
 
   async findByVisitor(visitor_id) {
     const { rows } = await pool.query(
-      `SELECT b.*, e.title, e.date_time, e.cover_image, e.country
+      `SELECT b.*, e.title, e.date_time, e.cover_image, e.country, e.meeting_link
        FROM bookings b
        JOIN experiences e ON b.experience_id = e.id
        WHERE b.visitor_id = $1
@@ -94,7 +97,7 @@ const Booking = {
     const { rows } = await pool.query(
       `SELECT
          b.id, b.status, b.amount_paid, b.qty_normal, b.qty_discounted,
-         b.contact_name, b.contact_email, b.created_at, b.meeting_link,
+         b.contact_name, b.contact_email, b.created_at, e.meeting_link,
          e.id          AS experience_id,
          e.title       AS experience_title,
          e.date_time   AS experience_date_time,

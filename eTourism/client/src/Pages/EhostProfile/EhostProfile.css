@@ -98,9 +98,9 @@
   box-sizing: border-box;
 }
 
-input[type="date"] {
+input[type="date"]:valid, input[type="date"]:valid::-webkit-datetime-edit {
     color: white;
-    -webkit-text-fill-color: black;
+    -webkit-text-fill-color: white;
 }
 
 .ep-input:focus,

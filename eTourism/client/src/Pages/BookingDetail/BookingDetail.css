@@ -8,7 +8,7 @@
 /* Card */
 .Mybooking-hero {
   height: 250px;
-  background-image: url("../icon/mainback.png");
+  /* background-image: url("../icon/mainback.png"); */
   background-size: cover;
   background-position: center;
   position: relative;
@@ -26,8 +26,8 @@
     rgba(102,102,102,0) 0%,
     rgb(255, 255, 255) 98%
   );
-
   z-index:1;
+  
 }
 
 .Myhero-title {

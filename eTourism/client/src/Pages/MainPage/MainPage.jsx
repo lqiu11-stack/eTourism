@@ -1,141 +1,103 @@
-import { useState, useEffect, useCallback } from "react";
-import axios from "axios";
+import { useMemo, useRef, useState } from "react";
 import "./Mainstyle.css";
 import searchIcon from "../icon/search.png";
 import continentIcon from "../icon/continents.png";
 import dateIcon from "../icon/calendar.png";
-import filterIcon from"../icon/filter.png";
-import refundIcon from"../icon/cashback.png";
-import customerSrevice from "../icon/customer-service.png"
-import customerReview from "../icon/customer-review.png"
-import LiveIcon from "../icon/live.png"
-import translate from "../icon/language.png"
+import filterIcon from "../icon/filter.png";
+import refundIcon from "../icon/cashback.png";
+import customerSrevice from "../icon/customer-service.png";
+import customerReview from "../icon/customer-review.png";
+import LiveIcon from "../icon/live.png";
+import translate from "../icon/language.png";
 import { useNavigate, Link } from "react-router-dom";
-import { getCountryImage } from "../../utils/countryImages";
+import { CONTINENTS, CATEGORIES, LANGUAGES } from "../../constants/enums";
+import { useExperiences } from "../../hooks/useExperiences";
+import { useAuth } from "../../utils/auth";
+import { formatDate } from "../../utils/formatDate";
+import { ExperienceCard } from "../../components/ExperienceCard";
 
-const API_BASE = import.meta.env.VITE_API_URL;
+const MAX_NEW_EVENTS = 8;
+const FILTER_CONTINENTS = CONTINENTS.filter(c => c !== "Antarctica");
 
-const getImage = (exp) => getCountryImage(exp.country);
+const toggleIn = (list, value) =>
+  list.includes(value) ? list.filter(v => v !== value) : [...list, value];
 
-
-
-const formatDate = (dt) => {
-  if (!dt) return 'Choose a date...';
-  const d = new Date(dt);
-
-  const months = [
-    "Jan", "Feb", "Mar", "Apr", "May", "Jun",
-    "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
-  ];
-
-  return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
-};
+const FilterDropdown = ({ label, shortLabel, options, active, onChange, isOpen, onToggle }) => (
+  <div style={{ position: "relative" }}>
+    <button
+      className={`filter-chip${active.length ? " filter-chip--active" : ""}`}
+      onClick={onToggle}
+    >
+      {active.length
+        ? `${shortLabel}${active.length > 1 ? ` (${active.length})` : `: ${active[0]}`}`
+        : `+ ${label}`}
+    </button>
+    {isOpen && (
+      <div className="filter-dropdown">
+        {options.map(opt => (
+          <label key={opt} className="filter-check">
+            <input
+              type="checkbox"
+              checked={active.includes(opt)}
+              onChange={() => onChange(prev => toggleIn(prev, opt))}
+            />
+            {opt}
+          </label>
+        ))}
+      </div>
+    )}
+  </div>
+);
 
 export const MainPage = () => {
   const navigate = useNavigate();
-  const token = localStorage.getItem("token");
-  const isLoggedIn = !!token;
-  const user = JSON.parse(localStorage.getItem("user") || "{}");
-  const isEhost = user.role === "ehost";
+  const { isLoggedIn, isEhost, logout } = useAuth();
+  const { experiences } = useExperiences();
+  const dateInputRef = useRef(null);
 
-  const [experiences, setExperiences] = useState([]);
   const [searchLocation, setSearchLocation] = useState("");
   const [searchDate, setSearchDate] = useState("");
-
   const [activeContinents, setActiveContinents] = useState([]);
   const [activeCategories, setActiveCategories] = useState([]);
-  const [activeLanguages,  setActiveLanguages]  = useState([]);
-  const [showRegionMenu,  setShowRegionMenu]  = useState(false);
-  const [showCategoryMenu,setShowCategoryMenu]= useState(false);
-  const [showLanguageMenu,setShowLanguageMenu]= useState(false);
+  const [activeLanguages, setActiveLanguages] = useState([]);
+  const [openMenu, setOpenMenu] = useState(null);
 
-  const [filtered, setFiltered] = useState([]);
+  const toggleMenu = (name) => setOpenMenu(prev => (prev === name ? null : name));
 
-  const toggleIn = (list, value) =>
-    list.includes(value) ? list.filter(v => v !== value) : [...list, value];
-
-  const fetchExperiences = useCallback(async () => {
-    try {
-      const { data } = await axios.get(`${API_BASE}/visitor/experiences`);
-      setExperiences(data);
-    } catch {}
-  }, []);
-
-  useEffect(() => {
-      axios.get(`${API_BASE}/visitor/experiences`)
-        .then(({ data }) => { setExperiences(data); setFiltered(data); })
-        .catch(() => {});
-    }, []);
-
-
-  const buildSearchParams = () => {
-    const params = new URLSearchParams();
-    if (searchLocation.trim()) params.set('q', searchLocation.trim());
-    if (searchDate) params.set('date', searchDate);
-    if (activeContinents.length) params.set('continents', activeContinents.join(','));
-    if (activeCategories.length) params.set('categories', activeCategories.join(','));
-    if (activeLanguages.length) params.set('languages', activeLanguages.join(','));
-    return params;
-  };
-
-  const handleSearch = () => {
-    const params = buildSearchParams();
-    const target = activeContinents.length === 1 ? activeContinents[0] : 'all';
-    navigate(`/continent/${target}${params.toString() ? `?${params}` : ''}`);
-  };
-
-  const handleExploreMore = () => {
-    const params = buildSearchParams();
-    const target = activeContinents.length === 1 ? activeContinents[0] : 'all';
-    navigate(`/continent/${target}${params.toString() ? `?${params}` : ''}`);
-  };
-
-  const handleLogout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
-    navigate("/login");
-  };
-
-  const continentCounts = experiences.reduce((acc, e) => {
-    if (e.continent) acc[e.continent] = (acc[e.continent] || 0) + 1;
-    return acc;
-  }, {});
-
-  const soldOut = filtered.filter(e => e.max_visitors <= 15);
-
-  // const maxId = Math.max(...filtered.map(e => e.id));
-  // const newEvent = filtered.filter (e => e.id >= maxId-5);
-  const maxItemNum = 8;
-  const newevent = filtered.sort((a, b) => b.id - a.id).slice(0, maxItemNum);
-
-  const renderCard = (exp) => (
-    <div
-      className="tour-card"
-      key={exp.id}
-      onClick={() =>
-        navigate(`/DetailPage?id=${exp.id}`, {
-          state: { from: "main" },
-        })
-      }
-      style={{ cursor: "pointer" }}
-    >
-      <div className="tour-image">
-        <img src={getImage(exp)} alt={exp.title} />
-        <div className="image-overlay">
-          <h3>{exp.title}</h3>
-        </div>
-      </div>
-      <div className="tour-info">
-        <p>{formatDate(exp.date_time)}</p>
-        <p>{exp.price}£ / per ticket</p>
-        <button className="book-btn">
-          Click to book &gt;&gt;
-        </button>
-      </div>
-    </div>
+  const continentCounts = useMemo(
+    () => experiences.reduce((acc, e) => {
+      if (e.continent) acc[e.continent] = (acc[e.continent] || 0) + 1;
+      return acc;
+    }, {}),
+    [experiences]
   );
 
+  const newEvents = useMemo(
+    () => [...experiences]
+      .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+      .slice(0, MAX_NEW_EVENTS),
+    [experiences]
+  );
 
+  const handleSearch = () => {
+    const params = new URLSearchParams();
+    if (searchLocation.trim()) params.set("q", searchLocation.trim());
+    if (searchDate) params.set("date", searchDate);
+    if (activeContinents.length) params.set("continents", activeContinents.join(","));
+    if (activeCategories.length) params.set("categories", activeCategories.join(","));
+    if (activeLanguages.length) params.set("languages", activeLanguages.join(","));
+    const target = activeContinents.length === 1 ? activeContinents[0] : "all";
+    navigate(`/continent/${target}${params.toString() ? `?${params}` : ""}`);
+  };
+
+  const resetFilters = () => {
+    setActiveContinents([]);
+    setActiveCategories([]);
+    setActiveLanguages([]);
+    setSearchLocation("");
+    setSearchDate("");
+    setOpenMenu(null);
+  };
 
   return (
     <div className="main-page">
@@ -145,7 +107,6 @@ export const MainPage = () => {
         <div className="hero-overlay" />
 
         <div className="hero-content">
-
           <nav className="navbar">
             <div className="nav-links">
               <a className="Text">
@@ -170,7 +131,7 @@ export const MainPage = () => {
                 My booking
               </Link>
               {isLoggedIn ? (
-                <button className="nav-link nav-btn-link" onClick={handleLogout}>
+                <button className="nav-link nav-btn-link" onClick={() => logout(navigate)}>
                   Logout
                 </button>
               ) : (
@@ -203,7 +164,7 @@ export const MainPage = () => {
                     className="textbox-word"
                     value={searchLocation}
                     onChange={(e) => setSearchLocation(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                    onKeyDown={(e) => e.key === "Enter" && handleSearch()}
                   />
                 </div>
               </div>
@@ -220,14 +181,15 @@ export const MainPage = () => {
                     value={formatDate(searchDate)}
                     placeholder="Select date"
                     readOnly
-                    onClick={() => document.getElementById("real-date-input").showPicker()}
+                    onClick={() => dateInputRef.current?.showPicker()}
                   />
 
                   <input
-                    id="real-date-input"
+                    ref={dateInputRef}
                     className="textbox-word"
                     type="date"
                     value={searchDate}
+                    min={new Date().toISOString().split("T")[0]}
                     onChange={(e) => setSearchDate(e.target.value)}
                     style={{ position: "absolute", opacity: 0, pointerEvents: "none" }}
                   />
@@ -247,85 +209,34 @@ export const MainPage = () => {
                 <span>Filter</span>
               </div>
               <div className="filter-list">
-                <div style={{ position: 'relative' }}>
-                  <button
-                    className={`filter-chip${activeContinents.length ? ' filter-chip--active' : ''}`}
-                    onClick={() => { setShowRegionMenu(p => !p); setShowCategoryMenu(false); setShowLanguageMenu(false); }}
-                  >
-                    {activeContinents.length
-                      ? `Region${activeContinents.length > 1 ? ` (${activeContinents.length})` : `: ${activeContinents[0]}`}`
-                      : '+ Region'}
-                  </button>
-                  {showRegionMenu && (
-                    <div className="filter-dropdown">
-                      {['Africa','Asia','Europe','North America','South America','Oceania'].map(c => (
-                        <label key={c} className="filter-check">
-                          <input
-                            type="checkbox"
-                            checked={activeContinents.includes(c)}
-                            onChange={() => setActiveContinents(prev => toggleIn(prev, c))}
-                          />
-                          {c}
-                        </label>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                <div style={{ position: 'relative' }}>
-                  <button
-                    className={`filter-chip${activeCategories.length ? ' filter-chip--active' : ''}`}
-                    onClick={() => { setShowCategoryMenu(p => !p); setShowRegionMenu(false); setShowLanguageMenu(false); }}
-                  >
-                    {activeCategories.length
-                      ? `Type${activeCategories.length > 1 ? ` (${activeCategories.length})` : `: ${activeCategories[0]}`}`
-                      : '+ Tour type'}
-                  </button>
-                  {showCategoryMenu && (
-                    <div className="filter-dropdown">
-                      {['Cultural Tourism','Historical Tourism','Art Tourism','Eco Tourism','Luxury Tourism','Culinary Tourism','Wellness Tourism','Religious Tourism'].map(c => (
-                        <label key={c} className="filter-check">
-                          <input
-                            type="checkbox"
-                            checked={activeCategories.includes(c)}
-                            onChange={() => setActiveCategories(prev => toggleIn(prev, c))}
-                          />
-                          {c}
-                        </label>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                <div style={{ position: 'relative' }}>
-                  <button
-                    className={`filter-chip${activeLanguages.length ? ' filter-chip--active' : ''}`}
-                    onClick={() => { setShowLanguageMenu(p => !p); setShowRegionMenu(false); setShowCategoryMenu(false); }}
-                  >
-                    {activeLanguages.length
-                      ? `Language${activeLanguages.length > 1 ? ` (${activeLanguages.length})` : `: ${activeLanguages[0]}`}`
-                      : '+ Tour language'}
-                  </button>
-                  {showLanguageMenu && (
-                    <div className="filter-dropdown">
-                      {['English','Spanish','French','German','Italian','Portuguese','Dutch','Arabic','Chinese','Japanese','Korean','Hindi','Thai','Turkish','Russian'].map(l => (
-                        <label key={l} className="filter-check">
-                          <input
-                            type="checkbox"
-                            checked={activeLanguages.includes(l)}
-                            onChange={() => setActiveLanguages(prev => toggleIn(prev, l))}
-                          />
-                          {l}
-                        </label>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                <button
-                  className="filter-chip"
-                  onClick={() => { setActiveContinents([]); setActiveCategories([]); setActiveLanguages([]); setSearchLocation(""); setSearchDate(""); setShowRegionMenu(false); setShowCategoryMenu(false); setShowLanguageMenu(false); }}
-                >
+                <FilterDropdown
+                  label="Region"
+                  shortLabel="Region"
+                  options={FILTER_CONTINENTS}
+                  active={activeContinents}
+                  onChange={setActiveContinents}
+                  isOpen={openMenu === "region"}
+                  onToggle={() => toggleMenu("region")}
+                />
+                <FilterDropdown
+                  label="Tour type"
+                  shortLabel="Type"
+                  options={CATEGORIES}
+                  active={activeCategories}
+                  onChange={setActiveCategories}
+                  isOpen={openMenu === "category"}
+                  onToggle={() => toggleMenu("category")}
+                />
+                <FilterDropdown
+                  label="Tour language"
+                  shortLabel="Language"
+                  options={LANGUAGES}
+                  active={activeLanguages}
+                  onChange={setActiveLanguages}
+                  isOpen={openMenu === "language"}
+                  onToggle={() => toggleMenu("language")}
+                />
+                <button className="filter-chip" onClick={resetFilters}>
                   Reset filter
                 </button>
               </div>
@@ -372,38 +283,38 @@ export const MainPage = () => {
               <h2 className="section-title">Where next?</h2>
               <p className="section-subtitle">Here are some popular choice</p>
             </div>
-            <button className="more-btn" onClick={handleExploreMore}>Explore more</button>
+            <button className="more-btn" onClick={handleSearch}>Explore more</button>
           </div>
           <div className="destination-grid">
             <div
               className="destination-card big-card"
-              onClick={() => navigate('/continent/Asia')}
-              style={{ cursor: 'pointer' }}
+              onClick={() => navigate("/continent/Asia")}
+              style={{ cursor: "pointer" }}
             >
               <div className="card-text">
                 <h3>Asia</h3>
-                <p>{continentCounts['Asia'] || 0} experience{continentCounts['Asia'] !== 1 ? 's' : ''} available</p>
+                <p>{continentCounts["Asia"] || 0} experience{continentCounts["Asia"] !== 1 ? "s" : ""} available</p>
               </div>
             </div>
             <div className="right-column">
               <div
                 className="destination-card tall-card"
-                onClick={() => navigate('/continent/Europe')}
-                style={{ cursor: 'pointer' }}
+                onClick={() => navigate("/continent/Europe")}
+                style={{ cursor: "pointer" }}
               >
                 <div className="small-card-text">
                   <h3>Europe</h3>
-                  <p>{continentCounts['Europe'] || 0} experience{continentCounts['Europe'] !== 1 ? 's' : ''} available</p>
+                  <p>{continentCounts["Europe"] || 0} experience{continentCounts["Europe"] !== 1 ? "s" : ""} available</p>
                 </div>
               </div>
               <div
                 className="destination-card tall-card"
-                onClick={() => navigate('/continent/Africa')}
-                style={{ cursor: 'pointer' }}
+                onClick={() => navigate("/continent/Africa")}
+                style={{ cursor: "pointer" }}
               >
                 <div className="small-card-text">
                   <h3>Africa</h3>
-                  <p>{continentCounts['Africa'] || 0} experience{continentCounts['Africa'] !== 1 ? 's' : ''} available</p>
+                  <p>{continentCounts["Africa"] || 0} experience{continentCounts["Africa"] !== 1 ? "s" : ""} available</p>
                 </div>
               </div>
             </div>
@@ -411,26 +322,7 @@ export const MainPage = () => {
         </div>
       </section>
 
-      {/* Almost Sold Out */}
-      <section className="popular">
-        <div className="destination-section">
-          <div className="where-header">
-            <div>
-              <h2 className="section-title">Almost sold out!</h2>
-              <p className="section-subtitle">Grab your last chance to explore the world with us.</p>
-            </div>
-            <button className="more-btn">Click here to check more</button>
-          </div>
-          <div className="card-list">
-            {soldOut.length > 0
-                ? soldOut.map(renderCard)
-                : <p style={{color:'#666'}}>No experiences found.</p>
-            }
-          </div>
-        </div>
-      </section>
-
-      {/* Top Choice This Month */}
+      {/* New event */}
       <section className="popular">
         <div className="destination-section">
           <div className="where-header">
@@ -438,18 +330,18 @@ export const MainPage = () => {
               <h2 className="section-title">New event!</h2>
               <p className="section-subtitle">Don't know what to choose? Check out our new activity!</p>
             </div>
-            <button className="more-btn">Click here to check more</button>
+            <button className="more-btn" onClick={() => navigate("/continent/all")}>Click here to check more</button>
           </div>
           <div className="card-list">
-            { newevent.length > 0
-                ? newevent.map(renderCard)
-                : <p style={{color:'#666'}}>No experiences found.</p>
+            {newEvents.length > 0
+              ? newEvents.map(exp => (
+                  <ExperienceCard key={exp.id} experience={exp} linkState={{ from: "main" }} />
+                ))
+              : <p style={{ color: "#666" }}>No experiences found.</p>
             }
           </div>
         </div>
       </section>
-
-
 
       {/* Newsletter */}
       <section className="newsletter">

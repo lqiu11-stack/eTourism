@@ -15,7 +15,6 @@ export const EhostRegisterStep2 = () => {
         saved.hasExperience === false ? "no" : "",
       yearsOfExperience:
         saved.yearsOfExperience !== undefined ? String(saved.yearsOfExperience) : "",
-      preferredCountry: saved.preferredCountry || "",
     };
   });
   const [error, setError] = useState("");
@@ -32,14 +31,13 @@ export const EhostRegisterStep2 = () => {
 
   const handleNext = (e) => {
     e.preventDefault();
-    if (form.hasExperience === "" || !form.preferredCountry) {
+    if (form.hasExperience === "") {
       setError("Please fill in all required fields.");
       return;
     }
     sessionStorage.setItem("ehost_step2", JSON.stringify({
       hasExperience: form.hasExperience === "yes",
       yearsOfExperience: Number(form.yearsOfExperience) || 0,
-      preferredCountry: form.preferredCountry,
     }));
     navigate("/register/ehost/step3");
   };
@@ -74,23 +72,20 @@ export const EhostRegisterStep2 = () => {
           </div>
 
           <label className="text-wrapper-3">How long have you been working as a tour guide?</label>
-          <div className="input-with-text">
-            <input
-              className="rectangle-5"
-              type="number"
-              min="0"
-              name="yearsOfExperience"
-              value={form.yearsOfExperience}
-              onChange={handleChange}
-              disabled={form.hasExperience !== "yes"}
-            />
-            <span className="suffix-text">year</span>
-          </div>
-
-          <label className="text-wrapper-5">Which country will you prefer to work in?*</label>
           {error && <div className="error-text">{error}</div>}
           <div className="email-wrapper">
-            <input className="rectangle-3" type="text" name="preferredCountry" placeholder="Enter country name" value={form.preferredCountry} onChange={handleChange} />
+            <div className="input-with-text">
+              <input
+                className="rectangle-5"
+                type="number"
+                min="0"
+                name="yearsOfExperience"
+                value={form.yearsOfExperience}
+                onChange={handleChange}
+                disabled={form.hasExperience !== "yes"}
+              />
+              <span className="suffix-text">year</span>
+            </div>
             <button type="submit" className="next-btn">
               <img src={arrowRight} alt="Next" className="next-icon" />
             </button>

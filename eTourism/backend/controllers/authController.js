@@ -2,6 +2,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const UserAgreement = require('../models/UserAgreement');
+const pool = require('../config/db');
 
 const calculateAge = (dob) => {
   const birth = new Date(dob);
@@ -73,6 +74,13 @@ const register = async (req, res) => {
     const role = 'visitor';
     const existing = await User.findByEmail(email);
     if (existing) {
+      return res.status(409).json({ error: 'Email already registered' });
+    }
+    const { rows: pendingApp } = await pool.query(
+      `SELECT id FROM ehost_applications WHERE email = $1 AND status = 'pending'`,
+      [email]
+    );
+    if (pendingApp.length > 0) {
       return res.status(409).json({ error: 'Email already registered' });
     }
     const password_hash = await bcrypt.hash(password, 10);
@@ -245,7 +253,14 @@ const checkEmail = async (req, res) => {
       return res.status(400).json({ error: 'email is required' });
     }
     const existing = await User.findByEmail(email);
-    res.json({ available: !existing });
+    if (existing) {
+      return res.json({ available: false });
+    }
+    const { rows: pendingApp } = await pool.query(
+      `SELECT id FROM ehost_applications WHERE email = $1 AND status = 'pending'`,
+      [email]
+    );
+    res.json({ available: pendingApp.length === 0 });
   } catch (err) {
     console.error('[checkEmail]', err);
     res.status(500).json({ error: err.message || 'Email check failed' });

@@ -160,7 +160,6 @@ describe('createBooking()', () => {
     assert.equal(res.status.mock.calls[0].arguments[0], 201);
     assert.equal(res.json.mock.calls[0].arguments[0].message, 'Booking created successfully');
     assert.deepEqual(res.json.mock.calls[0].arguments[0].booking, fakeBooking);
-    assert.equal(mockBooking.create.mock.calls[0].arguments[0].meeting_link, '');
   });
 
   it('400 : agreed_to_terms is not true', async () => {
@@ -339,9 +338,9 @@ describe('createBooking()', () => {
 describe('getBookings()', () => {
   beforeEach(resetMocks);
 
-  it('200 : returns bookings with parsed meeting link only for confirmed', async () => {
+  it('200 : returns bookings with experience meeting link only for confirmed', async () => {
     const fakeBookings = [
-      { id: 1, visitor_id: 42, status: 'confirmed', meeting_link: JSON.stringify({ platform: 'Zoom', link: 'https://zoom.us/j/123', password: '1111' }) },
+      { id: 1, visitor_id: 42, status: 'confirmed', meeting_link: 'https://zoom.us/j/123' },
       { id: 2, visitor_id: 42, status: 'pending', meeting_link: 'https://meet.google.com/raw-link' },
     ];
     mockBooking.findByVisitor.mock.mockImplementationOnce(async () => fakeBookings);
@@ -351,7 +350,7 @@ describe('getBookings()', () => {
     assert.equal(res.status.mock.calls[0].arguments[0], 200);
     const response = res.json.mock.calls[0].arguments[0];
     assert.equal(response[0].meeting_link, 'https://zoom.us/j/123');
-    assert.equal(response[0].meeting_config.password, '1111');
+    assert.equal(response[0].meeting_config.link, 'https://zoom.us/j/123');
     assert.equal(response[1].meeting_link, null);
     assert.equal(response[1].meeting_config, null);
   });
@@ -370,7 +369,7 @@ describe('getBookingById()', () => {
   beforeEach(resetMocks);
 
   it('200 : returns booking when found and owned by visitor', async () => {
-    const fakeBooking = { id: 1, visitor_id: 42, status: 'confirmed', meeting_link: JSON.stringify({ platform: 'WhatsApp', link: 'https://wa.me/111222333', password: null }) };
+    const fakeBooking = { id: 1, visitor_id: 42, status: 'confirmed', meeting_link: 'https://wa.me/111222333' };
     mockBooking.findById.mock.mockImplementationOnce(async () => fakeBooking);
     mockRefund.findByBookingId.mock.mockImplementationOnce(async () => null);
     mockPayment.findByBooking.mock.mockImplementationOnce(async () => []);
@@ -379,7 +378,7 @@ describe('getBookingById()', () => {
     await getBookingById(req, res);
     assert.equal(res.status.mock.calls[0].arguments[0], 200);
     assert.equal(res.json.mock.calls[0].arguments[0].meeting_link, 'https://wa.me/111222333');
-    assert.equal(res.json.mock.calls[0].arguments[0].meeting_config.platform, 'WhatsApp');
+    assert.equal(res.json.mock.calls[0].arguments[0].meeting_config.link, 'https://wa.me/111222333');
   });
 
   it('403 : booking belongs to a different visitor', async () => {

@@ -12,7 +12,6 @@ const {
   updateCalendarSlot,
   deleteCalendarSlot,
   setUnavailableDates,
-  updateBookingMeetingLink,
   getBookingPreferences,
   updateBookingPreferences,
   getMe,
@@ -53,9 +52,6 @@ router.put('/calendar/slots/:id', requireRole('ehost'), updateCalendarSlot);
 router.delete('/calendar/slots/:id', requireRole('ehost'), deleteCalendarSlot);
 
 router.post('/calendar/unavailable-dates', requireRole('ehost'), setUnavailableDates);
-
-// PATCH /api/ehost/bookings/:id/meeting-link
-router.patch('/bookings/:id/meeting-link', requireRole('ehost'), updateBookingMeetingLink);
 
 // GET /api/ehost/me
 router.get('/me', requireRole('ehost'), getMe);

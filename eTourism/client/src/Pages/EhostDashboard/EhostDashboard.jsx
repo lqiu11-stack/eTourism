@@ -2,9 +2,8 @@ import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import applyIcon from "../icon/approve.png";
-import profileIcon from "../icon/customer-review.png";
+import profileIcon from "../icon/profile.png";
 import { RejectionModal } from "./RejectionModal.jsx";
-import { getCountryImage } from "../../utils/countryImages";
 import "./EhostDashboard.css";
 
 const API_BASE = import.meta.env.VITE_API_URL;
@@ -29,6 +28,8 @@ export const EhostDashboard = () => {
   const [experiences, setExperiences] = useState([]);
   const [loading, setLoading] = useState(false);
   const [rejectionModal, setRejectionModal] = useState({ open: false, reason: "", title: "" });
+  const [deleteModal, setDeleteModal] = useState({ open: false, id: null, title: "" });
+  const [networkQuality, setNetworkQuality] = useState(null);
 
   useEffect(() => {
     if (!token || user.role !== "ehost") {
@@ -55,6 +56,15 @@ export const EhostDashboard = () => {
     fetchExperiences();
   }, [fetchExperiences]);
 
+  useEffect(() => {
+    if (!token) return;
+    axios.get(`${API_BASE}/network-logs/me`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then(({ data }) => setNetworkQuality(data))
+      .catch(() => {});
+  }, [token]);
+
   const handleLogout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
@@ -77,6 +87,24 @@ export const EhostDashboard = () => {
       }
     } catch {
       alert("Failed to load bookings. Please try again.");
+    }
+  };
+
+  const requestDelete = (exp) => {
+    setDeleteModal({ open: true, id: exp.id, title: exp.title || exp.location_name || "this experience" });
+  };
+
+  const confirmDelete = async () => {
+    const id = deleteModal.id;
+    setDeleteModal({ open: false, id: null, title: "" });
+    if (!id) return;
+    try {
+      await axios.delete(`${API_BASE}/ehost/experiences/${id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      fetchExperiences();
+    } catch (e) {
+      alert(e.response?.data?.message || "Failed to delete.");
     }
   };
 
@@ -150,18 +178,37 @@ export const EhostDashboard = () => {
           }
         }}
       >
-        <img src={exp.cover_image || getCountryImage(exp.country)} alt={exp.title || "experience"} className="eh-row-image" />
+        <img src={exp.cover_image} alt={exp.title || "experience"} className="eh-row-image" />
         <div className="eh-row-body">
           <div className="eh-row-title-line">
             <span className="eh-row-title">{exp.title || exp.location_name}</span>
             {exp.status === "approved" && isFuture && (
-              <span className="eh-row-title-tag">Approve</span>
+              <span className="eh-row-title-tag">Approved</span>
             )}
           </div>
           <div className="eh-row-datetime">{formatDateTime(exp.date_time) || "Date TBC"}</div>
           {statusNode}
         </div>
-        {button && <div className="eh-row-action">{button}</div>}
+        <div className="eh-row-action">
+          {exp.status === "pending" && (
+            <button
+              className="eh-row-btn"
+              onClick={stop(() => navigate(`/EditActivity/${exp.id}`))}
+            >
+              Edit
+            </button>
+          )}
+          {button}
+          {exp.status !== "approved" && (
+            <button
+              type="button"
+              className="eh-row-btn eh-row-btn-danger"
+              onClick={stop(() => requestDelete(exp))}
+            >
+              Delete
+            </button>
+          )}
+        </div>
       </div>
     );
   };
@@ -189,6 +236,26 @@ export const EhostDashboard = () => {
             <span>Update profile</span>
           </button>
         </div>
+        {networkQuality && networkQuality.total > 0 && (
+          <div
+            className={`eh-network-tile${networkQuality.is_poor ? " eh-network-tile--warn" : ""}`}
+          >
+            <div className="eh-network-tile-title">Connection quality (last 7 days)</div>
+            <div className="eh-network-tile-stats">
+              {networkQuality.poor_count} issue{networkQuality.poor_count === 1 ? "" : "s"}
+              {" out of "}
+              {networkQuality.total} request{networkQuality.total === 1 ? "" : "s"}
+              {" ("}
+              {Math.round(networkQuality.poor_ratio * 100)}%{")"}
+            </div>
+            {networkQuality.is_poor && (
+              <div className="eh-network-tile-hint">
+                Your sessions have been unstable. Consider switching to a wired
+                connection or moving closer to your router before going live.
+              </div>
+            )}
+          </div>
+        )}
       </section>
 
       <section className="eh-section">
@@ -208,6 +275,33 @@ export const EhostDashboard = () => {
           reason={rejectionModal.reason}
           onClose={() => setRejectionModal({ open: false, reason: "", title: "" })}
         />
+      )}
+
+      {deleteModal.open && (
+        <div className="eh-modal-overlay" role="dialog" aria-modal="true">
+          <div className="eh-modal-panel">
+            <h3 className="eh-modal-title">Delete experience?</h3>
+            <div className="eh-modal-body">
+              Are you sure you want to delete &quot;{deleteModal.title}&quot;? This cannot be undone.
+            </div>
+            <div className="eh-modal-actions" style={{ gap: 10 }}>
+              <button
+                type="button"
+                className="eh-row-btn"
+                onClick={() => setDeleteModal({ open: false, id: null, title: "" })}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="eh-modal-close"
+                onClick={confirmDelete}
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

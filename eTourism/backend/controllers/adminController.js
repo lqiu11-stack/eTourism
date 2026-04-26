@@ -117,8 +117,8 @@ const rejectExperience = async (req, res) => {
 // DELETE /api/admin/experiences/:id
 const deleteExperience = async (req, res) => {
   try {
-    const deleted = await Experience.delete(req.params.id);
-    if (!deleted) return res.status(404).json({ message: 'Experience not found' });
+    const updated = await Experience.update(req.params.id, { status: 'deleted' });
+    if (!updated) return res.status(404).json({ message: 'Experience not found' });
     res.json({ message: 'Experience deleted successfully' });
   } catch (err) {
     res.status(500).json({ message: 'Server error', error: String(err) });
@@ -142,14 +142,14 @@ const getReviews = async (req, res) => {
 // GET /api/admin/analytics
 const getAnalytics = async (req, res) => {
   try {
-    const [topExperiences, topHosts, visitorCountries, categoryBreakdown] = await Promise.all([
+    const [topExperiences, topHosts, revenueByCategory, categoryBreakdown] = await Promise.all([
       Analytics.getTopExperiences(),
       Analytics.getTopHosts(),
-      Analytics.getVisitorCountries(),
+      Analytics.getRevenueByCategory(),
       Analytics.getCategoryBreakdown(),
     ]);
 
-    res.json({ topExperiences, topHosts, visitorCountries, categoryBreakdown });
+    res.json({ topExperiences, topHosts, revenueByCategory, categoryBreakdown });
   } catch (err) {
     res.status(500).json({ message: 'Server error', error: String(err) });
   }
@@ -247,9 +247,9 @@ const approveApplication = async (req, res) => {
       return res.status(409).json({ message: 'A user with this email already exists' });
     }
 
-    // Generate a temporary password — ehost must reset on first login
-    const tempPassword = Math.random().toString(36).slice(-10);
-    const password_hash = await bcrypt.hash(tempPassword, 10);
+    if (!application.password_hash) {
+      return res.status(400).json({ message: 'Application has no password on file. Applicant must resubmit with a password.' });
+    }
 
     const nameParts = application.name.trim().split(' ');
     const first_name = nameParts[0];
@@ -257,12 +257,12 @@ const approveApplication = async (req, res) => {
 
     const user = await User.create({
       email: application.email,
-      password_hash,
+      password_hash: application.password_hash,
       role: 'ehost',
       first_name,
       last_name,
       date_of_birth: application.birthday,
-      country: application.preferred_country,
+      country: application.country,
       language: null,
     });
 
@@ -274,7 +274,6 @@ const approveApplication = async (req, res) => {
     res.json({
       message: 'Application approved. Ehost account created.',
       user,
-      temp_password: tempPassword,
     });
   } catch (err) {
     res.status(500).json({ message: 'Server error', error: String(err) });

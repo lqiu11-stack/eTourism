@@ -6,7 +6,6 @@ import backIcon from "../icon/back.png";
 import link2Icon from "../icon/link-2.png";
 import approveIcon from "../icon/approve.png";
 import enjoyIcon from "../icon/enjoy.png";
-import { getCountryImage } from "../../utils/countryImages";
 import { useLayoutEffect } from "react";
 
 
@@ -130,7 +129,7 @@ export const MyBookingDetail = () => {
     }
   }, [stateBooking, bookingIdParam, sessionId, token]);
 
-  const coverImage = getCountryImage(experience?.country ?? booking?.country);
+  const coverImage = experience?.cover_image;
   const now = new Date();
   const eventDate = experience?.date_time ? new Date(experience.date_time) : null;
   const isPast = eventDate && eventDate < now;

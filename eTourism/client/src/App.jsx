@@ -19,13 +19,15 @@ import { ApplyActivity } from "./Pages/ApplyActivity/ApplyActivity.jsx";
 import { EhostProfile } from "./Pages/EhostProfile/EhostProfile.jsx";
 import { ContinentPage } from "./Pages/ContinentPage/ContinentPage.jsx";
 import { VisitorRegister } from "./Pages/VisitorRegister/VisitorRegister.jsx";
+import { NetworkBanner } from "./components/NetworkBanner.jsx";
 
 
 
 
 function App() {
   return (
-
+    <>
+      <NetworkBanner />
       <Routes>
         <Route path="/" element={<MainPage />} />
         <Route path="/login" element={<LoginPage />} />
@@ -45,10 +47,12 @@ function App() {
         <Route path="/MapPage" element={< MapPage />} />
         <Route path="/EhostDashboard" element={<EhostDashboard />} />
         <Route path="/ApplyActivity" element={<ApplyActivity />} />
+        <Route path="/EditActivity/:id" element={<ApplyActivity />} />
         <Route path="/EhostProfile" element={<EhostProfile />} />
         <Route path="/continent/:continent" element={<ContinentPage />} />
         <Route path="/register/visitor" element={<VisitorRegister />} />
       </Routes>
+    </>
   );
 }
 

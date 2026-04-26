@@ -217,13 +217,16 @@
 .join-box input{
   color: white;
 }
-input[type="date"]{
+input[type="date"]:invalid,
+input[type="date"]:invalid::-webkit-datetime-edit{
   color: white;
   -webkit-text-fill-color: white;
 }
 
-input[type="date"]::-webkit-datetime-edit{
-  color: white;
+input[type="date"]:valid,
+input[type="date"]:valid::-webkit-datetime-edit{
+  color: black;
+  -webkit-text-fill-color: black;
 }
 
 input[type="date"]::-webkit-calendar-picker-indicator{
@@ -232,7 +235,73 @@ input[type="date"]::-webkit-calendar-picker-indicator{
 
 .next-icon{
   height: clamp(60px, 4vw, 70px);
-  width: fit-content; 
+  width: fit-content;
+}
+
+.info-text{
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 14px;
+  margin-top: 4px;
+}
+
+.error-text{
+  color: #ffb4b4;
+  font-size: 14px;
+  margin-top: 4px;
+  font-weight: 500;
+}
+
+.ehost-popup-overlay{
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 16px;
+}
+
+.ehost-popup-card{
+  background: #fff;
+  color: #2b2d42;
+  width: min(440px, 92vw);
+  border-radius: 12px;
+  padding: 28px 24px 22px;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.25);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  text-align: center;
+}
+
+.ehost-popup-card h3{
+  margin: 0;
+  font-size: 20px;
+  color: #2b2d42;
+}
+
+.ehost-popup-card p{
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.5;
+  color: #444;
+}
+
+.ehost-popup-ok{
+  align-self: center;
+  margin-top: 8px;
+  padding: 8px 28px;
+  border: none;
+  border-radius: 8px;
+  background: #a88b8b;
+  color: white;
+  font-size: 15px;
+  cursor: pointer;
+}
+
+.ehost-popup-ok:hover{
+  background: #8b6b6b;
 }
 
 

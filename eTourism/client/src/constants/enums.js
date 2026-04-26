@@ -53,3 +53,8 @@ export const PAYMENT_METHODS = ['stripe', 'paypal'];
 export const USER_ROLES = ['visitor', 'ehost', 'admin'];
 
 export const USER_STATUSES = ['active', 'suspended'];
+
+export const NETWORK_QUALITIES = ['good', 'slow', 'failed', 'offline'];
+export const NETWORK_POOR_QUALITIES = ['slow', 'failed', 'offline'];
+export const NETWORK_POOR_RATIO_THRESHOLD = 0.3;
+export const NETWORK_POOR_MIN_SAMPLES = 5;

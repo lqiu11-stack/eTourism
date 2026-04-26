@@ -108,26 +108,8 @@ const validateBookingPreference = (experience, payload = {}) => {
   return null;
 };
 
-const toMeetingConfig = (meetingLink) => {
-  if (!meetingLink) {
-    return null;
-  }
-  try {
-    const parsed = JSON.parse(meetingLink);
-    if (parsed && typeof parsed === 'object' && parsed.link) {
-      return {
-        platform: parsed.platform || 'Custom',
-        link: parsed.link,
-        password: parsed.password || null,
-      };
-    }
-  } catch (error) {}
-  return {
-    platform: 'Custom',
-    link: meetingLink,
-    password: null,
-  };
-};
+const toMeetingConfig = (meetingLink) =>
+  meetingLink ? { link: meetingLink } : null;
 
 const getPayPalClient = () => {
 
@@ -258,13 +240,12 @@ const createBooking = async (req, res) => {
     const newBooking = await Booking.create({
       visitor_id,
       experience_id,
-      amount_paid: totalAmount,      
-      booking_type: 'online', 
-      meeting_link: '',
+      amount_paid: totalAmount,
+      booking_type: 'online',
       qty_normal: qtyNormal,
       qty_discounted: qtyDiscounted,
-      contact_name,          
-      contact_email          
+      contact_name,
+      contact_email
     });
 
     return res.status(201).json({

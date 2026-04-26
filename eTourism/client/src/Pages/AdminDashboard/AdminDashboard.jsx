@@ -140,17 +140,28 @@ export const Dashboard = () => {
     }
   };
 
-  const handleDeleteUser = async (id) => {
-    if (!window.confirm("Delete this user? This cannot be undone.")) return;
-    try {
-      await axios.delete(`${API_BASE}/admin/users/${id}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      fetchUsers();
-      setShowUserModal(false);
-    } catch (e) {
-      alert(e.response?.data?.message || "Failed to delete user.");
-    }
+  const [confirmModal, setConfirmModal] = useState({ open: false, title: "", message: "", onConfirm: null });
+
+  const closeConfirmModal = () => setConfirmModal({ open: false, title: "", message: "", onConfirm: null });
+
+  const handleDeleteUser = (id) => {
+    setConfirmModal({
+      open: true,
+      title: "Delete user?",
+      message: "Delete this user? This cannot be undone.",
+      onConfirm: async () => {
+        closeConfirmModal();
+        try {
+          await axios.delete(`${API_BASE}/admin/users/${id}`, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          fetchUsers();
+          setShowUserModal(false);
+        } catch (e) {
+          alert(e.response?.data?.message || "Failed to delete user.");
+        }
+      },
+    });
   };
 
   const [experiences, setExperiences] = useState([]);
@@ -201,16 +212,23 @@ export const Dashboard = () => {
     }
   };
 
-  const handleDeleteExperience = async (id) => {
-    if (!window.confirm("Delete this experience?")) return;
-    try {
-      await axios.delete(`${API_BASE}/admin/experiences/${id}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      fetchExperiences(expStatusFilter);
-    } catch (e) {
-      alert(e.response?.data?.message || "Failed to delete.");
-    }
+  const handleDeleteExperience = (id) => {
+    setConfirmModal({
+      open: true,
+      title: "Delete experience?",
+      message: "This cannot be undone.",
+      onConfirm: async () => {
+        closeConfirmModal();
+        try {
+          await axios.delete(`${API_BASE}/admin/experiences/${id}`, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          fetchExperiences(expStatusFilter);
+        } catch (e) {
+          alert(e.response?.data?.message || "Failed to delete.");
+        }
+      },
+    });
   };
 
   const [applications, setApplications] = useState([]);
@@ -239,12 +257,12 @@ export const Dashboard = () => {
 
   const handleApproveApplication = async (id) => {
     try {
-      const { data } = await axios.patch(
+      await axios.patch(
         `${API_BASE}/admin/applications/${id}/approve`,
         {},
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      alert(`Application approved!\nTemporary password: ${data.temp_password}\nPlease share this with the new ehost.`);
+      alert("Application approved. The ehost can now log in with the password they set during registration.");
       fetchApplications(appStatusFilter);
       setShowAppModal(false);
     } catch (e) {
@@ -274,7 +292,26 @@ export const Dashboard = () => {
     if (activeTab === "EhostJoin") fetchApplications(appStatusFilter);
     if (activeTab === "reports") fetchAnalytics();
     if (activeTab === "suitability") fetchSuitExps(suitStatusFilter);
+    if (activeTab === "network") fetchNetworkSummary();
   }, [activeTab]);
+
+  // ── Network issues ───────────────────────────────────────────────────
+  const [networkSummary, setNetworkSummary] = useState(null);
+  const [networkLoading, setNetworkLoading] = useState(false);
+
+  const fetchNetworkSummary = useCallback(async () => {
+    setNetworkLoading(true);
+    try {
+      const { data } = await axios.get(`${API_BASE}/network-logs/admin/summary`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setNetworkSummary(data);
+    } catch {
+      setNetworkSummary(null);
+    } finally {
+      setNetworkLoading(false);
+    }
+  }, [token]);
 
   // ── Analytics / Reports ──────────────────────────────────────────────
   const [analytics, setAnalytics] = useState(null);
@@ -399,6 +436,7 @@ export const Dashboard = () => {
           { key: "suitability", label: "Suitability review" },
           { key: "request", label: "Experiences" },
           { key: "EhostJoin", label: "E-hosts" },
+          { key: "network", label: "Network issues" },
         ].map(({ key, label }) => (
           <button
             key={key}
@@ -503,8 +541,23 @@ export const Dashboard = () => {
             onAfterAction={() => { setShowSuitPanel(false); fetchSuitExps(suitStatusFilter); }}
           />
         )}
+        {activeTab === "network" && (
+          <NetworkIssues summary={networkSummary} loading={networkLoading} />
+        )}
       </div>
 
+      {confirmModal.open && (
+        <div className="refund-overlay" role="dialog" aria-modal="true">
+          <div className="refund-panel" style={{ width: "min(440px, 90vw)", padding: 24, flexDirection: "column", gap: 16 }}>
+            <h3 style={{ margin: 0 }}>{confirmModal.title}</h3>
+            <p style={{ margin: 0 }}>{confirmModal.message}</p>
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: 10 }}>
+              <button type="button" className="sort-btn" onClick={closeConfirmModal}>Cancel</button>
+              <button type="button" className="sort-btn" style={{ background: "#e57373", color: "white" }} onClick={() => confirmModal.onConfirm && confirmModal.onConfirm()}>Delete</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
@@ -743,7 +796,7 @@ const ExperienceRequests = ({ experiences, loading, statusFilter, setStatusFilte
                 <button className="sort-btn" onClick={() => onReject(item.id)}>Reject</button>
               </>
             )}
-            <button className="sort-btn" style={{ background: "#e57373", color: "white" }} onClick={() => onDelete(item.id)}>Delete</button>
+            <button type="button" className="sort-btn" style={{ background: "#e57373", color: "white" }} onClick={() => onDelete(item.id)}>Delete</button>
           </div>
         </div>
       ))}
@@ -810,15 +863,23 @@ const Reports = ({ analytics, loading }) => {
     }],
   };
 
-  const countryChartData = {
-    labels: analytics.visitorCountries.map((c) => c.country),
+  const revenueChartData = {
+    labels: analytics.revenueByCategory.map((c) => c.category || "Uncategorised"),
     datasets: [{
-      data: analytics.visitorCountries.map((c) => Number(c.visitor_count)),
+      data: analytics.revenueByCategory.map((c) => Number(c.revenue)),
       backgroundColor: "#8bb897",
       borderColor: "#6a9a78",
       borderWidth: 1,
       borderRadius: 4,
     }],
+  };
+
+  const revenueBarOptions = {
+    ...barOptions(),
+    plugins: {
+      ...barOptions().plugins,
+      tooltip: { callbacks: { label: (ctx) => ` £${Number(ctx.parsed.x).toFixed(2)}` } },
+    },
   };
 
   const categoryChartData = {
@@ -843,7 +904,7 @@ const Reports = ({ analytics, loading }) => {
   const CHART_HEIGHT = 300;
   const expBarHeight = Math.max(CHART_HEIGHT, analytics.topExperiences.length * 36);
   const hostBarHeight = Math.max(CHART_HEIGHT, analytics.topHosts.length * 36);
-  const countryBarHeight = Math.max(CHART_HEIGHT, analytics.visitorCountries.length * 36);
+  const revenueBarHeight = Math.max(CHART_HEIGHT, analytics.revenueByCategory.length * 36);
 
   return (
     <div className="reports-wrapper">
@@ -873,12 +934,12 @@ const Reports = ({ analytics, loading }) => {
 
       <div className="report-charts-row">
         <div className="report-section report-section-wide">
-          <h3 className="report-heading">Visitor Countries of Origin</h3>
-          {analytics.visitorCountries.length === 0 ? (
-            <p className="report-empty">No visitor country data yet.</p>
+          <h3 className="report-heading">Revenue by Category</h3>
+          {analytics.revenueByCategory.length === 0 ? (
+            <p className="report-empty">No revenue recorded yet.</p>
           ) : (
-            <div style={{ height: countryBarHeight }}>
-              <Bar data={countryChartData} options={barOptions()} />
+            <div style={{ height: revenueBarHeight }}>
+              <Bar data={revenueChartData} options={revenueBarOptions} />
             </div>
           )}
         </div>
@@ -1056,12 +1117,6 @@ const EhostApplications = ({
             <button className="sort-btn" onClick={() => { setSelectedApp(item); setShowAppModal(true); }}>
               View
             </button>
-            {item.status === "pending" && (
-              <>
-                <button className="sort-btn" onClick={() => onApprove(item.id)}>Approve</button>
-                <button className="sort-btn" onClick={() => onReject(item.id)}>Reject</button>
-              </>
-            )}
           </div>
         </div>
       ))}
@@ -1076,7 +1131,6 @@ const EhostApplications = ({
             <p><strong>Name:</strong> {selectedApp.name}</p>
             <p><strong>Email:</strong> {selectedApp.email}</p>
             <p><strong>Country:</strong> {selectedApp.country}</p>
-            <p><strong>Preferred country:</strong> {selectedApp.preferred_country}</p>
             <p><strong>Has experience:</strong> {selectedApp.has_experience ? "Yes" : "No"}</p>
             {selectedApp.years_of_experience > 0 && <p><strong>Years:</strong> {selectedApp.years_of_experience}</p>}
             <p><strong>Description:</strong> {selectedApp.description}</p>
@@ -1096,3 +1150,76 @@ const EhostApplications = ({
     )}
   </div>
 );
+
+const NetworkIssues = ({ summary, loading }) => {
+  if (loading) return <div className="ad-network-empty">Loading network issues…</div>;
+  if (!summary) return <div className="ad-network-empty">Failed to load network issues.</div>;
+
+  const { users = [], experiences = [], window_hours = 168 } = summary;
+  const days = Math.round(window_hours / 24);
+
+  return (
+    <div className="ad-network">
+      <p className="ad-network-intro">
+        Connection issues recorded in the last {days} day{days === 1 ? "" : "s"}.
+        Rows flagged in orange exceed the unreliable-connection threshold.
+      </p>
+
+      <h3 className="ad-network-section-title">Top users with issues</h3>
+      {users.length === 0 ? (
+        <div className="ad-network-empty">No user issues recorded.</div>
+      ) : (
+        <table className="ad-network-table">
+          <thead>
+            <tr>
+              <th>User</th>
+              <th>Email</th>
+              <th>Role</th>
+              <th>Issues</th>
+              <th>Total</th>
+              <th>Ratio</th>
+            </tr>
+          </thead>
+          <tbody>
+            {users.map((u) => (
+              <tr key={u.user_id} className={u.is_poor ? "ad-network-row-warn" : ""}>
+                <td>{[u.first_name, u.last_name].filter(Boolean).join(" ") || `User ${u.user_id}`}</td>
+                <td>{u.email || "—"}</td>
+                <td>{u.role || "—"}</td>
+                <td>{u.poor_count}</td>
+                <td>{u.total}</td>
+                <td>{Math.round(u.poor_ratio * 100)}%</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+
+      <h3 className="ad-network-section-title">Top experiences with issues</h3>
+      {experiences.length === 0 ? (
+        <div className="ad-network-empty">No experience issues recorded.</div>
+      ) : (
+        <table className="ad-network-table">
+          <thead>
+            <tr>
+              <th>Experience</th>
+              <th>Issues</th>
+              <th>Total</th>
+              <th>Ratio</th>
+            </tr>
+          </thead>
+          <tbody>
+            {experiences.map((e) => (
+              <tr key={e.experience_id} className={e.is_poor ? "ad-network-row-warn" : ""}>
+                <td>{e.title || `Experience ${e.experience_id}`}</td>
+                <td>{e.poor_count}</td>
+                <td>{e.total}</td>
+                <td>{Math.round(e.poor_ratio * 100)}%</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+    </div>
+  );
+};

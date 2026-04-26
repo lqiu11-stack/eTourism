@@ -1,4 +1,5 @@
 const pool = require('../config/db');
+const bcrypt = require('bcrypt');
 const User = require('../models/User');
 const { CATEGORIES, LANGUAGES, CONTINENTS, GENDER_PREFERENCES } = require('../constants/enums');
 
@@ -112,7 +113,8 @@ try {
         video_description,
         video_highlights,
         date_time,
-        price_discounted
+        price_discounted,
+        meeting_link
     } = req.body;
 
 
@@ -127,6 +129,20 @@ try {
         return res.status(400).json({
             success: false,
             message: 'Please upload a cover image of the experience project.'
+        });
+    }
+
+    if (!meeting_link || typeof meeting_link !== 'string' || !meeting_link.trim()) {
+        return res.status(400).json({
+            success: false,
+            message: 'Meeting link is required.'
+        });
+    }
+    const normalizedMeetingLink = meeting_link.trim();
+    if (!/^https?:\/\//i.test(normalizedMeetingLink)) {
+        return res.status(400).json({
+            success: false,
+            message: 'Meeting link must start with http:// or https://.'
         });
     }
 
@@ -209,8 +225,8 @@ try {
 
     const { rows } = await pool.query(
         `INSERT INTO experiences
-        (title, ehost_id, location_name, country, continent, latitude, longitude, category, language, description, price, price_discounted, duration_minutes, max_visitors, cover_image, gender_preference, allows_piggyback, sample_video_url, video_description, video_highlights, date_time, status)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, 'pending')
+        (title, ehost_id, location_name, country, continent, latitude, longitude, category, language, description, price, price_discounted, duration_minutes, max_visitors, cover_image, gender_preference, allows_piggyback, sample_video_url, video_description, video_highlights, date_time, meeting_link, status)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, 'pending')
         RETURNING *`,
         [
             title,
@@ -234,6 +250,7 @@ try {
             normalizedVideoDescription,
             normalizedVideoHighlights,
             normalizedDateTime,
+            normalizedMeetingLink,
         ]
     );
 
@@ -304,67 +321,191 @@ const updateExperience = async (req, res) => {
   try {
     const experienceId = req.params.id;
     const ehostId = req.user ? req.user.id : req.userId;
-    const { location_name, description, category, language, continent, price, gender_preference, allows_piggyback, max_visitors } = req.body;
-
-    if (category !== undefined && !CATEGORIES.includes(category)) {
-      return res.status(400).json({
-        success: false,
-        message: `Invalid category. Allowed values: ${CATEGORIES.join(', ')}`,
-      });
-    }
-
-    if (language !== undefined && !LANGUAGES.includes(language)) {
-      return res.status(400).json({
-        success: false,
-        message: `Invalid language. Allowed values: ${LANGUAGES.join(', ')}`,
-      });
-    }
-
-    if (continent !== undefined && !CONTINENTS.includes(continent)) {
-      return res.status(400).json({
-        success: false,
-        message: `Invalid continent. Allowed values: ${CONTINENTS.join(', ')}`,
-      });
-    }
-
-    const normalizedGenderPreference = gender_preference === undefined
-      ? undefined
-      : normalizeGenderPreference(gender_preference);
-    if (gender_preference !== undefined && !normalizedGenderPreference) {
-      return res.status(400).json({
-        success: false,
-        message: `Invalid gender_preference. Allowed values: ${supportedGenderPreferences.join(', ')}`,
-      });
-    }
 
     const { rows: checkRows } = await pool.query(
-        `SELECT id FROM experiences WHERE id = $1 AND ehost_id = $2`,
+        `SELECT id, status FROM experiences WHERE id = $1 AND ehost_id = $2`,
         [experienceId, ehostId]
     );
-    
     if (checkRows.length === 0) {
         return res.status(404).json({ success: false, message: 'This experience was not found or you do not have permission to modify it.' });
     }
+    if (checkRows[0].status !== 'pending') {
+        return res.status(403).json({ success: false, message: 'Experience can only be edited while pending admin approval.' });
+    }
 
+    const {
+        title,
+        location_name,
+        country,
+        continent,
+        latitude,
+        longitude,
+        category,
+        language,
+        description,
+        price,
+        duration_minutes,
+        max_visitors,
+        cover_image,
+        gender_preference,
+        allows_piggyback,
+        sample_video_url,
+        video_description,
+        video_highlights,
+        date_time,
+        price_discounted,
+        meeting_link,
+    } = req.body;
+
+    if (!title || !location_name || !country || !price || !description) {
+        return res.status(400).json({
+            success: false,
+            message: 'Required fields are missing: Location name, country, price, and description cannot be empty.'
+        });
+    }
+    if (!cover_image || typeof cover_image !== 'string') {
+        return res.status(400).json({ success: false, message: 'Please upload a cover image of the experience project.' });
+    }
+    if (!meeting_link || typeof meeting_link !== 'string' || !meeting_link.trim()) {
+        return res.status(400).json({ success: false, message: 'Meeting link is required.' });
+    }
+    const normalizedMeetingLink = meeting_link.trim();
+    if (!/^https?:\/\//i.test(normalizedMeetingLink)) {
+        return res.status(400).json({ success: false, message: 'Meeting link must start with http:// or https://.' });
+    }
+    if (category && !CATEGORIES.includes(category)) {
+        return res.status(400).json({ success: false, message: `Invalid category. Allowed values: ${CATEGORIES.join(', ')}` });
+    }
+    if (language && !LANGUAGES.includes(language)) {
+        return res.status(400).json({ success: false, message: `Invalid language. Allowed values: ${LANGUAGES.join(', ')}` });
+    }
+    if (continent && !CONTINENTS.includes(continent)) {
+        return res.status(400).json({ success: false, message: `Invalid continent. Allowed values: ${CONTINENTS.join(', ')}` });
+    }
+    const normalizedGenderPreference = normalizeGenderPreference(gender_preference);
+    if (!normalizedGenderPreference) {
+        return res.status(400).json({ success: false, message: `Invalid gender_preference. Allowed values: ${supportedGenderPreferences.join(', ')}` });
+    }
+
+    let normalizedSampleVideoUrl = null;
+    if (sample_video_url !== undefined && sample_video_url !== null && String(sample_video_url).trim() !== '') {
+        const trimmed = String(sample_video_url).trim();
+        if (!YOUTUBE_URL_RE.test(trimmed)) {
+            return res.status(400).json({ success: false, message: 'sample_video_url must be a valid YouTube link.' });
+        }
+        normalizedSampleVideoUrl = trimmed;
+    }
+
+    let normalizedVideoHighlights = null;
+    if (Array.isArray(video_highlights)) {
+        const cleaned = video_highlights
+            .map((item) => (item === null || item === undefined ? '' : String(item).trim()))
+            .filter(Boolean);
+        normalizedVideoHighlights = cleaned.length ? cleaned : null;
+    }
+
+    const normalizedVideoDescription =
+        typeof video_description === 'string' && video_description.trim() !== ''
+            ? video_description.trim()
+            : null;
+
+    let normalizedDateTime = null;
+    if (date_time !== undefined && date_time !== null && String(date_time).trim() !== '') {
+        normalizedDateTime = parseDateTimeInput(date_time);
+        if (!normalizedDateTime) {
+            return res.status(400).json({ success: false, message: 'Invalid date_time.' });
+        }
+        if (new Date(normalizedDateTime).getTime() <= Date.now()) {
+            return res.status(400).json({ success: false, message: 'date_time must be in the future.' });
+        }
+    }
+
+    let normalizedPriceDiscounted = null;
+    if (price_discounted !== undefined && price_discounted !== null && String(price_discounted).trim() !== '') {
+        const parsedDiscount = Number(price_discounted);
+        if (!Number.isFinite(parsedDiscount) || parsedDiscount < 0) {
+            return res.status(400).json({ success: false, message: 'price_discounted must be a non-negative number.' });
+        }
+        if (parsedDiscount >= Number(price)) {
+            return res.status(400).json({ success: false, message: 'price_discounted must be lower than price.' });
+        }
+        normalizedPriceDiscounted = parsedDiscount;
+    }
+
+    if (normalizedDateTime) {
+        const resolvedDuration = parsePositiveInteger(duration_minutes || 60);
+        if (!resolvedDuration) {
+            return res.status(400).json({ success: false, message: 'duration_minutes must be a positive integer.' });
+        }
+        const overlapping = await findOverlappingSlot({
+            ehostId,
+            slotStart: normalizedDateTime,
+            durationMinutes: resolvedDuration,
+            excludeExperienceId: experienceId,
+        });
+        if (overlapping) {
+            return res.status(409).json({
+                success: false,
+                message: 'Time slot overlaps with an existing slot.',
+                conflict: overlapping,
+            });
+        }
+    }
 
     const { rows: updateRows } = await pool.query(
         `UPDATE experiences
-         SET location_name     = COALESCE($1, location_name),
-             description       = COALESCE($2, description),
-             category          = COALESCE($3, category),
-             language          = COALESCE($4, language),
-             continent         = COALESCE($5, continent),
-             price             = COALESCE($6, price),
-             gender_preference = COALESCE($7, gender_preference),
-             allows_piggyback  = COALESCE($8, allows_piggyback),
-             max_visitors      = COALESCE($9, max_visitors),
+         SET title             = $1,
+             location_name     = $2,
+             country           = $3,
+             continent         = $4,
+             latitude          = $5,
+             longitude         = $6,
+             category          = $7,
+             language          = $8,
+             description       = $9,
+             price             = $10,
+             price_discounted  = $11,
+             duration_minutes  = $12,
+             max_visitors      = $13,
+             cover_image       = $14,
+             gender_preference = $15,
+             allows_piggyback  = $16,
+             sample_video_url  = $17,
+             video_description = $18,
+             video_highlights  = $19,
+             date_time         = $20,
+             meeting_link      = $21,
              status            = 'pending',
              rejection_reason  = NULL
-         WHERE id = $10 AND ehost_id = $11
+         WHERE id = $22 AND ehost_id = $23
          RETURNING *`,
-        [location_name, description, category, language, continent, price, normalizedGenderPreference, allows_piggyback, max_visitors, experienceId, ehostId]
+        [
+            title,
+            location_name,
+            country,
+            continent || null,
+            latitude || null,
+            longitude || null,
+            category || null,
+            language || 'English',
+            description,
+            price,
+            normalizedPriceDiscounted,
+            duration_minutes || 60,
+            max_visitors || 10,
+            cover_image,
+            normalizedGenderPreference,
+            allows_piggyback || false,
+            normalizedSampleVideoUrl,
+            normalizedVideoDescription,
+            normalizedVideoHighlights,
+            normalizedDateTime,
+            normalizedMeetingLink,
+            experienceId,
+            ehostId,
+        ]
     );
-    
+
     res.status(200).json({ success: true, data: updateRows[0] });
   } catch (error) {
     console.error("Failed to update experience:", error);
@@ -379,14 +520,16 @@ const deleteExperience = async (req, res) => {
     const ehostId = req.user ? req.user.id : req.userId;
 
     const { rows } = await pool.query(
-        `UPDATE experiences SET status = 'deleted' WHERE id = $1 AND ehost_id = $2 RETURNING id`,
+        `UPDATE experiences SET status = 'deleted'
+         WHERE id = $1 AND ehost_id = $2 AND status <> 'approved'
+         RETURNING id`,
         [experienceId, ehostId]
     );
-    
+
     if (rows.length === 0) {
-        return res.status(404).json({ success: false, message: 'This experience was not found or you do not have permission to modify it.' });
+        return res.status(403).json({ success: false, message: 'Approved experiences cannot be deleted, or this experience does not belong to you.' });
     }
-    
+
     res.status(200).json({ success: true, message: 'Experience has been successfully removed.' });
   } catch (error) {
     console.error("Failed to remove experience:", error);
@@ -394,29 +537,6 @@ const deleteExperience = async (req, res) => {
   }
 };
 
-
-const suggestedMeetingServices = ['Google Meet', 'Zoom', 'WhatsApp'];
-
-const toMeetingConfig = (meetingLink) => {
-  if (!meetingLink) {
-    return null;
-  }
-  try {
-    const parsed = JSON.parse(meetingLink);
-    if (parsed && typeof parsed === 'object' && parsed.link) {
-      return {
-        platform: parsed.platform || 'Custom',
-        link: parsed.link,
-        password: parsed.password || null,
-      };
-    }
-  } catch (error) {}
-  return {
-    platform: 'Custom',
-    link: meetingLink,
-    password: null,
-  };
-};
 
 const getBookings = async (req, res) => {
   try {
@@ -430,11 +550,11 @@ const getBookings = async (req, res) => {
          b.booking_date,
          b.amount_paid,
          b.status,
-         b.meeting_link,
          b.qty_normal,
          b.qty_discounted,
          b.contact_name,
          b.contact_email,
+         e.meeting_link,
          e.title AS experience_title,
          e.date_time AS experience_date_time,
          u.first_name AS visitor_first_name,
@@ -452,12 +572,11 @@ const getBookings = async (req, res) => {
 
     const data = rows.map((booking) => ({
       ...booking,
-      meeting_config: toMeetingConfig(booking.meeting_link),
+      meeting_config: booking.meeting_link ? { link: booking.meeting_link } : null,
     }));
 
     res.status(200).json({
       success: true,
-      suggested_services: suggestedMeetingServices,
       data,
     });
   } catch (error) {
@@ -875,79 +994,6 @@ const updateBookingPreferences = async (req, res) => {
   }
 };
 
-const updateBookingMeetingLink = async (req, res) => {
-  try {
-    const ehostId = req.user ? req.user.id : req.userId;
-    const bookingId = Number(req.params.id);
-    const {
-      platform = 'Custom',
-      meeting_link,
-      meeting_password = null,
-    } = req.body;
-
-    if (!Number.isInteger(bookingId) || bookingId <= 0) {
-      return res.status(400).json({ success: false, message: 'Invalid booking id.' });
-    }
-
-    if (!meeting_link || typeof meeting_link !== 'string' || !meeting_link.trim()) {
-      return res.status(400).json({ success: false, message: 'Meeting link is required.' });
-    }
-
-    const normalizedLink = meeting_link.trim();
-    if (!/^https?:\/\//i.test(normalizedLink)) {
-      return res.status(400).json({ success: false, message: 'Meeting link must start with http:// or https://.' });
-    }
-
-    const { rows: ownershipRows } = await pool.query(
-      `SELECT b.id
-       FROM bookings b
-       JOIN experiences e ON e.id = b.experience_id
-       WHERE b.id = $1
-         AND e.ehost_id = $2
-         AND e.date_time >= NOW()
-         AND b.status = 'confirmed'
-       LIMIT 1`,
-      [bookingId, ehostId]
-    );
-
-    if (ownershipRows.length === 0) {
-      return res.status(404).json({
-        success: false,
-        message: 'Booking not found, not upcoming, or you do not have permission.',
-      });
-    }
-
-    const meetingConfigString = JSON.stringify({
-      platform: String(platform || 'Custom').trim() || 'Custom',
-      link: normalizedLink,
-      password: meeting_password && String(meeting_password).trim()
-        ? String(meeting_password).trim()
-        : null,
-    });
-
-    const { rows: updateRows } = await pool.query(
-      `UPDATE bookings
-       SET meeting_link = $1
-       WHERE id = $2
-       RETURNING id, meeting_link`,
-      [meetingConfigString, bookingId]
-    );
-
-    res.status(200).json({
-      success: true,
-      message: 'Meeting link configured successfully.',
-      suggested_services: suggestedMeetingServices,
-      data: {
-        booking_id: updateRows[0].id,
-        meeting_config: toMeetingConfig(updateRows[0].meeting_link),
-      },
-    });
-  } catch (error) {
-    console.error('Failed to update meeting link:', error);
-    res.status(500).json({ success: false, message: 'Server internal error' });
-  }
-};
-
 
 
 
@@ -1015,8 +1061,8 @@ const submitApplication = async (req, res) => {
   try {
     
     const {
-      name, birthday, country, email,
-      hasExperience, yearsOfExperience, preferredCountry,
+      name, birthday, country, email, password,
+      hasExperience, yearsOfExperience,
       description, videoLink
     } = req.body;
 
@@ -1030,10 +1076,17 @@ const submitApplication = async (req, res) => {
       return res.status(409).json({ message: "This email has already submitted an application. Please wait for the review." });
     }
 
+    const existingUser = await User.findByEmail(email);
+    if (existingUser) {
+      return res.status(409).json({ message: "This email is already registered. Please use a different email." });
+    }
+
+    const password_hash = await bcrypt.hash(password, 10);
+
     // !!!Save the data into the database.
     const { rows: newAppRows } = await pool.query(
       `INSERT INTO ehost_applications
-      (name, birthday, country, email, has_experience, years_of_experience, preferred_country, description, video_link, status)
+      (name, birthday, country, email, password_hash, has_experience, years_of_experience, description, video_link, status)
       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'pending')
       RETURNING id`,
       [
@@ -1041,9 +1094,9 @@ const submitApplication = async (req, res) => {
         birthday,
         country,
         email,
+        password_hash,
         hasExperience,
         yearsOfExperience || 0,
-        preferredCountry,
         description,
         videoLink
       ]
@@ -1061,7 +1114,8 @@ const submitApplication = async (req, res) => {
 
   } catch (error) {
     console.error("Application submission failed:", error);
-    res.status(500).json({ message: "Internal server error, please try again later" });
+    const detail = error.detail || error.message || "Unknown error";
+    res.status(500).json({ message: `Submission failed: ${detail}` });
   }
 };
 
@@ -1078,7 +1132,6 @@ module.exports = {
   updateCalendarSlot,
   deleteCalendarSlot,
   setUnavailableDates,
-  updateBookingMeetingLink,
   getBookingPreferences,
   updateBookingPreferences,
   getMe,

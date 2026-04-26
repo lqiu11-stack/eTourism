@@ -1,17 +1,13 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
 import "./DetailPage.css";
-
 import videoImg from "../icon/livecover.png";
 import head from "../icon/head.png";
-import photo2 from "../icon/london1.jpg";
-import photo3 from "../icon/london2.jpg";
-import photo4 from "../icon/london3.jpg";
 import { useNavigate, useSearchParams, Link, useLocation } from "react-router-dom";
 import backIcon from "../icon/back.png";
-import blog from "../icon/blogger.png";
-import { getCountryImage } from "../../utils/countryImages";
+// import blog from "../icon/blogger.png";
 import { toYouTubeEmbed } from "../../utils/youtube";
+import { setExperienceContext } from "../../utils/networkMonitor";
 
 const API_BASE = import.meta.env.VITE_API_URL;
 
@@ -45,6 +41,7 @@ export const DetailPage = () => {
 
   const [experience, setExperience] = useState(null);
   const [reviews, setReviews] = useState([]);
+  const [networkWarning, setNetworkWarning] = useState(null);
 
   const handleLogout = () => {
     localStorage.removeItem("token");
@@ -56,13 +53,30 @@ export const DetailPage = () => {
     window.scrollTo(0, 0);
     const id = searchParams.get("id");
     if (!id) return;
+    setExperienceContext(id);
     axios.get(`${API_BASE}/visitor/experiences/${id}`)
       .then(({ data }) => setExperience(data))
       .catch(() => {});
     axios.get(`${API_BASE}/visitor/reviews?experience_id=${id}`)
       .then(({ data }) => setReviews(data))
       .catch(() => {});
-  }, [searchParams]);
+    if (token) {
+      axios.get(`${API_BASE}/network-logs/experience/${id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+        .then(({ data }) => {
+          if (data?.experience?.is_poor || data?.ehost?.is_poor) {
+            setNetworkWarning(
+              "Heads up: this host has had connection issues recently. Sessions may be interrupted."
+            );
+          } else {
+            setNetworkWarning(null);
+          }
+        })
+        .catch(() => {});
+    }
+    return () => setExperienceContext(null);
+  }, [searchParams, token]);
 
   return (
     <div className="tour-page">
@@ -70,7 +84,7 @@ export const DetailPage = () => {
       {/* HERO */}
       <section
         className="detail-hero"
-        style={{ backgroundImage: `url(${experience?.cover_image || getCountryImage(experience?.country)})` }}
+        style={{ backgroundImage: `url(${experience?.cover_image})` }}
       >
         <div className="detail-hero-overlay"/>
 
@@ -119,6 +133,12 @@ export const DetailPage = () => {
             <h3>Live Start</h3>
             <p>{experience ? new Date(experience.date_time).toLocaleString() : ""}</p>
             <p>{experience ? `£${experience.price} / per ticket` : ""}</p>
+
+            {networkWarning && (
+              <p className="detail-network-warning" role="status">
+                {networkWarning}
+              </p>
+            )}
 
             {(() => {
               const isPast = experience?.date_time && new Date(experience.date_time).getTime() <= Date.now();
@@ -253,48 +273,23 @@ export const DetailPage = () => {
 
       {/* REFUND */}
       <section className="detail-refund-section">
-
         <h3>Refund policy</h3>
-
         <div className="detail-refund-card">
           Free cancellation up to 24 hours before live start. If you miss the
           session, a replay will be available for 24 hours.
         </div>
-
       </section>
 
-
-      {/* PHOTOS */}
-      {/* <section className="detail-photo-section">
-
-        <h3>More photo</h3>
-
-        <div className="detail-photo-grid">
-
-          <img src={photo2}/>
-          <img src={photo2}/>
-          <img src={photo3}/>
-          <img src={photo4}/>
-
-        </div>
-
-      </section> */}
-
-
       <section className="detail-newsletter">
-
         <div className="newsletter-overlay"></div>
-
         <div className="newsletter-content">
           <h2>Get Your Travel Inspiration</h2>
           <p>Straight to Your Inbox</p>
-
           <div className="newsletter-form">
             <input type="email" placeholder="Email address"/>
             <button>Subscribe</button>
           </div>
         </div>
-
       </section>
 
 

@@ -3,7 +3,6 @@ import backIcon from "../icon/back.png";
 import { useNavigate, Link } from "react-router-dom";
 import { useState, useEffect } from "react";
 import axios from "axios";
-import { getCountryImage } from "../../utils/countryImages";
 import { useLocation } from "react-router-dom";
 import { useLayoutEffect } from "react";
 
@@ -164,7 +163,7 @@ export const MyBooking = () => {
             onClick={() => navigate(`/MyBookingDetail?id=${b.id}`, { state: { booking: b } })}
             style={{ cursor: "pointer" }}
             >
-            <img src={getCountryImage(b.country)} className="Mybooking-card-img" alt={b.title} />
+            <img src={b.cover_image} className="Mybooking-card-img" alt={b.title} />
 
             <div className="Mybooking-card-info">
               <h2>{b.title}</h2>
