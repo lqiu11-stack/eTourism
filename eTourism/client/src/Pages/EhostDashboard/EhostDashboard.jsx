@@ -214,6 +214,7 @@ export const EhostDashboard = () => {
         </nav>
       </header>
 
+
       <section className="eh-section">
         <h2 className="eh-section-title">Dashboard</h2>
         <div className="eh-actions-card">

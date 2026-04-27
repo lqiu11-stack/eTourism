@@ -20,6 +20,8 @@ import { convertToWebp } from "../../utils/imageConvert";
 import "./ApplyActivity.css";
 
 const API_BASE = import.meta.env.VITE_API_URL;
+const MIN_ADDITIONAL_IMAGES = 3;
+const MAX_ADDITIONAL_IMAGES = 6;
 const MAP_LIBRARIES = ["places"];
 const DEFAULT_MAP_CENTER = { lat: 51.5101, lng: -0.1340 };
 const mapContainerStyle = { width: "100%", height: "320px", borderRadius: "10px" };
@@ -46,7 +48,9 @@ const reverseGeocodeCountry = async (lat, lng) => {
       const country = extractCountryFromComponents(result.address_components);
       if (country) return country;
     }
-  } catch {}
+  } catch {
+    /* fall through to empty result */
+  }
   return "";
 };
 
@@ -84,11 +88,14 @@ export const ApplyActivity = () => {
     meeting_link: "",
   });
   const [coverImage, setCoverImage] = useState("");
+  const [additionalImages, setAdditionalImages] = useState([]);
+  const [additionalUploading, setAdditionalUploading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
-  const [meetingLinkOnly, setMeetingLinkOnly] = useState(false);
+  const [wasApproved, setWasApproved] = useState(false);
+  const [showSubmittedModal, setShowSubmittedModal] = useState(false);
   const minDateTime = toDateTimeLocal(new Date(Date.now() + 60 * 1000));
 
   useEffect(() => {
@@ -106,7 +113,7 @@ export const ApplyActivity = () => {
           navigate("/EhostDashboard");
           return;
         }
-        setMeetingLinkOnly(exp.status === "approved");
+        setWasApproved(exp.status === "approved");
         const highlights = Array.isArray(exp.video_highlights)
           ? exp.video_highlights.join("\n")
           : (exp.video_highlights || "");
@@ -133,6 +140,7 @@ export const ApplyActivity = () => {
           meeting_link: exp.meeting_link || "",
         });
         setCoverImage(exp.cover_image || "");
+        setAdditionalImages(Array.isArray(exp.additional_images) ? exp.additional_images : []);
       } catch (err) {
         alert(err.response?.data?.message || "Failed to load experience.");
         navigate("/EhostDashboard");
@@ -227,35 +235,64 @@ export const ApplyActivity = () => {
     );
   };
 
+  const uploadOneAdditionalImage = (file) => new Promise((resolve, reject) => {
+    (async () => {
+      let uploadFile;
+      try {
+        uploadFile = await convertToWebp(file);
+      } catch {
+        reject(new Error("Failed to process image. Please try a different file."));
+        return;
+      }
+      const storageRef = ref(storage, `detail_page image/${Date.now()}_${uploadFile.name}`);
+      const task = uploadBytesResumable(storageRef, uploadFile);
+      task.on(
+        "state_changed",
+        null,
+        () => reject(new Error("Image upload failed. Please try again.")),
+        async () => {
+          try {
+            const url = await getDownloadURL(task.snapshot.ref);
+            resolve(url);
+          } catch (err) {
+            reject(err);
+          }
+        }
+      );
+    })();
+  });
+
+  const handleAdditionalImagesUpload = async (files) => {
+    if (!files || files.length === 0) return;
+    const remaining = MAX_ADDITIONAL_IMAGES - additionalImages.length;
+    if (remaining <= 0) return;
+    if (files.length > remaining) {
+      setError(`You can upload at most ${MAX_ADDITIONAL_IMAGES} additional photos.`);
+      files = files.slice(0, remaining);
+      if (files.length === 0) return;
+    } else {
+      setError("");
+    }
+    setAdditionalUploading(true);
+    try {
+      for (const file of files) {
+        const url = await uploadOneAdditionalImage(file);
+        setAdditionalImages((prev) => [...prev, url]);
+      }
+    } catch (err) {
+      setError(err.message || "Image upload failed. Please try again.");
+    } finally {
+      setAdditionalUploading(false);
+    }
+  };
+
+  const removeAdditionalImage = (index) => {
+    setAdditionalImages((prev) => prev.filter((_, i) => i !== index));
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (uploading) return;
-    if (meetingLinkOnly) {
-      const trimmedMeetingLink = form.meeting_link.trim();
-      if (!trimmedMeetingLink) {
-        setError("Please add a meeting link for your live experience.");
-        return;
-      }
-      if (!/^https?:\/\//i.test(trimmedMeetingLink)) {
-        setError("Meeting link must start with http:// or https://.");
-        return;
-      }
-      setError("");
-      setSubmitting(true);
-      try {
-        await axios.put(
-          `${API_BASE}/ehost/experiences/${editId}`,
-          { meeting_link: trimmedMeetingLink },
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
-        navigate("/EhostDashboard");
-      } catch (err) {
-        setError(err.response?.data?.message || "Failed to update meeting link. Please try again.");
-      } finally {
-        setSubmitting(false);
-      }
-      return;
-    }
+    if (uploading || additionalUploading) return;
     if (!form.title || !form.location_name || !form.country || !form.price || !form.description) {
       setError("Please fill in all required fields.");
       return;
@@ -282,6 +319,14 @@ export const ApplyActivity = () => {
     }
     if (!coverImage) {
       setError("Please upload a cover image.");
+      return;
+    }
+    if (additionalImages.length < MIN_ADDITIONAL_IMAGES) {
+      setError(`Please upload at least ${MIN_ADDITIONAL_IMAGES} additional photos.`);
+      return;
+    }
+    if (additionalImages.length > MAX_ADDITIONAL_IMAGES) {
+      setError(`You can upload at most ${MAX_ADDITIONAL_IMAGES} additional photos.`);
       return;
     }
     const trimmedVideoUrl = form.sample_video_url.trim();
@@ -315,6 +360,7 @@ export const ApplyActivity = () => {
         longitude: Number(form.longitude),
         date_time: new Date(form.date_time).toISOString(),
         cover_image: coverImage,
+        additional_images: additionalImages,
         sample_video_url: trimmedVideoUrl || null,
         video_description: form.video_description.trim() || null,
         video_highlights: highlightsArray.length ? highlightsArray : null,
@@ -326,7 +372,7 @@ export const ApplyActivity = () => {
       } else {
         await axios.post(`${API_BASE}/ehost/experiences`, payload, cfg);
       }
-      navigate("/EhostDashboard");
+      setShowSubmittedModal(true);
     } catch (err) {
       setError(err.response?.data?.message || "Failed to submit experience. Please try again.");
     } finally {
@@ -340,23 +386,23 @@ export const ApplyActivity = () => {
         <button className="aa-back" type="button" onClick={() => navigate("/EhostDashboard")}>
           ← Back
         </button>
-        <h1 className="aa-title">{meetingLinkOnly ? "Edit meeting link" : isEdit ? "Edit experience" : "Apply for new experience"}</h1>
+        <h1 className="aa-title">{isEdit ? "Edit experience" : "Apply for new experience"}</h1>
         <span />
       </header>
 
       <form className="aa-form" onSubmit={handleSubmit}>
-        {meetingLinkOnly && (
+        {wasApproved && (
           <div className="aa-hint">
-            This experience has been approved. Only the meeting link can be edited.
+            Heads up: this experience is currently approved. Saving changes will send it back to the admin for re-approval.
           </div>
         )}
         <label className="aa-label">Title*</label>
-        <input className="aa-input" name="title" value={form.title} onChange={handleChange} placeholder="e.g. Thailand Religious Tourism" disabled={meetingLinkOnly} />
+        <input className="aa-input" name="title" value={form.title} onChange={handleChange} placeholder="e.g. Thailand Religious Tourism"  />
 
         <div className="aa-grid">
           <div>
             <label className="aa-label">Location name*</label>
-            <input className="aa-input" name="location_name" value={form.location_name} onChange={handleChange} disabled={meetingLinkOnly} />
+            <input className="aa-input" name="location_name" value={form.location_name} onChange={handleChange}  />
           </div>
           <div>
             <label className="aa-label">Country*</label>
@@ -368,8 +414,7 @@ export const ApplyActivity = () => {
               placeholder="Start typing your country..."
               value={form.country}
               onChange={handleChange}
-              disabled={meetingLinkOnly}
-            />
+                         />
             <datalist id="aa-country-options">
               {COUNTRIES.map((c) => <option key={c} value={c} />)}
             </datalist>
@@ -379,7 +424,7 @@ export const ApplyActivity = () => {
         <div className="aa-grid">
           <div>
             <label className="aa-label">Continent</label>
-            <select className="aa-input" name="continent" value={form.continent} onChange={handleChange} disabled={meetingLinkOnly}>
+            <select className="aa-input" name="continent" value={form.continent} onChange={handleChange} >
               <option value="">— select —</option>
               {CONTINENTS.map((c) => (
                 <option key={c} value={c}>{c}</option>
@@ -388,7 +433,7 @@ export const ApplyActivity = () => {
           </div>
           <div>
             <label className="aa-label">Category</label>
-            <select className="aa-input" name="category" value={form.category} onChange={handleChange} disabled={meetingLinkOnly}>
+            <select className="aa-input" name="category" value={form.category} onChange={handleChange} >
               <option value="">— select —</option>
               {CATEGORIES.map((c) => (
                 <option key={c} value={c}>{c}</option>
@@ -400,7 +445,7 @@ export const ApplyActivity = () => {
         <div className="aa-grid">
           <div>
             <label className="aa-label">Language</label>
-            <select className="aa-input" name="language" value={form.language} onChange={handleChange} disabled={meetingLinkOnly}>
+            <select className="aa-input" name="language" value={form.language} onChange={handleChange} >
               {LANGUAGES.map((l) => (
                 <option key={l} value={l}>{l}</option>
               ))}
@@ -408,42 +453,40 @@ export const ApplyActivity = () => {
           </div>
           <div>
             <label className="aa-label">Date & time*</label>
-            <input className="aa-input" name="date_time" type="datetime-local" min={minDateTime} value={form.date_time} onChange={handleChange} disabled={meetingLinkOnly} />
+            <input className="aa-input" name="date_time" type="datetime-local" min={minDateTime} value={form.date_time} onChange={handleChange}  />
           </div>
         </div>
 
         <div className="aa-grid">
           <div>
             <label className="aa-label">Price (USD)*</label>
-            <input className="aa-input" name="price" type="number" min="0" step="0.01" value={form.price} onChange={handleChange} disabled={meetingLinkOnly} />
+            <input className="aa-input" name="price" type="number" min="0" step="0.01" value={form.price} onChange={handleChange}  />
           </div>
           <div>
             <label className="aa-label">Discounted price (optional)</label>
-            <input className="aa-input" name="price_discounted" type="number" min="0" step="0.01" value={form.price_discounted} onChange={handleChange} disabled={meetingLinkOnly} />
+            <input className="aa-input" name="price_discounted" type="number" min="0" step="0.01" value={form.price_discounted} onChange={handleChange}  />
           </div>
         </div>
 
         <div className="aa-grid">
           <div>
             <label className="aa-label">Duration (minutes)</label>
-            <input className="aa-input" name="duration_minutes" type="number" min="15" value={form.duration_minutes} onChange={handleChange} disabled={meetingLinkOnly} />
+            <input className="aa-input" name="duration_minutes" type="number" min="15" value={form.duration_minutes} onChange={handleChange}  />
           </div>
           <div>
             <label className="aa-label">Max visitors</label>
-            <input className="aa-input" name="max_visitors" type="number" min="1" value={form.max_visitors} onChange={handleChange} disabled={meetingLinkOnly} />
+            <input className="aa-input" name="max_visitors" type="number" min="1" value={form.max_visitors} onChange={handleChange}  />
           </div>
         </div>
 
         <label className="aa-label">Pin the location on the map*</label>
         {mapIsLoaded ? (
           <>
-            {!meetingLinkOnly && (
-              <gmp-place-autocomplete
-                ref={autocompleteRef}
-                class="aa-input"
-                placeholder="Search a place (e.g. Eiffel Tower)"
-              ></gmp-place-autocomplete>
-            )}
+            <gmp-place-autocomplete
+              ref={autocompleteRef}
+              class="aa-input"
+              placeholder="Search a place (e.g. Eiffel Tower)"
+            ></gmp-place-autocomplete>
             <GoogleMap
               mapContainerStyle={mapContainerStyle}
               center={
@@ -452,13 +495,13 @@ export const ApplyActivity = () => {
                   : DEFAULT_MAP_CENTER
               }
               zoom={form.latitude !== "" && form.longitude !== "" ? 14 : 2}
-              onClick={meetingLinkOnly ? undefined : onMapClick}
+              onClick={onMapClick}
             >
               {form.latitude !== "" && form.longitude !== "" && (
                 <Marker
                   position={{ lat: Number(form.latitude), lng: Number(form.longitude) }}
-                  draggable={!meetingLinkOnly}
-                  onDragEnd={meetingLinkOnly ? undefined : onMarkerDragEnd}
+                  draggable
+                  onDragEnd={onMarkerDragEnd}
                 />
               )}
             </GoogleMap>
@@ -475,7 +518,7 @@ export const ApplyActivity = () => {
         <div className="aa-grid">
           <div>
             <label className="aa-label">Gender preference</label>
-            <select className="aa-input" name="gender_preference" value={form.gender_preference} onChange={handleChange} disabled={meetingLinkOnly}>
+            <select className="aa-input" name="gender_preference" value={form.gender_preference} onChange={handleChange} >
               {GENDER_PREFERENCES.map((g) => (
                 <option key={g} value={g}>{g.replace("_", " ")}</option>
               ))}
@@ -483,14 +526,14 @@ export const ApplyActivity = () => {
           </div>
           <div className="aa-checkbox-row">
             <label className="aa-checkbox">
-              <input type="checkbox" name="allows_piggyback" checked={form.allows_piggyback} onChange={handleChange} disabled={meetingLinkOnly} />
+              <input type="checkbox" name="allows_piggyback" checked={form.allows_piggyback} onChange={handleChange}  />
               Allow piggyback bookings
             </label>
           </div>
         </div>
 
         <label className="aa-label">Description*</label>
-        <textarea className="aa-textarea" name="description" rows="5" value={form.description} onChange={handleChange} disabled={meetingLinkOnly} />
+        <textarea className="aa-textarea" name="description" rows="5" value={form.description} onChange={handleChange}  />
 
         <label className="aa-label">Meeting link*</label>
         <input
@@ -504,11 +547,48 @@ export const ApplyActivity = () => {
         <div className="aa-hint">Visitors will join your live experience using this link.</div>
 
         <label className="aa-label">Cover image*</label>
-        <input type="file" accept="image/*" onChange={(e) => handleImageUpload(e.target.files[0])} disabled={uploading || meetingLinkOnly} />
+        <input type="file" accept="image/*" onChange={(e) => handleImageUpload(e.target.files[0])} disabled={uploading} />
         {uploading && <div className="aa-hint">Uploading… {uploadProgress}%</div>}
         {coverImage && !uploading && (
           <img src={coverImage} alt="cover preview" className="aa-preview" />
         )}
+
+        <label className="aa-label">Additional photos* ({MIN_ADDITIONAL_IMAGES}–{MAX_ADDITIONAL_IMAGES})</label>
+        <input
+          type="file"
+          accept="image/*"
+          multiple
+          onChange={(e) => {
+            handleAdditionalImagesUpload(Array.from(e.target.files));
+            e.target.value = "";
+          }}
+          disabled={
+            additionalUploading ||
+            additionalImages.length >= MAX_ADDITIONAL_IMAGES
+          }
+        />
+        {additionalUploading && <div className="aa-hint">Uploading additional photos…</div>}
+        {additionalImages.length > 0 && (
+          <div className="aa-additional-grid">
+            {additionalImages.map((url, i) => (
+              <div key={url} className="aa-additional-thumb">
+                <img src={url} alt={`additional ${i + 1}`} className="aa-preview" />
+                <button
+                  type="button"
+                  className="aa-additional-remove"
+                  onClick={() => removeAdditionalImage(i)}
+                >
+                  Remove
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+        <div className="aa-hint">
+          {additionalImages.length} of {MAX_ADDITIONAL_IMAGES} uploaded.
+          {additionalImages.length < MIN_ADDITIONAL_IMAGES &&
+            ` Add at least ${MIN_ADDITIONAL_IMAGES - additionalImages.length} more.`}
+        </div>
 
         <label className="aa-label">Sample video (YouTube link)</label>
         <input
@@ -518,8 +598,7 @@ export const ApplyActivity = () => {
           value={form.sample_video_url}
           onChange={handleChange}
           placeholder="https://youtube.com/watch?v=..."
-          disabled={meetingLinkOnly}
-        />
+                 />
 
         <label className="aa-label">Video description</label>
         <textarea
@@ -529,8 +608,7 @@ export const ApplyActivity = () => {
           value={form.video_description}
           onChange={handleChange}
           placeholder="A short paragraph or two about what visitors will see in the sample video. Separate paragraphs with a blank line."
-          disabled={meetingLinkOnly}
-        />
+                 />
 
         <label className="aa-label">Video highlights</label>
         <textarea
@@ -540,15 +618,38 @@ export const ApplyActivity = () => {
           value={form.video_highlights}
           onChange={handleChange}
           placeholder={"One highlight per line, e.g.\nVisit the oldest temple in the city\nMeet local artisans\nTaste street food"}
-          disabled={meetingLinkOnly}
-        />
+                 />
 
         {error && <div className="aa-error">{error}</div>}
 
-        <button className="aa-submit" type="submit" disabled={uploading || submitting}>
-          {submitting ? "Submitting…" : meetingLinkOnly ? "Save meeting link" : isEdit ? "Save changes" : "Submit experience"}
+        <button className="aa-submit" type="submit" disabled={uploading || additionalUploading || submitting}>
+          {submitting ? "Submitting…" : isEdit ? "Save changes" : "Submit experience"}
         </button>
       </form>
+
+      {showSubmittedModal && (
+        <div className="aa-modal-overlay" role="dialog" aria-modal="true">
+          <div className="aa-modal-panel">
+            <h3 className="aa-modal-title">Submitted for review</h3>
+            <p className="aa-modal-body">
+              Your request has been submitted. The admin team will take several days
+              to review and approve your experience.
+            </p>
+            <div className="aa-modal-actions">
+              <button
+                type="button"
+                className="aa-modal-ok"
+                onClick={() => {
+                  setShowSubmittedModal(false);
+                  navigate("/EhostDashboard");
+                }}
+              >
+                OK
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

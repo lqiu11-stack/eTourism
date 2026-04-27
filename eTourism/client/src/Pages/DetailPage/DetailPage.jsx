@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState, useEffect } from "react";
+import { useMemo, useState, useEffect } from "react";
 import axios from "axios";
 import "./DetailPage.css";
 import videoImg from "../icon/livecover.png";
@@ -159,7 +159,9 @@ const { experiences } = useExperiences();
             )}
 
             {(() => {
-              const isPast = experience?.date_time && new Date(experience.date_time).getTime() <= Date.now();
+              // eslint-disable-next-line react-hooks/purity
+              const nowMs = Date.now();
+              const isPast = experience?.date_time && new Date(experience.date_time).getTime() <= nowMs;
               const notApproved = experience?.status && experience.status !== 'approved';
               const unavailable = isPast || notApproved || isEhost;
               const reason = isEhost
@@ -297,6 +299,24 @@ const { experiences } = useExperiences();
           session, a replay will be available for 24 hours.
         </div>
       </section>
+
+      {/* GALLERY */}
+      {experience?.additional_images?.length > 0 && (
+        <section className="detail-gallery-section">
+          <h3>More photos</h3>
+          <div className="detail-gallery-grid">
+            {experience.additional_images.map((url, i) => (
+              <img
+                key={url}
+                src={url}
+                alt={`${experience.title} photo ${i + 1}`}
+                className="detail-gallery-img"
+                loading="lazy"
+              />
+            ))}
+          </div>
+        </section>
+      )}
 
       <section className="popular">
               <div className="destination-section">
