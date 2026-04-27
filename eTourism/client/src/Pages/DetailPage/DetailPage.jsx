@@ -201,25 +201,6 @@ const { experiences } = useExperiences();
       </section>
 
 
-      {/* GALLERY */}
-      {experience?.additional_images?.length > 0 && (
-        <section className="detail-gallery-section">
-          <h3>More photos</h3>
-          <div className="detail-gallery-grid">
-            {experience.additional_images.map((url, i) => (
-              <img
-                key={url}
-                src={url}
-                alt={`${experience.title} photo ${i + 1}`}
-                className="detail-gallery-img"
-                loading="lazy"
-              />
-            ))}
-          </div>
-        </section>
-      )}
-
-
       {/* PAST VIDEO */}
       <section className="detail-video-section">
 
@@ -318,6 +299,24 @@ const { experiences } = useExperiences();
           session, a replay will be available for 24 hours.
         </div>
       </section>
+
+      {/* GALLERY */}
+      {experience?.additional_images?.length > 0 && (
+        <section className="detail-gallery-section">
+          <h3>More photos</h3>
+          <div className="detail-gallery-grid">
+            {experience.additional_images.map((url, i) => (
+              <img
+                key={url}
+                src={url}
+                alt={`${experience.title} photo ${i + 1}`}
+                className="detail-gallery-img"
+                loading="lazy"
+              />
+            ))}
+          </div>
+        </section>
+      )}
 
       <section className="popular">
               <div className="destination-section">

@@ -352,7 +352,8 @@
   .detail-guide-section,
   .detail-review-section,
   .detail-refund-section,
-  .detail-photo-section {
+  .detail-photo-section,
+  .detail-gallery-section {
     padding: 20px clamp(20px, 4vw, 60px) 40px;
   }
   .detail-photo-grid {
@@ -401,7 +402,8 @@
   .detail-guide-section,
   .detail-review-section,
   .detail-refund-section,
-  .detail-photo-section {
+  .detail-photo-section,
+  .detail-gallery-section {
     padding: 16px 16px 30px;
   }
   .detail-photo-grid {
@@ -439,11 +441,11 @@
 }
 
 .detail-gallery-section {
-  padding: 32px 5%;
+  padding: 10px 150px 40px 150px;
 }
 
 .detail-gallery-section h3 {
-  margin: 0 0 16px;
+  margin-bottom: 10px;
 }
 
 .detail-gallery-grid {
