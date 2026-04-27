@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState, useEffect } from "react";
 import "./Mainstyle.css";
 import searchIcon from "../icon/search.png";
 import continentIcon from "../icon/continents.png";
@@ -15,6 +15,8 @@ import { useExperiences } from "../../hooks/useExperiences";
 import { useAuth } from "../../utils/auth";
 import { formatDate } from "../../utils/formatDate";
 import { ExperienceCard } from "../../components/ExperienceCard";
+
+
 
 const MAX_NEW_EVENTS = 8;
 const FILTER_CONTINENTS = CONTINENTS.filter(c => c !== "Antarctica");
@@ -51,6 +53,15 @@ const FilterDropdown = ({ label, shortLabel, options, active, onChange, isOpen, 
 
 export const MainPage = () => {
   const navigate = useNavigate();
+  const [showTerms, setShowTerms] = useState(false);
+  const [termsText, setTermsText] = useState("");
+  useEffect(() => {
+  fetch("/terms.txt")
+    .then((r) => r.text())
+    .then(setTermsText)
+    .catch(() => {});
+}, []);
+
   const { isLoggedIn, isEhost, logout } = useAuth();
   const { experiences } = useExperiences();
   const dateInputRef = useRef(null);
@@ -358,31 +369,54 @@ export const MainPage = () => {
 
       <footer className="footer">
         <div className="footer-container">
-          <div className="footer-brand">
+          <div className="footer-column">
             <h3>e-Tourism</h3>
-            <p>Follow us</p>
+            <p onClick={() => {
+              navigate("/");
+              setTimeout(() => {
+                window.scrollTo(0, 0);
+              }, 0);
+            }}>start your journey</p>
           </div>
           <div className="footer-column">
-            <h4>About us</h4>
-            <p>Company</p>
-            <p>Careers</p>
-            <p>Blog</p>
+            <h4>Join us</h4>
+            <p onClick={() => navigate("/register/ehost/step1")}>Become e-host</p>
+            <p onClick={() => navigate("/continent/all")}>View the newest event</p>
           </div>
           <div className="footer-column">
             <h4>Travel</h4>
-            <p>Destinations</p>
-            <p>Tours</p>
-            <p>Guides</p>
+            <p onClick={() => navigate("/continent/Asia")}>Asia</p>
+            <p onClick={() => navigate("/continent/Europe")}>Europe</p>
+            <p onClick={() => navigate("/continent/Africa")}>Africa</p>
           </div>
           <div className="footer-column">
             <h4>Support</h4>
-            <p>Help Center</p>
-            <p>Contact</p>
-            <p>Terms</p>
+            <p onClick={() => setShowTerms(true)} style={{ cursor: "pointer" }}>
+              User Terms
+            </p>
           </div>
         </div>
       </footer>
-
+      {showTerms && (
+        <div className="modal-overlay" onClick={() => setShowTerms(false)}>
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <button
+              className="modal-close"
+              onClick={() => setShowTerms(false)}
+            >
+              ✕
+            </button>
+            <h2>Terms & Conditions</h2>
+            <div className="modal-content">
+              {termsText.split("\n\n").map((para, i) => (
+                <p key={i} style={{ whiteSpace: "pre-wrap" }}>{para}</p>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
+
+

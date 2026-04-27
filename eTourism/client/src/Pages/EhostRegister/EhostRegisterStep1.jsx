@@ -86,7 +86,7 @@ export const EhostRegisterStep1 = () => {
       <button
         type="button"
         className="back-btn"
-        onClick={() => navigate("/login")}
+        onClick={() => navigate(-1)}
         aria-label="Back"
       >
         <img src={backIcon} alt="Back" className="back-icon" />

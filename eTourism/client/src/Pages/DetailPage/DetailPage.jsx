@@ -1,13 +1,17 @@
-import { useState, useEffect } from "react";
+import { useMemo, useRef, useState, useEffect } from "react";
 import axios from "axios";
 import "./DetailPage.css";
 import videoImg from "../icon/livecover.png";
 import head from "../icon/head.png";
 import { useNavigate, useSearchParams, Link, useLocation } from "react-router-dom";
 import backIcon from "../icon/back.png";
+import { useExperiences } from "../../hooks/useExperiences";
 // import blog from "../icon/blogger.png";
 import { toYouTubeEmbed } from "../../utils/youtube";
 import { setExperienceContext } from "../../utils/networkMonitor";
+import { ExperienceCard } from "../../components/ExperienceCard";
+
+const MAX_NEW_EVENTS = 8;
 
 const API_BASE = import.meta.env.VITE_API_URL;
 
@@ -26,8 +30,22 @@ export const DetailPage = () => {
     navigate("/MainPage");
   }
 };
-
-  const navigate = useNavigate();
+const { experiences } = useExperiences();
+    const navigate = useNavigate();
+    const [showTerms, setShowTerms] = useState(false);
+    const [termsText, setTermsText] = useState("");
+    useEffect(() => {
+    fetch("/terms.txt")
+      .then((r) => r.text())
+      .then(setTermsText)
+      .catch(() => {});
+    }, []);
+    const newEvents = useMemo(
+        () => [...experiences]
+          .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+          .slice(0, MAX_NEW_EVENTS),
+        [experiences]
+      );
   const [searchParams] = useSearchParams();
   const token = localStorage.getItem("token");
   const isLoggedIn = !!token;
@@ -280,52 +298,87 @@ export const DetailPage = () => {
         </div>
       </section>
 
-      <section className="detail-newsletter">
-        <div className="newsletter-overlay"></div>
-        <div className="newsletter-content">
-          <h2>Get Your Travel Inspiration</h2>
-          <p>Straight to Your Inbox</p>
-          <div className="newsletter-form">
-            <input type="email" placeholder="Email address"/>
-            <button>Subscribe</button>
-          </div>
-        </div>
-      </section>
-
-
-      <footer className="footer">
-
-        <div className="footer-container">
-
-          <div className="footer-brand">
-            <h3>e-Tourism</h3>
-            <p>Follow us</p>
-          </div>
-
-          <div className="footer-column">
-            <h4>About us</h4>
-            <p>Company</p>
-            <p>Careers</p>
-            <p>Blog</p>
-          </div>
-
-          <div className="footer-column">
-            <h4>Travel</h4>
-            <p>Destinations</p>
-            <p>Tours</p>
-            <p>Guides</p>
-          </div>
-
-          <div className="footer-column">
-            <h4>Support</h4>
-            <p>Help Center</p>
-            <p>Contact</p>
-            <p>Terms</p>
-          </div>
-
-        </div>
-
-      </footer>
+      <section className="popular">
+              <div className="destination-section">
+                <div className="where-header">
+                  <div>
+                    <h2 className="section-title">New event!</h2>
+                    <p className="section-subtitle">Don't know what to choose? Check out our new activity!</p>
+                  </div>
+                  <button className="more-btn" onClick={() => navigate("/continent/all")}>Click here to check more</button>
+                </div>
+                <div className="card-list">
+                  {newEvents.length > 0
+                    ? newEvents.map(exp => (
+                        <ExperienceCard key={exp.id} experience={exp} linkState={{ from: "main" }} />
+                      ))
+                    : <p style={{ color: "#666" }}>No experiences found.</p>
+                  }
+                </div>
+              </div>
+            </section>
+      
+            {/* Newsletter */}
+            <section className="newsletter">
+              <div className="newsletter-overlay"></div>
+              <div className="newsletter-content">
+                <h2>Get Your Travel Inspiration</h2>
+                <p>Straight to Your Inbox</p>
+                <div className="newsletter-form">
+                  <input type="email" placeholder="Email address"/>
+                  <button>Subscribe</button>
+                </div>
+              </div>
+            </section>
+      
+            <footer className="footer">
+              <div className="footer-container">
+                <div className="footer-column">
+                  <h3>e-Tourism</h3>
+                  <p onClick={() => {
+                    navigate("/");
+                    setTimeout(() => {
+                      window.scrollTo(0, 0);
+                    }, 0);
+                  }}>start your journey</p>
+                </div>
+                <div className="footer-column">
+                  <h4>Join us</h4>
+                  <p onClick={() => navigate("/register/ehost/step1")}>Become e-host</p>
+                  <p onClick={() => navigate("/continent/all")}>View the newest event</p>
+                </div>
+                <div className="footer-column">
+                  <h4>Travel</h4>
+                  <p onClick={() => navigate("/continent/Asia")}>Asia</p>
+                  <p onClick={() => navigate("/continent/Europe")}>Europe</p>
+                  <p onClick={() => navigate("/continent/Africa")}>Africa</p>
+                </div>
+                <div className="footer-column">
+                  <h4>Support</h4>
+                  <p onClick={() => setShowTerms(true)} style={{ cursor: "pointer" }}>
+                    User Terms
+                  </p>
+                </div>
+              </div>
+            </footer>
+            {showTerms && (
+              <div className="modal-overlay" onClick={() => setShowTerms(false)}>
+                <div className="modal" onClick={(e) => e.stopPropagation()}>
+                  <button
+                    className="modal-close"
+                    onClick={() => setShowTerms(false)}
+                  >
+                    ✕
+                  </button>
+                  <h2>Terms & Conditions</h2>
+                  <div className="modal-content">
+                    {termsText.split("\n\n").map((para, i) => (
+                      <p key={i} style={{ whiteSpace: "pre-wrap" }}>{para}</p>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
 
     </div>
   );

@@ -20,13 +20,23 @@ const formatDate = (dt) => {
 };
 
 export const MyBookingDetail = () => {
+  const navigate = useNavigate();
+  const [showTerms, setShowTerms] = useState(false);
+  const [termsText, setTermsText] = useState("");
+  useEffect(() => {
+  fetch("/terms.txt")
+    .then((r) => r.text())
+    .then(setTermsText)
+    .catch(() => {});
+}, []);
+
+
   console.log('[BookingDetail] component rendered');
   const [rating, setRating] = useState(0);
   const [quality, setQuality] = useState("");
   const [reviewComment, setReviewComment] = useState("");
   const [reviewStatus, setReviewStatus] = useState({ state: "idle", message: "" });
   const [reviewPopup, setReviewPopup] = useState(null);
-  const navigate = useNavigate();
   const location = useLocation();
   useLayoutEffect(() => {
     requestAnimationFrame(() => {
@@ -429,7 +439,7 @@ export const MyBookingDetail = () => {
       </div>
       </div>
 
-      <section className="detail-newsletter">
+      <section className="newsletter">
         <div className="newsletter-overlay"></div>
         <div className="newsletter-content">
           <h2>Get Your Travel Inspiration</h2>
@@ -462,26 +472,66 @@ export const MyBookingDetail = () => {
         </div>
       )}
 
+      <section className="newsletter">
+        <div className="newsletter-overlay"></div>
+        <div className="newsletter-content">
+          <h2>Get Your Travel Inspiration</h2>
+          <p>Straight to Your Inbox</p>
+          <div className="newsletter-form">
+            <input type="email" placeholder="Email address"/>
+            <button>Subscribe</button>
+          </div>
+        </div>
+      </section>
+
       <footer className="footer">
         <div className="footer-container">
-          <div className="footer-brand">
+          <div className="footer-column">
             <h3>e-Tourism</h3>
-            <p>Follow us</p>
+            <p onClick={() => {
+              navigate("/");
+              setTimeout(() => {
+                window.scrollTo(0, 0);
+              }, 0);
+            }}>start your journey</p>
           </div>
           <div className="footer-column">
-            <h4>About us</h4>
-            <p>Company</p><p>Careers</p><p>Blog</p>
+            <h4>Join us</h4>
+            <p onClick={() => navigate("/register/ehost/step1")}>Become e-host</p>
+            <p onClick={() => navigate("/continent/all")}>View the newest event</p>
           </div>
           <div className="footer-column">
             <h4>Travel</h4>
-            <p>Destinations</p><p>Tours</p><p>Guides</p>
+            <p onClick={() => navigate("/continent/Asia")}>Asia</p>
+            <p onClick={() => navigate("/continent/Europe")}>Europe</p>
+            <p onClick={() => navigate("/continent/Africa")}>Africa</p>
           </div>
           <div className="footer-column">
             <h4>Support</h4>
-            <p>Help Center</p><p>Contact</p><p>Terms</p>
+            <p onClick={() => setShowTerms(true)} style={{ cursor: "pointer" }}>
+              User Terms
+            </p>
           </div>
         </div>
       </footer>
+      {showTerms && (
+        <div className="modal-overlay" onClick={() => setShowTerms(false)}>
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <button
+              className="modal-close"
+              onClick={() => setShowTerms(false)}
+            >
+              ✕
+            </button>
+            <h2>Terms & Conditions</h2>
+            <div className="modal-content">
+              {termsText.split("\n\n").map((para, i) => (
+                <p key={i} style={{ whiteSpace: "pre-wrap" }}>{para}</p>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );
