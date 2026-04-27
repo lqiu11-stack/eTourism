@@ -6,6 +6,7 @@ import close from "../icon/close.png";
 import { useNavigate, useSearchParams, Link } from "react-router-dom";
 import { useState, useEffect } from "react";
 import axios from "axios";
+import bg from "../icon/worldtravel.jpg";
 
 const API_BASE = import.meta.env.VITE_API_URL;
 
@@ -179,7 +180,8 @@ export const PaymentPage = () => {
     dt ? new Date(dt).toLocaleString("en-GB", { dateStyle: "short", timeStyle: "short" }) : "";
 
   return (
-    <div className="payment-page">
+    <div className="payment-page"
+    style={{ backgroundImage: `url(${bg})` }}>
       <div className="payment-card">
 
         <nav className="navbar">
