@@ -158,6 +158,58 @@ input[type="file"]:disabled {
   background: #f5d4d6;
 }
 
+.aa-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.aa-modal-panel {
+  background: #fff;
+  border-radius: 14px;
+  max-width: 440px;
+  width: 100%;
+  padding: 24px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.2);
+}
+
+.aa-modal-title {
+  margin: 0 0 12px;
+  font-size: 20px;
+  color: #5a1a1a;
+}
+
+.aa-modal-body {
+  margin: 0 0 20px;
+  font-size: 15px;
+  line-height: 1.5;
+  color: #4a4a4a;
+}
+
+.aa-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.aa-modal-ok {
+  background: #5a1a1a;
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  padding: 10px 22px;
+  font-size: 15px;
+  cursor: pointer;
+}
+
+.aa-modal-ok:hover {
+  background: #4a1414;
+}
+
 .aa-hint {
   font-size: 13px;
   color: #8a6d3b;
