@@ -820,12 +820,38 @@ const ExperienceRequests = ({
 
           <div className="suit-panel-left">
             <h3>{selectedExp.title}</h3>
+            {selectedExp.cover_image && (
+              <img
+                src={selectedExp.cover_image}
+                alt={`${selectedExp.title} cover`}
+                className="suit-cover-image"
+              />
+            )}
             <p><strong>Category:</strong> {selectedExp.category || "—"}</p>
             <p><strong>Country:</strong> {selectedExp.country || "—"}</p>
             <p><strong>Language:</strong> {selectedExp.language || "—"}</p>
             <p><strong>Status:</strong> {selectedExp.status}</p>
             {selectedExp.description && (
               <p style={{ marginTop: "8px", fontSize: "13px" }}>{selectedExp.description}</p>
+            )}
+            {Array.isArray(selectedExp.additional_images) && selectedExp.additional_images.length > 0 && (
+              <>
+                <p style={{ marginTop: "12px", marginBottom: "6px" }}>
+                  <strong>Additional photos ({selectedExp.additional_images.length}):</strong>
+                </p>
+                <div className="suit-additional-grid">
+                  {selectedExp.additional_images.map((url, i) => (
+                    <a key={url} href={url} target="_blank" rel="noreferrer">
+                      <img
+                        src={url}
+                        alt={`additional ${i + 1}`}
+                        className="suit-additional-thumb"
+                        loading="lazy"
+                      />
+                    </a>
+                  ))}
+                </div>
+              </>
             )}
           </div>
 
