@@ -114,7 +114,8 @@ try {
         video_highlights,
         date_time,
         price_discounted,
-        meeting_link
+        meeting_link,
+        additional_images,
     } = req.body;
 
 
@@ -131,6 +132,19 @@ try {
             message: 'Please upload a cover image of the experience project.'
         });
     }
+
+    if (
+        !Array.isArray(additional_images) ||
+        additional_images.length < 3 ||
+        additional_images.length > 6 ||
+        !additional_images.every((v) => typeof v === 'string' && v.trim() !== '')
+    ) {
+        return res.status(400).json({
+            success: false,
+            message: 'Please upload between 3 and 6 additional photos.',
+        });
+    }
+    const normalizedAdditionalImages = additional_images.map((s) => s.trim());
 
     if (!meeting_link || typeof meeting_link !== 'string' || !meeting_link.trim()) {
         return res.status(400).json({
@@ -225,8 +239,8 @@ try {
 
     const { rows } = await pool.query(
         `INSERT INTO experiences
-        (title, ehost_id, location_name, country, continent, latitude, longitude, category, language, description, price, price_discounted, duration_minutes, max_visitors, cover_image, gender_preference, allows_piggyback, sample_video_url, video_description, video_highlights, date_time, meeting_link, status)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, 'pending')
+        (title, ehost_id, location_name, country, continent, latitude, longitude, category, language, description, price, price_discounted, duration_minutes, max_visitors, cover_image, gender_preference, allows_piggyback, sample_video_url, video_description, video_highlights, date_time, meeting_link, additional_images, status)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, 'pending')
         RETURNING *`,
         [
             title,
@@ -251,6 +265,7 @@ try {
             normalizedVideoHighlights,
             normalizedDateTime,
             normalizedMeetingLink,
+            normalizedAdditionalImages,
         ]
     );
 
@@ -375,6 +390,7 @@ const updateExperience = async (req, res) => {
         date_time,
         price_discounted,
         meeting_link,
+        additional_images,
     } = req.body;
 
     if (!title || !location_name || !country || !price || !description) {
@@ -386,6 +402,18 @@ const updateExperience = async (req, res) => {
     if (!cover_image || typeof cover_image !== 'string') {
         return res.status(400).json({ success: false, message: 'Please upload a cover image of the experience project.' });
     }
+    if (
+        !Array.isArray(additional_images) ||
+        additional_images.length < 3 ||
+        additional_images.length > 6 ||
+        !additional_images.every((v) => typeof v === 'string' && v.trim() !== '')
+    ) {
+        return res.status(400).json({
+            success: false,
+            message: 'Please upload between 3 and 6 additional photos.',
+        });
+    }
+    const normalizedAdditionalImages = additional_images.map((s) => s.trim());
     if (!meeting_link || typeof meeting_link !== 'string' || !meeting_link.trim()) {
         return res.status(400).json({ success: false, message: 'Meeting link is required.' });
     }
@@ -495,9 +523,10 @@ const updateExperience = async (req, res) => {
              video_highlights  = $19,
              date_time         = $20,
              meeting_link      = $21,
+             additional_images = $22,
              status            = 'pending',
              rejection_reason  = NULL
-         WHERE id = $22 AND ehost_id = $23
+         WHERE id = $23 AND ehost_id = $24
          RETURNING *`,
         [
             title,
@@ -521,6 +550,7 @@ const updateExperience = async (req, res) => {
             normalizedVideoHighlights,
             normalizedDateTime,
             normalizedMeetingLink,
+            normalizedAdditionalImages,
             experienceId,
             ehostId,
         ]

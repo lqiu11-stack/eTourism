@@ -437,3 +437,25 @@
   font-size: 13px;
   line-height: 1.4;
 }
+
+.detail-gallery-section {
+  padding: 32px 5%;
+}
+
+.detail-gallery-section h3 {
+  margin: 0 0 16px;
+}
+
+.detail-gallery-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 12px;
+}
+
+.detail-gallery-img {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  border-radius: 10px;
+  display: block;
+}

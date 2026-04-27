@@ -20,6 +20,8 @@ import { convertToWebp } from "../../utils/imageConvert";
 import "./ApplyActivity.css";
 
 const API_BASE = import.meta.env.VITE_API_URL;
+const MIN_ADDITIONAL_IMAGES = 3;
+const MAX_ADDITIONAL_IMAGES = 6;
 const MAP_LIBRARIES = ["places"];
 const DEFAULT_MAP_CENTER = { lat: 51.5101, lng: -0.1340 };
 const mapContainerStyle = { width: "100%", height: "320px", borderRadius: "10px" };
@@ -46,7 +48,9 @@ const reverseGeocodeCountry = async (lat, lng) => {
       const country = extractCountryFromComponents(result.address_components);
       if (country) return country;
     }
-  } catch {}
+  } catch {
+    /* fall through to empty result */
+  }
   return "";
 };
 
@@ -84,6 +88,8 @@ export const ApplyActivity = () => {
     meeting_link: "",
   });
   const [coverImage, setCoverImage] = useState("");
+  const [additionalImages, setAdditionalImages] = useState([]);
+  const [additionalUploading, setAdditionalUploading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [submitting, setSubmitting] = useState(false);
@@ -133,6 +139,7 @@ export const ApplyActivity = () => {
           meeting_link: exp.meeting_link || "",
         });
         setCoverImage(exp.cover_image || "");
+        setAdditionalImages(Array.isArray(exp.additional_images) ? exp.additional_images : []);
       } catch (err) {
         alert(err.response?.data?.message || "Failed to load experience.");
         navigate("/EhostDashboard");
@@ -227,9 +234,64 @@ export const ApplyActivity = () => {
     );
   };
 
+  const uploadOneAdditionalImage = (file) => new Promise((resolve, reject) => {
+    (async () => {
+      let uploadFile;
+      try {
+        uploadFile = await convertToWebp(file);
+      } catch {
+        reject(new Error("Failed to process image. Please try a different file."));
+        return;
+      }
+      const storageRef = ref(storage, `additional_images/${Date.now()}_${uploadFile.name}`);
+      const task = uploadBytesResumable(storageRef, uploadFile);
+      task.on(
+        "state_changed",
+        null,
+        () => reject(new Error("Image upload failed. Please try again.")),
+        async () => {
+          try {
+            const url = await getDownloadURL(task.snapshot.ref);
+            resolve(url);
+          } catch (err) {
+            reject(err);
+          }
+        }
+      );
+    })();
+  });
+
+  const handleAdditionalImagesUpload = async (files) => {
+    if (!files || files.length === 0) return;
+    const remaining = MAX_ADDITIONAL_IMAGES - additionalImages.length;
+    if (remaining <= 0) return;
+    if (files.length > remaining) {
+      setError(`You can upload at most ${MAX_ADDITIONAL_IMAGES} additional photos.`);
+      files = files.slice(0, remaining);
+      if (files.length === 0) return;
+    } else {
+      setError("");
+    }
+    setAdditionalUploading(true);
+    try {
+      for (const file of files) {
+        const url = await uploadOneAdditionalImage(file);
+        setAdditionalImages((prev) => [...prev, url]);
+      }
+    } catch (err) {
+      setError(err.message || "Image upload failed. Please try again.");
+    } finally {
+      setAdditionalUploading(false);
+    }
+  };
+
+  const removeAdditionalImage = (index) => {
+    setAdditionalImages((prev) => prev.filter((_, i) => i !== index));
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (uploading) return;
+    if (uploading || additionalUploading) return;
     if (meetingLinkOnly) {
       const trimmedMeetingLink = form.meeting_link.trim();
       if (!trimmedMeetingLink) {
@@ -284,6 +346,14 @@ export const ApplyActivity = () => {
       setError("Please upload a cover image.");
       return;
     }
+    if (additionalImages.length < MIN_ADDITIONAL_IMAGES) {
+      setError(`Please upload at least ${MIN_ADDITIONAL_IMAGES} additional photos.`);
+      return;
+    }
+    if (additionalImages.length > MAX_ADDITIONAL_IMAGES) {
+      setError(`You can upload at most ${MAX_ADDITIONAL_IMAGES} additional photos.`);
+      return;
+    }
     const trimmedVideoUrl = form.sample_video_url.trim();
     if (trimmedVideoUrl && !isYouTubeUrl(trimmedVideoUrl)) {
       setError("Please paste a valid YouTube link (e.g. https://youtube.com/watch?v=...).");
@@ -315,6 +385,7 @@ export const ApplyActivity = () => {
         longitude: Number(form.longitude),
         date_time: new Date(form.date_time).toISOString(),
         cover_image: coverImage,
+        additional_images: additionalImages,
         sample_video_url: trimmedVideoUrl || null,
         video_description: form.video_description.trim() || null,
         video_highlights: highlightsArray.length ? highlightsArray : null,
@@ -510,6 +581,46 @@ export const ApplyActivity = () => {
           <img src={coverImage} alt="cover preview" className="aa-preview" />
         )}
 
+        <label className="aa-label">Additional photos* ({MIN_ADDITIONAL_IMAGES}–{MAX_ADDITIONAL_IMAGES})</label>
+        <input
+          type="file"
+          accept="image/*"
+          multiple
+          onChange={(e) => {
+            handleAdditionalImagesUpload(Array.from(e.target.files));
+            e.target.value = "";
+          }}
+          disabled={
+            additionalUploading ||
+            meetingLinkOnly ||
+            additionalImages.length >= MAX_ADDITIONAL_IMAGES
+          }
+        />
+        {additionalUploading && <div className="aa-hint">Uploading additional photos…</div>}
+        {additionalImages.length > 0 && (
+          <div className="aa-additional-grid">
+            {additionalImages.map((url, i) => (
+              <div key={url} className="aa-additional-thumb">
+                <img src={url} alt={`additional ${i + 1}`} className="aa-preview" />
+                {!meetingLinkOnly && (
+                  <button
+                    type="button"
+                    className="aa-additional-remove"
+                    onClick={() => removeAdditionalImage(i)}
+                  >
+                    Remove
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+        <div className="aa-hint">
+          {additionalImages.length} of {MAX_ADDITIONAL_IMAGES} uploaded.
+          {additionalImages.length < MIN_ADDITIONAL_IMAGES &&
+            ` Add at least ${MIN_ADDITIONAL_IMAGES - additionalImages.length} more.`}
+        </div>
+
         <label className="aa-label">Sample video (YouTube link)</label>
         <input
           className="aa-input"
@@ -545,7 +656,7 @@ export const ApplyActivity = () => {
 
         {error && <div className="aa-error">{error}</div>}
 
-        <button className="aa-submit" type="submit" disabled={uploading || submitting}>
+        <button className="aa-submit" type="submit" disabled={uploading || additionalUploading || submitting}>
           {submitting ? "Submitting…" : meetingLinkOnly ? "Save meeting link" : isEdit ? "Save changes" : "Submit experience"}
         </button>
       </form>

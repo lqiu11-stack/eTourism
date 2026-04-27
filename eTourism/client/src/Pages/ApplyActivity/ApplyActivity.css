@@ -123,6 +123,41 @@ input[type="file"]:disabled {
   margin-top: 6px;
 }
 
+.aa-additional-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.aa-additional-thumb {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.aa-additional-thumb .aa-preview {
+  width: 100%;
+  max-width: none;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  margin-top: 0;
+}
+
+.aa-additional-remove {
+  background: #fbe8e9;
+  color: #a3373b;
+  border: none;
+  border-radius: 8px;
+  padding: 6px 10px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.aa-additional-remove:hover {
+  background: #f5d4d6;
+}
+
 .aa-hint {
   font-size: 13px;
   color: #8a6d3b;
