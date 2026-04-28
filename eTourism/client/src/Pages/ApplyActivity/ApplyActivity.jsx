@@ -244,7 +244,7 @@ export const ApplyActivity = () => {
         reject(new Error("Failed to process image. Please try a different file."));
         return;
       }
-      const storageRef = ref(storage, `detail_page image/${Date.now()}_${uploadFile.name}`);
+      const storageRef = ref(storage, `detail_page_image/${Date.now()}_${uploadFile.name}`);
       const task = uploadBytesResumable(storageRef, uploadFile);
       task.on(
         "state_changed",
