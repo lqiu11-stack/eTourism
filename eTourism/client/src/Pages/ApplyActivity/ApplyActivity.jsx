@@ -550,7 +550,16 @@ export const ApplyActivity = () => {
         <input type="file" accept="image/*" onChange={(e) => handleImageUpload(e.target.files[0])} disabled={uploading} />
         {uploading && <div className="aa-hint">Uploading… {uploadProgress}%</div>}
         {coverImage && !uploading && (
-          <img src={coverImage} alt="cover preview" className="aa-preview" />
+          <div className="aa-cover-preview">
+            <img src={coverImage} alt="cover preview" className="aa-preview" />
+            <button
+              type="button"
+              className="aa-additional-remove"
+              onClick={() => setCoverImage("")}
+            >
+              Remove
+            </button>
+          </div>
         )}
 
         <label className="aa-label">Additional photos* ({MIN_ADDITIONAL_IMAGES}–{MAX_ADDITIONAL_IMAGES})</label>
