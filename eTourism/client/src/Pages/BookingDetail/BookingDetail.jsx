@@ -439,18 +439,6 @@ export const MyBookingDetail = () => {
       </div>
       </div>
 
-      <section className="newsletter">
-        <div className="newsletter-overlay"></div>
-        <div className="newsletter-content">
-          <h2>Get Your Travel Inspiration</h2>
-          <p>Straight to Your Inbox</p>
-          <div className="newsletter-form">
-            <input type="email" placeholder="Email address"/>
-            <button>Subscribe</button>
-          </div>
-        </div>
-      </section>
-
       {reviewPopup && (
         <div className="review-popup-overlay" onClick={() => setReviewPopup(null)}>
           <div
