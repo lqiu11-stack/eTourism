@@ -130,6 +130,27 @@
   margin: 5px 0px;
 }
 
+.Mybooking-small-refund-btn {
+  background: #e2bf91;
+  border: none;
+  padding: 8px 14px;
+  border-radius: 20px;
+  cursor: pointer;
+  font-size: 14px;
+  margin: 5px 0px;
+}
+
+.Mybooking-small-feedback-btn {
+  background: #e2b391;
+  border: none;
+  padding: 8px 14px;
+  border-radius: 20px;
+  cursor: pointer;
+  font-size: 14px;
+  margin: 5px 0px;
+}
+
+
 /* main button */
 .Mybooking-main-btn {
   background: #cfa8a0;
@@ -148,6 +169,15 @@
 .Mybooking-main-btn:hover {
   background: #caa59d;
 }
+
+.Mybooking-small-refund-btn:hover{
+ background: #d2b287;
+}
+
+.Mybooking-small-feedback-btn:hover{
+ background: #d5a888;
+}
+
 
 .help{
     font-size: 18px;
