@@ -26,7 +26,10 @@ export const DetailPage = () => {
     navigate("/MapPage");
   } else if (from === "ehost") {
     navigate("/EhostDashboard");
-  } else {
+  } else if (from) {
+      navigate(from);
+  }
+  else {
     navigate("/MainPage");
   }
 };

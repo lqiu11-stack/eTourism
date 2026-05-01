@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate, useParams, useSearchParams, Link } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams, Link, useLocation } from "react-router-dom";
 import "../MainPage/Mainstyle.css";
 import "./ContinentPage.css";
 import searchIcon from "../icon/search.png";
@@ -15,6 +15,7 @@ import { useExperiences } from "../../hooks/useExperiences";
 import { useAuth } from "../../utils/auth";
 import { formatDate } from "../../utils/formatDate";
 import { ExperienceCard } from "../../components/ExperienceCard";
+
 
 const VALID_CONTINENTS = CONTINENTS.filter(c => c !== "Antarctica");
 const ALL_VALUE = "all";
@@ -95,6 +96,18 @@ export const ContinentPage = () => {
     setShowCategoryMenu(false);
     setShowLanguageMenu(false);
   };
+
+  const location = useLocation();
+
+const handleCardClick = (exp) => {
+  navigate(`/DetailPage?id=${exp.id}`, {
+    state: {
+      from: location.pathname + location.search
+    }
+  });
+};
+
+
 
   return (
     <div className="main-page continent-page">
@@ -301,7 +314,9 @@ export const ContinentPage = () => {
               <ExperienceCard
                 key={exp.id}
                 experience={exp}
-                linkState={{ from: "continent", continent: lockedContinent || "all" }}
+                linkState={{
+                  from: location.pathname + location.search
+                }}
               />
             ))}
           </div>
