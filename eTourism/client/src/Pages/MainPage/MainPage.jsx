@@ -127,7 +127,9 @@ export const MainPage = () => {
 
             <div className="nav-links">
               <Link to="/register/ehost/step1" className="nav-link">Become E-host</Link>
-              <Link
+              {isLoggedIn && (
+                <Link
+              
                 to="/MyBooking"
                 className="nav-link"
                 onClick={(e) => {
@@ -141,6 +143,8 @@ export const MainPage = () => {
               >
                 My booking
               </Link>
+              )}
+              
               {isLoggedIn ? (
                 <button className="nav-link nav-btn-link" onClick={() => logout(navigate)}>
                   Logout
