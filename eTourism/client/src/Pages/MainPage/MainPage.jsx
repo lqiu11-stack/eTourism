@@ -205,8 +205,13 @@ export const MainPage = () => {
                     type="date"
                     value={searchDate}
                     min={new Date().toISOString().split("T")[0]}
-                    onChange={(e) => setSearchDate(e.target.value)}
-                    style={{ position: "absolute", opacity: 0, pointerEvents: "none" }}
+                    onChange={(e) => {setSearchDate(e.target.value);
+                                      setTimeout(() => {
+                                        dateInputRef.current?.blur();
+                                      }, 100);
+                    }
+                    }
+                    style={{ position: "absolute", opacity: 0 }}
                   />
                 </div>
               </div>
