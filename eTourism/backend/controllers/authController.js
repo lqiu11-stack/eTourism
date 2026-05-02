@@ -148,6 +148,7 @@ const login = async (req, res) => {
       process.env.JWT_SECRET,
       { expiresIn: '7d' }
     );
+    await User.touchLastLogin(user.id);
     const { password_hash, ...userInfo } = user;
     res.json({ token, user: userInfo });
   } catch (err) {
@@ -199,6 +200,7 @@ const oauthLogin = (provider) => async (req, res) => {
       process.env.JWT_SECRET,
       { expiresIn: '7d' }
     );
+    await User.touchLastLogin(user.id);
     const { password_hash, ...userInfo } = user;
     res.json({ token, user: userInfo });
   } catch (err) {
@@ -313,6 +315,7 @@ const completeOAuthProfile = async (req, res) => {
       process.env.JWT_SECRET,
       { expiresIn: '7d' }
     );
+    await User.touchLastLogin(user.id);
     const { password_hash, ...userInfo } = user;
     res.status(201).json({ token, user: userInfo });
   } catch (err) {

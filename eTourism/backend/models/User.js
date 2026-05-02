@@ -42,14 +42,9 @@ const User = {
   async findAll({ role, status } = {}) {
     let query = `
       SELECT u.id, u.email, u.role, u.first_name, u.last_name, u.status, u.created_at,
-             nl.last_active
+             u.last_login_at AS last_active
       FROM users u
-      LEFT JOIN (
-        SELECT user_id, MAX(logged_at) AS last_active
-        FROM network_logs
-        GROUP BY user_id
-      ) nl ON nl.user_id = u.id
-      WHERE 1=1
+      WHERE u.status IS DISTINCT FROM 'deleted'
     `;
     const values = [];
     if (role) { values.push(role); query += ` AND u.role = $${values.length}`; }
@@ -59,9 +54,22 @@ const User = {
     return rows;
   },
 
+  async touchLastLogin(id) {
+    await pool.query('UPDATE users SET last_login_at = NOW() WHERE id = $1', [id]);
+  },
+
   async delete(id) {
     const { rowCount } = await pool.query(
-      'DELETE FROM users WHERE id = $1',
+      `UPDATE users
+         SET status        = 'deleted',
+             email         = 'deleted_' || id || '@example.invalid',
+             first_name    = 'Deleted',
+             last_name     = 'User',
+             bio           = NULL,
+             profile_image = NULL,
+             password_hash = ''
+       WHERE id = $1
+         AND status IS DISTINCT FROM 'deleted'`,
       [id]
     );
     return rowCount > 0;

@@ -4,9 +4,6 @@ import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import backIcon from "../icon/back.png";
 import { COUNTRIES } from "../../utils/countries";
-import { storage } from "../../firebase";
-import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
-import { convertToWebp } from "../../utils/imageConvert";
 
 export const VisitorRegister = () => {
   const navigate = useNavigate();
@@ -20,7 +17,6 @@ export const VisitorRegister = () => {
     date_of_birth: "",
     country: "",
     bio: "",
-    profile_image: "",
   });
   const [agreements, setAgreements] = useState({
     is_over_18: false,
@@ -32,8 +28,6 @@ export const VisitorRegister = () => {
   const [error, setError] = useState("");
   const [emailError, setEmailError] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const [uploading, setUploading] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState(0);
   const [showTerms, setShowTerms] = useState(false);
   const [termsText, setTermsText] = useState("");
   const emailCheckSeq = useRef(0);
@@ -47,7 +41,6 @@ export const VisitorRegister = () => {
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
-    if (e.target.name === "email") setEmailError("");
   };
 
   const handleAgreementChange = (e) => {
@@ -65,50 +58,35 @@ export const VisitorRegister = () => {
     return age;
   };
 
-  const handleEmailBlur = async () => {
-    const email = form.email.trim();
-    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return;
+  const checkEmailAvailability = async (email) => {
+    const trimmed = email.trim();
+    if (!trimmed || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) return null;
     const seq = ++emailCheckSeq.current;
     try {
       const { data } = await axios.get(`${API_BASE}/auth/check-email`, {
-        params: { email },
+        params: { email: trimmed },
       });
-      if (seq !== emailCheckSeq.current) return;
-      setEmailError(data.available ? "" : "Email already registered.");
+      if (seq !== emailCheckSeq.current) return null;
+      const message = data.available ? "" : "Email already registered.";
+      setEmailError(message);
+      return data.available;
     } catch {
-      // network/server hiccup — submit-time 409 acts as the safety net
+      return null;
     }
   };
 
-  const handleProfileImageUpload = async (file) => {
-    if (!file) return;
-    setUploading(true);
-    setUploadProgress(0);
-    setError("");
-    let uploadFile;
-    try {
-      uploadFile = await convertToWebp(file);
-    } catch {
-      setError("Failed to process image. Please try a different file.");
-      setUploading(false);
+  useEffect(() => {
+    const email = form.email.trim();
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      setEmailError("");
       return;
     }
-    const storageRef = ref(storage, `profile_images/${Date.now()}_${uploadFile.name}`);
-    const task = uploadBytesResumable(storageRef, uploadFile);
-    task.on(
-      "state_changed",
-      (snap) => setUploadProgress(Math.round((snap.bytesTransferred / snap.totalBytes) * 100)),
-      () => {
-        setError("Profile image upload failed. Please try again.");
-        setUploading(false);
-      },
-      async () => {
-        const url = await getDownloadURL(task.snapshot.ref);
-        setForm((prev) => ({ ...prev, profile_image: url }));
-        setUploading(false);
-      }
-    );
-  };
+    const t = setTimeout(() => {
+      checkEmailAvailability(email);
+    }, 400);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [form.email]);
 
   const allAgreementsChecked =
     agreements.is_over_18 &&
@@ -140,6 +118,12 @@ export const VisitorRegister = () => {
     }
 
     setSubmitting(true);
+    const available = await checkEmailAvailability(form.email);
+    if (available === false) {
+      setError("Email already registered.");
+      setSubmitting(false);
+      return;
+    }
     try {
       await axios.post(`${API_BASE}/auth/register`, {
         ...form,
@@ -184,7 +168,6 @@ export const VisitorRegister = () => {
               placeholder="Enter email"
               value={form.email}
               onChange={handleChange}
-              onBlur={handleEmailBlur}
               required
             />
             {emailError && (
@@ -261,24 +244,6 @@ export const VisitorRegister = () => {
               value={form.bio}
               onChange={handleChange}
             />
-
-            <label className="vtext-wrapper-3">Profile Image</label>
-            <input
-              className="visitor-file-input"
-              type="file"
-              accept="image/*"
-              onChange={(e) => handleProfileImageUpload(e.target.files?.[0])}
-            />
-            {uploading && (
-              <progress className="visitor-upload-progress" value={uploadProgress} max="100" />
-            )}
-            {form.profile_image && !uploading && (
-              <img
-                src={form.profile_image}
-                alt="Profile preview"
-                className="visitor-profile-preview"
-              />
-            )}
 
             <div className="visitor-agreements">
               <label className="agreement-row">
@@ -360,7 +325,7 @@ export const VisitorRegister = () => {
             <button
               type="submit"
               className="visitor-submit"
-              disabled={submitting || uploading || Boolean(emailError)}
+              disabled={submitting || Boolean(emailError)}
             >
               {submitting ? "Registering..." : "Register →"}
             </button>

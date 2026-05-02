@@ -18,6 +18,7 @@ import {
   ArcElement,
 } from "chart.js";
 import { Bar, Doughnut, Line } from "react-chartjs-2";
+import { InfoTooltip } from "../../components/InfoTooltip";
 
 ChartJS.register(
   CategoryScale, LinearScale, BarElement, LineElement, PointElement, Filler,
@@ -709,13 +710,19 @@ const UserData = ({
               >
                 Edit
               </button>
-              <button
-                className="sort-btn"
-                style={{ padding: "4px 10px", fontSize: "12px" }}
-                onClick={() => onUpdateStatus(item.id, item.status === "active" ? "suspended" : "active")}
-              >
-                {item.status === "active" ? "Suspend" : "Activate"}
-              </button>
+              <span style={{ display: "inline-flex", alignItems: "center" }}>
+                <button
+                  className="sort-btn"
+                  style={{ padding: "4px 10px", fontSize: "12px" }}
+                  onClick={() => onUpdateStatus(item.id, item.status === "active" ? "suspended" : "active")}
+                >
+                  {item.status === "active" ? "Suspend" : "Activate"}
+                </button>
+                <InfoTooltip label="About suspending users">
+                  Suspended users can&rsquo;t log in or book; reversible by clicking Activate.
+                  Use for policy violations or temporary holds.
+                </InfoTooltip>
+              </span>
             </div>
           </div>
         ))}
@@ -747,13 +754,21 @@ const UserData = ({
               <button className="save-btn" onClick={() => onUpdateRole(selectedUser.id, selectedUser.role)}>
                 Save role
               </button>
-              <button
-                className="action-btn"
-                style={{ marginTop: "10px", background: "#e57373", color: "white" }}
-                onClick={() => onDelete(selectedUser.id)}
-              >
-                Delete user
-              </button>
+              <div style={{ display: "inline-flex", alignItems: "center", marginTop: "10px" }}>
+                <button
+                  className="action-btn"
+                  style={{ background: "#e57373", color: "white" }}
+                  onClick={() => onDelete(selectedUser.id)}
+                >
+                  Delete user
+                </button>
+                <InfoTooltip label="About deleting users">
+                  Permanent: the account is removed and the user must register again.
+                  Their email becomes free for re-use. Past bookings and reviews are kept
+                  but anonymised. Use only when the user requests deletion or for
+                  fraudulent accounts &mdash; otherwise prefer Suspend.
+                </InfoTooltip>
+              </div>
             </div>
           </div>
         </div>
@@ -1312,10 +1327,13 @@ const NetworkIssues = ({ summary, loading, windowHours, onWindowChange }) => {
   return (
     <div className="ad-network">
       <div className="ad-network-header">
-        <p className="ad-network-intro">
-          Connection issues captured from client telemetry. Rows flagged in orange exceed the
-          unreliable-connection threshold.
-        </p>
+        <h3 className="ad-network-title">
+          Network issues
+          <InfoTooltip label="About network telemetry">
+            Connection issues captured from client telemetry. Rows flagged in orange exceed the
+            unreliable-connection threshold (&ge;30% poor events with &ge;5 samples).
+          </InfoTooltip>
+        </h3>
         {windowSelector}
       </div>
 
