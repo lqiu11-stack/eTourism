@@ -371,8 +371,8 @@ export const ApplyActivity = () => {
         date_time: new Date(form.date_time).toISOString(),
         cover_image: coverImage,
         additional_images: additionalImages,
-        sample_video_url: trimmedVideoUrl || null,
-        video_description: form.video_description.trim() || null,
+        sample_video_url: trimmedVideoUrl,
+        video_description: trimmedVideoDescription,
         video_highlights: highlightsArray.length ? highlightsArray : null,
         meeting_link: trimmedMeetingLink,
       };
@@ -614,7 +614,7 @@ export const ApplyActivity = () => {
             ` Add at least ${MIN_ADDITIONAL_IMAGES - additionalImages.length} more.`}
         </div>
 
-        <label className="aa-label">Sample video (YouTube link)</label>
+        <label className="aa-label">Sample video (YouTube link)*</label>
         <input
           className="aa-input"
           type="url"
@@ -624,7 +624,7 @@ export const ApplyActivity = () => {
           placeholder="https://youtube.com/watch?v=..."
                  />
 
-        <label className="aa-label">Video description</label>
+        <label className="aa-label">Video description*</label>
         <textarea
           className="aa-textarea"
           name="video_description"

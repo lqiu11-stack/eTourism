@@ -189,17 +189,23 @@ try {
       });
     }
 
-    let normalizedSampleVideoUrl = null;
-    if (sample_video_url !== undefined && sample_video_url !== null && String(sample_video_url).trim() !== '') {
-      const trimmed = String(sample_video_url).trim();
-      if (!YOUTUBE_URL_RE.test(trimmed)) {
-        return res.status(400).json({
-          success: false,
-          message: 'sample_video_url must be a valid YouTube link.',
-        });
-      }
-      normalizedSampleVideoUrl = trimmed;
+    const trimmedSampleVideoUrl =
+      sample_video_url !== undefined && sample_video_url !== null
+        ? String(sample_video_url).trim()
+        : '';
+    if (!trimmedSampleVideoUrl) {
+      return res.status(400).json({
+        success: false,
+        message: 'sample_video_url is required.',
+      });
     }
+    if (!YOUTUBE_URL_RE.test(trimmedSampleVideoUrl)) {
+      return res.status(400).json({
+        success: false,
+        message: 'sample_video_url must be a valid YouTube link.',
+      });
+    }
+    const normalizedSampleVideoUrl = trimmedSampleVideoUrl;
 
     let normalizedVideoHighlights = null;
     if (Array.isArray(video_highlights)) {
@@ -209,10 +215,15 @@ try {
       normalizedVideoHighlights = cleaned.length ? cleaned : null;
     }
 
-    const normalizedVideoDescription =
-      typeof video_description === 'string' && video_description.trim() !== ''
-        ? video_description.trim()
-        : null;
+    const trimmedVideoDescription =
+      typeof video_description === 'string' ? video_description.trim() : '';
+    if (!trimmedVideoDescription) {
+      return res.status(400).json({
+        success: false,
+        message: 'video_description is required.',
+      });
+    }
+    const normalizedVideoDescription = trimmedVideoDescription;
 
     let normalizedDateTime = null;
     if (date_time !== undefined && date_time !== null && String(date_time).trim() !== '') {
@@ -416,14 +427,17 @@ const updateExperience = async (req, res) => {
         return res.status(400).json({ success: false, message: `Invalid gender_preference. Allowed values: ${supportedGenderPreferences.join(', ')}` });
     }
 
-    let normalizedSampleVideoUrl = null;
-    if (sample_video_url !== undefined && sample_video_url !== null && String(sample_video_url).trim() !== '') {
-        const trimmed = String(sample_video_url).trim();
-        if (!YOUTUBE_URL_RE.test(trimmed)) {
-            return res.status(400).json({ success: false, message: 'sample_video_url must be a valid YouTube link.' });
-        }
-        normalizedSampleVideoUrl = trimmed;
+    const trimmedSampleVideoUrl =
+        sample_video_url !== undefined && sample_video_url !== null
+            ? String(sample_video_url).trim()
+            : '';
+    if (!trimmedSampleVideoUrl) {
+        return res.status(400).json({ success: false, message: 'sample_video_url is required.' });
     }
+    if (!YOUTUBE_URL_RE.test(trimmedSampleVideoUrl)) {
+        return res.status(400).json({ success: false, message: 'sample_video_url must be a valid YouTube link.' });
+    }
+    const normalizedSampleVideoUrl = trimmedSampleVideoUrl;
 
     let normalizedVideoHighlights = null;
     if (Array.isArray(video_highlights)) {
@@ -433,10 +447,12 @@ const updateExperience = async (req, res) => {
         normalizedVideoHighlights = cleaned.length ? cleaned : null;
     }
 
-    const normalizedVideoDescription =
-        typeof video_description === 'string' && video_description.trim() !== ''
-            ? video_description.trim()
-            : null;
+    const trimmedVideoDescription =
+        typeof video_description === 'string' ? video_description.trim() : '';
+    if (!trimmedVideoDescription) {
+        return res.status(400).json({ success: false, message: 'video_description is required.' });
+    }
+    const normalizedVideoDescription = trimmedVideoDescription;
 
     let normalizedDateTime = null;
     if (date_time !== undefined && date_time !== null && String(date_time).trim() !== '') {

@@ -237,7 +237,7 @@ export const PaymentPage = () => {
               <p className="ticket-title">
                 Watch-only ticket <span>£{discountedPrice} / per ticket</span>
                 <InfoTooltip label="About watch-only / piggyback tickets">
-                  Watch-only tickets piggyback on an existing booking &mdash; you join
+                  Watch-only tickets piggyback on an existing booking you join
                   the same live stream at a discount, but you can&rsquo;t ask questions
                   or interact. Pick this if you just want to watch along.
                 </InfoTooltip>
