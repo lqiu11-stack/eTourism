@@ -17,6 +17,7 @@ import {
 import { isYouTubeUrl } from "../../utils/youtube";
 import { COUNTRIES } from "../../utils/countries";
 import { convertToWebp } from "../../utils/imageConvert";
+import { InfoTooltip } from "../../components/InfoTooltip";
 import "./ApplyActivity.css";
 
 const API_BASE = import.meta.env.VITE_API_URL;
@@ -330,8 +331,17 @@ export const ApplyActivity = () => {
       return;
     }
     const trimmedVideoUrl = form.sample_video_url.trim();
-    if (trimmedVideoUrl && !isYouTubeUrl(trimmedVideoUrl)) {
+    if (!trimmedVideoUrl) {
+      setError("Please add a sample YouTube video link for your experience.");
+      return;
+    }
+    if (!isYouTubeUrl(trimmedVideoUrl)) {
       setError("Please paste a valid YouTube link (e.g. https://youtube.com/watch?v=...).");
+      return;
+    }
+    const trimmedVideoDescription = form.video_description.trim();
+    if (!trimmedVideoDescription) {
+      setError("Please add a video description.");
       return;
     }
     const trimmedMeetingLink = form.meeting_link.trim();
@@ -529,6 +539,11 @@ export const ApplyActivity = () => {
               <input type="checkbox" name="allows_piggyback" checked={form.allows_piggyback} onChange={handleChange}  />
               Allow piggyback bookings
             </label>
+            <InfoTooltip label="About piggyback bookings">
+              When enabled, otherSample video (YouTube link) visitors can buy a discounted &ldquo;watch-only&rdquo;
+              ticket and join the same live session as the main booker. They can watch
+              the stream but can&rsquo;t ask questions or interact.
+            </InfoTooltip>
           </div>
         </div>
 

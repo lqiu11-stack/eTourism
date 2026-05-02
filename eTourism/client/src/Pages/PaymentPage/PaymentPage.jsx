@@ -7,6 +7,7 @@ import { useNavigate, useSearchParams, Link } from "react-router-dom";
 import { useState, useEffect } from "react";
 import axios from "axios";
 import bg from "../icon/worldtravel.jpg";
+import { InfoTooltip } from "../../components/InfoTooltip";
 
 const API_BASE = import.meta.env.VITE_API_URL;
 
@@ -235,6 +236,11 @@ export const PaymentPage = () => {
             <div>
               <p className="ticket-title">
                 Watch-only ticket <span>£{discountedPrice} / per ticket</span>
+                <InfoTooltip label="About watch-only / piggyback tickets">
+                  Watch-only tickets piggyback on an existing booking &mdash; you join
+                  the same live stream at a discount, but you can&rsquo;t ask questions
+                  or interact. Pick this if you just want to watch along.
+                </InfoTooltip>
               </p>
               <span className="small-text">(no Q&A, stream only)</span>
               <Link className="ticket-link" onClick={() => setShowWatchOnlyTerms(true)}>click to see the detail</Link>
