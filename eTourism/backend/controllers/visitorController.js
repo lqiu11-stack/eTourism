@@ -332,6 +332,13 @@ const createBooking = async (req, res) => {
       return res.status(400).json({ message: 'This experience has no available time slot.' });
     }
 
+    const existing = await Booking.findActiveByVisitorAndExperience(visitor_id, experience_id);
+    if (existing) {
+      return res.status(400).json({
+        message: 'You already have a booking for this experience. Cancel or refund the existing one before booking again.',
+      });
+    }
+
     const qtyNormal = Number(qty_normal);
     const qtyDiscounted = Number(qty_discounted);
     if (!Number.isInteger(qtyNormal) || !Number.isInteger(qtyDiscounted) || qtyNormal < 0 || qtyDiscounted < 0) {

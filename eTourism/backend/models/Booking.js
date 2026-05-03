@@ -12,6 +12,20 @@ const Booking = {
     return rows[0] || null;
   },
 
+  // Returns the visitor's existing active booking for an experience, if any.
+  // "Active" excludes refund-related states so they can rebook after a refund.
+  async findActiveByVisitorAndExperience(visitor_id, experience_id) {
+    const { rows } = await pool.query(
+      `SELECT id, status FROM bookings
+       WHERE visitor_id = $1
+         AND experience_id = $2
+         AND status NOT IN ('refunded', 'refund_pending')
+       LIMIT 1`,
+      [visitor_id, experience_id]
+    );
+    return rows[0] || null;
+  },
+
   async create({
     visitor_id, experience_id, amount_paid, booking_type,
     qty_normal = 1, qty_discounted = 0, contact_name, contact_email,
