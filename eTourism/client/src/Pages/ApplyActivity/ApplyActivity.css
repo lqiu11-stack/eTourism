@@ -4,32 +4,52 @@
   padding-bottom: 120px;
 }
 
-/* Stepper bar */
-.aa-stepper-bar {
+/* Navbar (matches EhostDashboard .eh-navbar) */
+.aa-navbar {
   position: sticky;
   top: 0;
   z-index: 10;
-  display: grid;
-  grid-template-columns: 200px 1fr 200px;
+  display: flex;
+  justify-content: space-between;
   align-items: center;
-  padding: 18px 32px;
-  background: #f4f1ef;
-  border-bottom: 1px solid #e6dcd5;
+  padding: 22px 48px;
+  color: #fff;
+  background: linear-gradient(90deg, #eadad1 0%, #a06767 55%, #5a1a1a 100%);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
-.aa-back {
-  background: transparent;
-  color: #4a4a4a;
+.aa-navbar-title {
+  font-size: 26px;
+  font-weight: 600;
+  margin: 0;
+  letter-spacing: 0.5px;
+}
+
+.aa-nav-links {
+  display: flex;
+  align-items: center;
+  gap: 28px;
+}
+
+.aa-nav-link {
+  background: none;
   border: none;
-  padding: 8px 4px;
-  font-size: 14px;
+  color: #fff;
+  font-size: 16px;
   cursor: pointer;
-  text-align: left;
-  font-weight: 500;
+  padding: 4px 0;
+  font-family: inherit;
 }
 
-.aa-back:hover {
-  color: #a06767;
+.aa-nav-link:hover {
+  opacity: 0.85;
+}
+
+/* Stepper row sits below the gradient navbar */
+.aa-stepper-row {
+  display: flex;
+  justify-content: center;
+  padding: 22px 32px 0;
 }
 
 .aa-stepper {
@@ -42,7 +62,6 @@
   padding: 6px 10px;
   gap: 4px;
   max-width: 540px;
-  margin: 0 auto;
 }
 
 .aa-stepper-item {
@@ -112,7 +131,7 @@
   grid-template-columns: minmax(0, 1fr) 360px;
   gap: 32px;
   max-width: 1180px;
-  margin: 32px auto 0;
+  margin: 24px auto 0;
   padding: 0 32px;
   align-items: start;
 }
@@ -330,17 +349,33 @@
   .aa-preview-pane {
     position: static;
   }
-  .aa-stepper-bar {
-    grid-template-columns: 1fr;
-    gap: 12px;
-  }
-  .aa-stepper {
-    margin: 0;
-  }
   .aa-footer {
     flex-direction: column;
     border-radius: 18px;
     padding: 14px;
+  }
+}
+
+@media (max-width: 640px) {
+  .aa-navbar {
+    padding: 16px 18px;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .aa-navbar-title {
+    font-size: 20px;
+  }
+  .aa-nav-links {
+    gap: 16px;
+  }
+  .aa-nav-link {
+    font-size: 14px;
+  }
+  .aa-stepper-row {
+    padding: 16px 16px 0;
+  }
+  .aa-stepper {
+    flex-wrap: wrap;
   }
 }
 

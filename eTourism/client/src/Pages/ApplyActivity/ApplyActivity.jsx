@@ -460,10 +460,16 @@ export const ApplyActivity = () => {
 
   return (
     <div className="aa-page">
-      <header className="aa-stepper-bar">
-        <button className="aa-back" type="button" onClick={() => navigate("/EhostDashboard")}>
-          ‹ Back to dashboard
-        </button>
+      <header className="aa-navbar">
+        <nav className="aa-nav-links">
+          <button className="aa-nav-link" type="button" onClick={() => navigate("/EhostDashboard")}>
+            ‹ Back to dashboard
+          </button>
+        </nav>
+        <h1 className="aa-navbar-title">{isEdit ? "Edit experience" : "Apply for new experience"}</h1>
+      </header>
+
+      <div className="aa-stepper-row">
         <nav className="aa-stepper" aria-label="Form progress">
           {STEPS.map((s, i) => {
             const done = currentStep > s.n;
@@ -483,8 +489,7 @@ export const ApplyActivity = () => {
             );
           })}
         </nav>
-        <span />
-      </header>
+      </div>
 
       <div className="aa-layout">
         <form className="aa-form" onSubmit={handleSubmit}>
