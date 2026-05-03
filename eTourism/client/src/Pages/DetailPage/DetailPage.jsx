@@ -22,16 +22,9 @@ export const DetailPage = () => {
   const from = location.state?.from;
   const handleBack = () => {
 
-  if (from === "map") {
-    navigate("/MapPage");
-  } else if (from === "ehost") {
-    navigate("/EhostDashboard");
-  } else if (from === "main") {
-    navigate("/MainPage");
-  } else if (from) {
-      navigate(from);
-  }
-  else {
+  if (from) {
+    navigate(-1);
+  } else {
     navigate("/MainPage");
   }
 };
