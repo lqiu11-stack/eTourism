@@ -1,10 +1,13 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
+import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
+import { storage } from "../../firebase";
+import { convertToWebp } from "../../utils/imageConvert";
 import "../EhostProfile/EhostProfile.css";
 
 const API_BASE = import.meta.env.VITE_API_URL;
-const EDITABLE = ["first_name", "last_name", "display_name"];
+const EDITABLE = ["first_name", "last_name", "profile_image"];
 
 export const VisitorProfile = () => {
   const navigate = useNavigate();
@@ -14,12 +17,15 @@ export const VisitorProfile = () => {
   const [form, setForm] = useState({
     first_name: "",
     last_name: "",
-    display_name: "",
+    profile_image: "",
   });
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
+  const uploadIdRef = useRef(0);
 
   useEffect(() => {
     if (!token || user.role !== "visitor") navigate("/login");
@@ -36,7 +42,7 @@ export const VisitorProfile = () => {
         setForm({
           first_name: data.first_name || "",
           last_name: data.last_name || "",
-          display_name: data.display_name || "",
+          profile_image: data.profile_image || "",
         });
       } catch {
         setError("Failed to load profile.");
@@ -51,8 +57,45 @@ export const VisitorProfile = () => {
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
+  const handleProfileImageUpload = async (file) => {
+    if (!file) return;
+    const myUploadId = ++uploadIdRef.current;
+    setUploading(true);
+    setUploadProgress(0);
+    setError("");
+    let uploadFile;
+    try {
+      uploadFile = await convertToWebp(file);
+    } catch {
+      setError("Failed to process image. Please try a different file.");
+      setUploading(false);
+      return;
+    }
+    const storageRef = ref(storage, `profile_images/${Date.now()}_${uploadFile.name}`);
+    const task = uploadBytesResumable(storageRef, uploadFile);
+    task.on(
+      "state_changed",
+      (snap) => {
+        if (myUploadId !== uploadIdRef.current) return;
+        setUploadProgress(Math.round((snap.bytesTransferred / snap.totalBytes) * 100));
+      },
+      () => {
+        if (myUploadId !== uploadIdRef.current) return;
+        setError("Profile image upload failed. Please try again.");
+        setUploading(false);
+      },
+      async () => {
+        if (myUploadId !== uploadIdRef.current) return;
+        const url = await getDownloadURL(task.snapshot.ref);
+        setForm((prev) => ({ ...prev, profile_image: url }));
+        setUploading(false);
+      }
+    );
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (uploading) return;
     setError("");
     setNotice("");
     if (!form.first_name.trim() || !form.last_name.trim()) {
@@ -92,6 +135,24 @@ export const VisitorProfile = () => {
           <div className="ep-hint">Loading profile…</div>
         ) : (
           <>
+            <div className="ep-avatar-row">
+              {form.profile_image ? (
+                <img src={form.profile_image} alt="profile" className="ep-avatar" />
+              ) : (
+                <div className="ep-avatar ep-avatar-placeholder">No photo</div>
+              )}
+              <div>
+                <label className="ep-label">Profile photo</label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => handleProfileImageUpload(e.target.files[0])}
+                  disabled={uploading}
+                />
+                {uploading && <div className="ep-hint">Uploading… {uploadProgress}%</div>}
+              </div>
+            </div>
+
             <div className="ep-grid">
               <div>
                 <label className="ep-label">First name*</label>
@@ -103,22 +164,10 @@ export const VisitorProfile = () => {
               </div>
             </div>
 
-            <label className="ep-label">Public display name (optional)</label>
-            <input
-              className="ep-input"
-              name="display_name"
-              value={form.display_name}
-              onChange={handleChange}
-              placeholder="Leave blank to use your first name"
-            />
-            <div className="ep-hint">
-              This is the name you should use in the meeting — the e-host uses it to recognise you.
-            </div>
-
             {error && <div className="ep-error">{error}</div>}
             {notice && <div className="ep-notice">{notice}</div>}
 
-            <button className="ep-submit" type="submit" disabled={saving}>
+            <button className="ep-submit" type="submit" disabled={saving || uploading}>
               {saving ? "Saving…" : "Save changes"}
             </button>
           </>

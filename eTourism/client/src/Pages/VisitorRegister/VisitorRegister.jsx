@@ -4,6 +4,9 @@ import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import backIcon from "../icon/back.png";
 import { COUNTRIES } from "../../utils/countries";
+import { storage } from "../../firebase";
+import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
+import { convertToWebp } from "../../utils/imageConvert";
 
 export const VisitorRegister = () => {
   const navigate = useNavigate();
@@ -18,6 +21,7 @@ export const VisitorRegister = () => {
     country: "",
     gender: "",
     bio: "",
+    profile_image: "",
   });
   const [agreements, setAgreements] = useState({
     is_over_18: false,
@@ -29,9 +33,12 @@ export const VisitorRegister = () => {
   const [error, setError] = useState("");
   const [emailError, setEmailError] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
   const [showTerms, setShowTerms] = useState(false);
   const [termsText, setTermsText] = useState("");
   const emailCheckSeq = useRef(0);
+  const uploadIdRef = useRef(0);
 
   useEffect(() => {
     fetch("/terms.txt")
@@ -46,6 +53,42 @@ export const VisitorRegister = () => {
 
   const handleAgreementChange = (e) => {
     setAgreements({ ...agreements, [e.target.name]: e.target.checked });
+  };
+
+  const handleProfileImageUpload = async (file) => {
+    if (!file) return;
+    const myUploadId = ++uploadIdRef.current;
+    setUploading(true);
+    setUploadProgress(0);
+    setError("");
+    let uploadFile;
+    try {
+      uploadFile = await convertToWebp(file);
+    } catch {
+      setError("Failed to process image. Please try a different file.");
+      setUploading(false);
+      return;
+    }
+    const storageRef = ref(storage, `profile_images/${Date.now()}_${uploadFile.name}`);
+    const task = uploadBytesResumable(storageRef, uploadFile);
+    task.on(
+      "state_changed",
+      (snap) => {
+        if (myUploadId !== uploadIdRef.current) return;
+        setUploadProgress(Math.round((snap.bytesTransferred / snap.totalBytes) * 100));
+      },
+      () => {
+        if (myUploadId !== uploadIdRef.current) return;
+        setError("Profile image upload failed. Please try again.");
+        setUploading(false);
+      },
+      async () => {
+        if (myUploadId !== uploadIdRef.current) return;
+        const url = await getDownloadURL(task.snapshot.ref);
+        setForm((prev) => ({ ...prev, profile_image: url }));
+        setUploading(false);
+      }
+    );
   };
 
   const calculateAge = (dob) => {
@@ -265,6 +308,24 @@ export const VisitorRegister = () => {
               onChange={handleChange}
             />
 
+            <label className="vtext-wrapper-3">Profile Image</label>
+            <input
+              className="visitor-file-input"
+              type="file"
+              accept="image/*"
+              onChange={(e) => handleProfileImageUpload(e.target.files?.[0])}
+            />
+            {uploading && (
+              <progress className="visitor-upload-progress" value={uploadProgress} max="100" />
+            )}
+            {form.profile_image && !uploading && (
+              <img
+                src={form.profile_image}
+                alt="Profile preview"
+                className="visitor-profile-preview"
+              />
+            )}
+
             <div className="visitor-agreements">
               <label className="agreement-row">
                 <input
@@ -345,7 +406,7 @@ export const VisitorRegister = () => {
             <button
               type="submit"
               className="visitor-submit"
-              disabled={submitting || Boolean(emailError)}
+              disabled={submitting || uploading || Boolean(emailError)}
             >
               {submitting ? "Registering..." : "Register →"}
             </button>

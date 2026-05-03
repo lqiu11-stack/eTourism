@@ -436,7 +436,14 @@ export const MyBookingDetail = () => {
       </div>
 
       {reviewPopup && (
-        <div className="review-popup-overlay" onClick={() => setReviewPopup(null)}>
+        <div
+          className="review-popup-overlay"
+          onClick={() => {
+            const wasSuccess = reviewPopup.tone === "success";
+            setReviewPopup(null);
+            if (wasSuccess) navigate("/MyBooking");
+          }}
+        >
           <div
             className={`review-popup-card review-popup-card--${reviewPopup.tone}`}
             onClick={(e) => e.stopPropagation()}
@@ -448,7 +455,11 @@ export const MyBookingDetail = () => {
             <button
               className="review-popup-btn"
               type="button"
-              onClick={() => setReviewPopup(null)}
+              onClick={() => {
+                const wasSuccess = reviewPopup.tone === "success";
+                setReviewPopup(null);
+                if (wasSuccess) navigate("/MyBooking");
+              }}
             >
               OK
             </button>
