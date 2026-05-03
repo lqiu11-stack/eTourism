@@ -10,6 +10,7 @@ import { useExperiences } from "../../hooks/useExperiences";
 import { toYouTubeEmbed } from "../../utils/youtube";
 import { setExperienceContext } from "../../utils/networkMonitor";
 import { ExperienceCard } from "../../components/ExperienceCard";
+import { PhotoLightbox } from "../../components/PhotoLightbox";
 
 const MAX_NEW_EVENTS = 8;
 
@@ -32,6 +33,7 @@ const { experiences } = useExperiences();
     const navigate = useNavigate();
     const [showTerms, setShowTerms] = useState(false);
     const [termsText, setTermsText] = useState("");
+    const [previewUrl, setPreviewUrl] = useState(null);
     useEffect(() => {
     fetch("/terms.txt")
       .then((r) => r.text())
@@ -304,13 +306,20 @@ const { experiences } = useExperiences();
           <h3>More photos</h3>
           <div className="detail-gallery-grid">
             {experience.additional_images.map((url, i) => (
-              <img
+              <button
                 key={url}
-                src={url}
-                alt={`${experience.title} photo ${i + 1}`}
-                className="detail-gallery-img"
-                loading="lazy"
-              />
+                type="button"
+                className="photo-trigger"
+                onClick={() => setPreviewUrl(url)}
+                aria-label={`Preview photo ${i + 1}`}
+              >
+                <img
+                  src={url}
+                  alt={`${experience.title} photo ${i + 1}`}
+                  className="detail-gallery-img"
+                  loading="lazy"
+                />
+              </button>
             ))}
           </div>
         </section>
@@ -398,6 +407,7 @@ const { experiences } = useExperiences();
               </div>
             )}
 
+      <PhotoLightbox url={previewUrl} onClose={() => setPreviewUrl(null)} />
     </div>
   );
 };

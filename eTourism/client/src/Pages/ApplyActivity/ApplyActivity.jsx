@@ -18,6 +18,7 @@ import { isYouTubeUrl } from "../../utils/youtube";
 import { COUNTRIES } from "../../utils/countries";
 import { convertToWebp } from "../../utils/imageConvert";
 import { InfoTooltip } from "../../components/InfoTooltip";
+import { PhotoLightbox } from "../../components/PhotoLightbox";
 import "./ApplyActivity.css";
 
 const API_BASE = import.meta.env.VITE_API_URL;
@@ -97,6 +98,7 @@ export const ApplyActivity = () => {
   const [error, setError] = useState("");
   const [wasApproved, setWasApproved] = useState(false);
   const [showSubmittedModal, setShowSubmittedModal] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState(null);
   const minDateTime = toDateTimeLocal(new Date(Date.now() + 60 * 1000));
 
   useEffect(() => {
@@ -566,7 +568,14 @@ export const ApplyActivity = () => {
         {uploading && <div className="aa-hint">Uploading… {uploadProgress}%</div>}
         {coverImage && !uploading && (
           <div className="aa-cover-preview">
-            <img src={coverImage} alt="cover preview" className="aa-preview" />
+            <button
+              type="button"
+              className="photo-trigger"
+              onClick={() => setPreviewUrl(coverImage)}
+              aria-label="Preview cover image"
+            >
+              <img src={coverImage} alt="cover preview" className="aa-preview" />
+            </button>
             <button
               type="button"
               className="aa-additional-remove"
@@ -596,7 +605,14 @@ export const ApplyActivity = () => {
           <div className="aa-additional-grid">
             {additionalImages.map((url, i) => (
               <div key={url} className="aa-additional-thumb">
-                <img src={url} alt={`additional ${i + 1}`} className="aa-preview" />
+                <button
+                  type="button"
+                  className="photo-trigger"
+                  onClick={() => setPreviewUrl(url)}
+                  aria-label={`Preview photo ${i + 1}`}
+                >
+                  <img src={url} alt={`additional ${i + 1}`} className="aa-preview" />
+                </button>
                 <button
                   type="button"
                   className="aa-additional-remove"
@@ -674,6 +690,8 @@ export const ApplyActivity = () => {
           </div>
         </div>
       )}
+
+      <PhotoLightbox url={previewUrl} onClose={() => setPreviewUrl(null)} />
     </div>
   );
 };

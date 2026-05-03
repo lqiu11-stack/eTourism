@@ -19,6 +19,7 @@ import {
 } from "chart.js";
 import { Bar, Doughnut, Line } from "react-chartjs-2";
 import { InfoTooltip } from "../../components/InfoTooltip";
+import { PhotoLightbox } from "../../components/PhotoLightbox";
 
 ChartJS.register(
   CategoryScale, LinearScale, BarElement, LineElement, PointElement, Filler,
@@ -785,13 +786,6 @@ const ExperienceRequests = ({
 }) => {
   const [previewUrl, setPreviewUrl] = useState(null);
 
-  useEffect(() => {
-    if (!previewUrl) return undefined;
-    const onKey = (e) => { if (e.key === "Escape") setPreviewUrl(null); };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [previewUrl]);
-
   return (
   <div>
     <div className="booking-top">
@@ -848,7 +842,7 @@ const ExperienceRequests = ({
             {selectedExp.cover_image && (
               <button
                 type="button"
-                className="suit-photo-btn"
+                className="photo-trigger"
                 onClick={() => setPreviewUrl(selectedExp.cover_image)}
                 aria-label="Preview cover image"
               >
@@ -947,7 +941,7 @@ const ExperienceRequests = ({
                     <button
                       key={url}
                       type="button"
-                      className="suit-photo-btn"
+                      className="photo-trigger"
                       onClick={() => setPreviewUrl(url)}
                       aria-label={`Preview photo ${i + 1}`}
                     >
@@ -1003,23 +997,7 @@ const ExperienceRequests = ({
       </div>
     )}
 
-    {previewUrl && (
-      <div className="suit-lightbox" onClick={() => setPreviewUrl(null)} role="dialog" aria-modal="true">
-        <button
-          type="button"
-          className="suit-lightbox-close"
-          onClick={(e) => { e.stopPropagation(); setPreviewUrl(null); }}
-          aria-label="Close preview"
-        >
-          ✕
-        </button>
-        <img
-          src={previewUrl}
-          alt="Photo preview"
-          onClick={(e) => e.stopPropagation()}
-        />
-      </div>
-    )}
+    <PhotoLightbox url={previewUrl} onClose={() => setPreviewUrl(null)} />
   </div>
   );
 };
