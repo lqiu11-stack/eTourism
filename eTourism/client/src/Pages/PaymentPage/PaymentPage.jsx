@@ -57,6 +57,12 @@ export const PaymentPage = () => {
   }, [experienceId]);
 
   useEffect(() => {
+    if (experience && !experience.allows_piggyback && qtyDiscounted !== 0) {
+      setQtyDiscounted(0);
+    }
+  }, [experience, qtyDiscounted]);
+
+  useEffect(() => {
     fetch("/terms.txt")
       .then((r) => r.text())
       .then(setTermsText)
@@ -231,27 +237,29 @@ export const PaymentPage = () => {
             <p className="ticket-text">Ticket(s)</p>
           </div>
 
-          {/* Ticket 2 */}
-          <div className="ticket">
-            <div>
-              <p className="ticket-title">
-                Watch-only ticket <span>£{discountedPrice} / per ticket</span>
-                <InfoTooltip label="About watch-only / piggyback tickets">
-                  Watch-only tickets piggyback on an existing booking you join
-                  the same live stream at a discount, but you can&rsquo;t ask questions
-                  or interact. Pick this if you just want to watch along.
-                </InfoTooltip>
-              </p>
-              <span className="small-text">(no Q&A, stream only)</span>
-              <Link className="ticket-link" onClick={() => setShowWatchOnlyTerms(true)}>click to see the detail</Link>
+          {/* Ticket 2 — only if the e-host allows piggyback bookings */}
+          {experience?.allows_piggyback && (
+            <div className="ticket">
+              <div>
+                <p className="ticket-title">
+                  Watch-only ticket <span>£{discountedPrice} / per ticket</span>
+                  <InfoTooltip label="About watch-only / piggyback tickets">
+                    Watch-only tickets piggyback on an existing booking you join
+                    the same live stream at a discount, but you can&rsquo;t ask questions
+                    or interact. Pick this if you just want to watch along.
+                  </InfoTooltip>
+                </p>
+                <span className="small-text">(no Q&A, stream only)</span>
+                <Link className="ticket-link" onClick={() => setShowWatchOnlyTerms(true)}>click to see the detail</Link>
+              </div>
+              <div className="counter">
+                <button onClick={() => setQtyDiscounted(Math.max(0, qtyDiscounted - 1))}>-</button>
+                <span>{qtyDiscounted}</span>
+                <button onClick={() => setQtyDiscounted(qtyDiscounted + 1)}>+</button>
+              </div>
+              <p className="ticket-text">Ticket(s)</p>
             </div>
-            <div className="counter">
-              <button onClick={() => setQtyDiscounted(Math.max(0, qtyDiscounted - 1))}>-</button>
-              <span>{qtyDiscounted}</span>
-              <button onClick={() => setQtyDiscounted(qtyDiscounted + 1)}>+</button>
-            </div>
-            <p className="ticket-text">Ticket(s)</p>
-          </div>
+          )}
 
           {/* Terms */}
           <div className="terms">
