@@ -446,15 +446,14 @@ export const PaymentPage = () => {
             onChange={(e) => setName(e.target.value)}
           />
 
-          <label>
+          {/* <label>
             Please tell us your email*
-            <span>(stream link will be sent through email)</span>
           </label>
           <input
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-          />
+          /> */}
 
           {bookingUnavailableReason && (
             <p className="input-error">{bookingUnavailableReason}</p>
