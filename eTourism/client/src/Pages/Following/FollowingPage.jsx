@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
 import backIcon from "../icon/back.png";
 import { AccountMenu } from "../../components/AccountMenu";
+import "../MainPage/Mainstyle.css";
 import "./FollowingPage.css";
 
 const API_BASE = import.meta.env.VITE_API_URL;

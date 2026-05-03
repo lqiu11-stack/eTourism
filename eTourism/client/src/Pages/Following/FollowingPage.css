@@ -4,27 +4,10 @@
   padding-bottom: 80px;
 }
 
-.following-page .navbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 16px 32px;
-  background: #fff;
-  border-bottom: 1px solid #ece1d8;
-}
-
-.following-page .nav-link {
-  color: #2a1d18;
-  text-decoration: none;
-  font-size: 14px;
-  font-weight: 500;
-  margin-right: 16px;
-}
-
 .following-hero {
   max-width: 1080px;
   margin: 0 auto;
-  padding: 36px 32px 12px;
+  padding: 110px 32px 12px;
 }
 
 .following-title {
