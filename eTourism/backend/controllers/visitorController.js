@@ -204,13 +204,15 @@ const getReviews = async (req, res) => {
 const createBooking = async (req, res) => {
   try {
   
-    const { 
-      experience_id, 
-      qty_normal = 0, 
-      qty_discounted = 0, 
-      contact_name, 
+    const {
+      experience_id,
+      qty_normal = 0,
+      qty_discounted = 0,
+      contact_name,
       contact_email,
-      agreed_to_terms
+      agreed_to_terms,
+      souvenir_qty = 0,
+      video_addon = false
     } = req.body;
     
     const visitor_id = req.userId;
@@ -243,8 +245,11 @@ const createBooking = async (req, res) => {
     if (totalTickets <= 0) {
       return res.status(400).json({ message: 'At least one ticket is required.' });
     }
-    if (totalTickets > experience.max_visitors) {
-      return res.status(400).json({ message: `Sold out! Only ${experience.max_visitors} spots available.` });
+    if (qtyNormal > experience.max_visitors) {
+      return res.status(400).json({ message: `Sold out! Only ${experience.max_visitors} normal-ticket spot(s) available.` });
+    }
+    if (qtyDiscounted > 0 && experience.allows_piggyback && experience.max_piggyback_visitors != null && qtyDiscounted > experience.max_piggyback_visitors) {
+      return res.status(400).json({ message: `Sold out! Only ${experience.max_piggyback_visitors} watch-only spot(s) available.` });
     }
 
     if (experience.date_time && new Date(experience.date_time).getTime() <= Date.now()) {
@@ -257,12 +262,37 @@ const createBooking = async (req, res) => {
     }
 
     const normalPrice = parseFloat(experience.price || 0);
-    
-    const discountedPrice = experience.price_discounted 
-      ? parseFloat(experience.price_discounted) 
+
+    const discountedPrice = experience.price_discounted
+      ? parseFloat(experience.price_discounted)
       : Math.max(0, normalPrice - 10);
 
-    let totalAmount = Number(((normalPrice * qtyNormal) + (discountedPrice * qtyDiscounted)).toFixed(2));
+    const souvenirQty = Number(souvenir_qty);
+    if (!Number.isInteger(souvenirQty) || souvenirQty < 0) {
+      return res.status(400).json({ message: 'souvenir_qty must be a non-negative integer.' });
+    }
+    if (souvenirQty > 0 && experience.allows_souvenir_addon !== true) {
+      return res.status(400).json({ message: 'This experience does not offer the souvenir add-on.' });
+    }
+
+    const wantsVideoAddon = video_addon === true;
+    if (wantsVideoAddon && experience.allows_video_addon !== true) {
+      return res.status(400).json({ message: 'This experience does not offer the video download add-on.' });
+    }
+
+    const souvenirTotal = souvenirQty > 0
+      ? souvenirQty * parseFloat(experience.souvenir_price || 0)
+      : 0;
+    const videoTotal = wantsVideoAddon
+      ? parseFloat(experience.video_addon_price || 0)
+      : 0;
+
+    let totalAmount = Number((
+      (normalPrice * qtyNormal) +
+      (discountedPrice * qtyDiscounted) +
+      souvenirTotal +
+      videoTotal
+    ).toFixed(2));
 
     const newBooking = await Booking.create({
       visitor_id,
@@ -272,7 +302,9 @@ const createBooking = async (req, res) => {
       qty_normal: qtyNormal,
       qty_discounted: qtyDiscounted,
       contact_name,
-      contact_email
+      contact_email,
+      souvenir_qty: souvenirQty,
+      video_addon: wantsVideoAddon
     });
 
     return res.status(201).json({

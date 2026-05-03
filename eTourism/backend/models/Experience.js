@@ -15,19 +15,26 @@ const Experience = {
     price, price_discounted, cover_image, gender_preference, allows_piggyback,
     sample_video_url, video_description, video_highlights, language = 'English',
     meeting_link,
+    allows_souvenir_addon = false, souvenir_price = null,
+    allows_video_addon = false, video_addon_price = null,
+    max_piggyback_visitors = null,
   }) {
     const { rows } = await pool.query(
       `INSERT INTO experiences
          (ehost_id, title, description, category, country, continent, location_name,
           latitude, longitude, date_time, duration_minutes, max_visitors,
           price, price_discounted, cover_image, gender_preference, allows_piggyback,
-          sample_video_url, video_description, video_highlights, language, meeting_link)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22)
+          sample_video_url, video_description, video_highlights, language, meeting_link,
+          allows_souvenir_addon, souvenir_price, allows_video_addon, video_addon_price,
+          max_piggyback_visitors)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27)
        RETURNING *`,
       [ehost_id, title, description, category, country, continent, location_name,
        latitude, longitude, date_time, duration_minutes, max_visitors,
        price, price_discounted, cover_image, gender_preference, allows_piggyback,
-       sample_video_url, video_description, video_highlights, language, meeting_link]
+       sample_video_url, video_description, video_highlights, language, meeting_link,
+       allows_souvenir_addon, souvenir_price, allows_video_addon, video_addon_price,
+       max_piggyback_visitors]
     );
     return rows[0];
   },

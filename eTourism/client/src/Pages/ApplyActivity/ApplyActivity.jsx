@@ -88,6 +88,11 @@ export const ApplyActivity = () => {
     latitude: "",
     longitude: "",
     meeting_link: "",
+    allows_souvenir_addon: false,
+    souvenir_price: "",
+    allows_video_addon: false,
+    video_addon_price: "",
+    max_piggyback_visitors: "",
   });
   const [coverImage, setCoverImage] = useState("");
   const [additionalImages, setAdditionalImages] = useState([]);
@@ -101,7 +106,20 @@ export const ApplyActivity = () => {
   const [previewUrl, setPreviewUrl] = useState(null);
   const [showGenderWarning, setShowGenderWarning] = useState(false);
   const [genderWarningAcknowledged, setGenderWarningAcknowledged] = useState(false);
+  const [currentStep, setCurrentStep] = useState(1);
   const minDateTime = toDateTimeLocal(new Date(Date.now() + 60 * 1000));
+
+  const STEPS = [
+    { n: 1, title: "The basics", subtitle: "Tell viewers where they're going and what makes it yours." },
+    { n: 2, title: "Cover & schedule", subtitle: "How it'll appear in the catalogue and when it runs." },
+    { n: 3, title: "Preferences & extras", subtitle: "Set who can book, piggyback options, and on-the-day add-ons." },
+  ];
+
+  const goToStep = (n) => {
+    setError("");
+    setCurrentStep(n);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
 
   useEffect(() => {
     if (!isEdit || !token) return;
@@ -143,6 +161,11 @@ export const ApplyActivity = () => {
           latitude: exp.latitude ?? "",
           longitude: exp.longitude ?? "",
           meeting_link: exp.meeting_link || "",
+          allows_souvenir_addon: Boolean(exp.allows_souvenir_addon),
+          souvenir_price: exp.souvenir_price ?? "",
+          allows_video_addon: Boolean(exp.allows_video_addon),
+          video_addon_price: exp.video_addon_price ?? "",
+          max_piggyback_visitors: exp.max_piggyback_visitors ?? "",
         });
         setCoverImage(exp.cover_image || "");
         setAdditionalImages(Array.isArray(exp.additional_images) ? exp.additional_images : []);
@@ -326,9 +349,32 @@ export const ApplyActivity = () => {
       setError("Please pin the location on the map.");
       return;
     }
+    if (form.allows_piggyback && (form.price_discounted === "" || Number.isNaN(Number(form.price_discounted)) || Number(form.price_discounted) < 0)) {
+      setError("Please set a piggyback price (£0 or more) when piggyback bookings are enabled.");
+      return;
+    }
+    if (form.allows_piggyback) {
+      const cap = Number(form.max_piggyback_visitors);
+      if (form.max_piggyback_visitors === "" || !Number.isInteger(cap) || cap < 1) {
+        setError("Please set a max piggyback tickets (1 or more) when piggyback bookings are enabled.");
+        return;
+      }
+    }
     if (form.price_discounted !== "" && Number(form.price_discounted) >= Number(form.price)) {
       setError("Discounted price must be lower than the regular price.");
       return;
+    }
+    if (form.allows_souvenir_addon) {
+      if (form.souvenir_price === "" || Number(form.souvenir_price) < 0 || Number.isNaN(Number(form.souvenir_price))) {
+        setError("Please set a souvenir price (£0 or more) when the souvenir add-on is enabled.");
+        return;
+      }
+    }
+    if (form.allows_video_addon) {
+      if (form.video_addon_price === "" || Number(form.video_addon_price) < 0 || Number.isNaN(Number(form.video_addon_price))) {
+        setError("Please set a video download price (£0 or more) when the video add-on is enabled.");
+        return;
+      }
     }
     if (!coverImage) {
       setError("Please upload a cover image.");
@@ -387,6 +433,11 @@ export const ApplyActivity = () => {
         video_description: trimmedVideoDescription,
         video_highlights: highlightsArray.length ? highlightsArray : null,
         meeting_link: trimmedMeetingLink,
+        allows_souvenir_addon: Boolean(form.allows_souvenir_addon),
+        souvenir_price: form.allows_souvenir_addon ? Number(form.souvenir_price) : null,
+        allows_video_addon: Boolean(form.allows_video_addon),
+        video_addon_price: form.allows_video_addon ? Number(form.video_addon_price) : null,
+        max_piggyback_visitors: form.allows_piggyback ? Number(form.max_piggyback_visitors) : null,
       };
       const cfg = { headers: { Authorization: `Bearer ${token}` } };
       if (isEdit) {
@@ -402,280 +453,486 @@ export const ApplyActivity = () => {
     }
   };
 
+  const activeStep = STEPS[currentStep - 1];
+  const previewDate = form.date_time
+    ? new Date(form.date_time).toLocaleDateString("en-GB", { day: "numeric", month: "short" })
+    : "Date TBC";
+
   return (
     <div className="aa-page">
-      <header className="aa-navbar">
+      <header className="aa-stepper-bar">
         <button className="aa-back" type="button" onClick={() => navigate("/EhostDashboard")}>
-          ← Back
+          ‹ Back to dashboard
         </button>
-        <h1 className="aa-title">{isEdit ? "Edit experience" : "Apply for new experience"}</h1>
+        <nav className="aa-stepper" aria-label="Form progress">
+          {STEPS.map((s, i) => {
+            const done = currentStep > s.n;
+            const active = currentStep === s.n;
+            return (
+              <div key={s.n} className="aa-stepper-item">
+                <button
+                  type="button"
+                  className={`aa-stepper-step${active ? " is-active" : ""}${done ? " is-done" : ""}`}
+                  onClick={() => goToStep(s.n)}
+                >
+                  <span className="aa-stepper-num">{done ? "✓" : s.n}</span>
+                  <span className="aa-stepper-label">{s.title}</span>
+                </button>
+                {i < STEPS.length - 1 && <span className="aa-stepper-divider" aria-hidden="true" />}
+              </div>
+            );
+          })}
+        </nav>
         <span />
       </header>
 
-      <form className="aa-form" onSubmit={handleSubmit}>
-        {wasApproved && (
-          <div className="aa-hint">
-            Heads up: this experience is currently approved. Saving changes will send it back to the admin for re-approval.
-          </div>
-        )}
-        <label className="aa-label">Title*</label>
-        <input className="aa-input" name="title" value={form.title} onChange={handleChange} placeholder="e.g. Thailand Religious Tourism"  />
+      <div className="aa-layout">
+        <form className="aa-form" onSubmit={handleSubmit}>
+          {wasApproved && (
+            <div className="aa-hint">
+              Heads up: this experience is currently approved. Saving changes will send it back to the admin for re-approval.
+            </div>
+          )}
 
-        <div className="aa-grid">
-          <div>
-            <label className="aa-label">Location name*</label>
-            <input className="aa-input" name="location_name" value={form.location_name} onChange={handleChange}  />
+          <div className="aa-step-header">
+            <h2 className="aa-step-title">{activeStep.title}</h2>
+            <p className="aa-step-subtitle">{activeStep.subtitle}</p>
           </div>
-          <div>
-            <label className="aa-label">Country*</label>
-            <input
-              className="aa-input"
-              name="country"
-              list="aa-country-options"
-              autoComplete="off"
-              placeholder="Start typing your country..."
-              value={form.country}
-              onChange={handleChange}
-                         />
-            <datalist id="aa-country-options">
-              {COUNTRIES.map((c) => <option key={c} value={c} />)}
-            </datalist>
-          </div>
-        </div>
 
-        <div className="aa-grid">
-          <div>
-            <label className="aa-label">Continent</label>
-            <select className="aa-input" name="continent" value={form.continent} onChange={handleChange} >
-              <option value="">— select —</option>
-              {CONTINENTS.map((c) => (
-                <option key={c} value={c}>{c}</option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="aa-label">Category</label>
-            <select className="aa-input" name="category" value={form.category} onChange={handleChange} >
-              <option value="">— select —</option>
-              {CATEGORIES.map((c) => (
-                <option key={c} value={c}>{c}</option>
-              ))}
-            </select>
-          </div>
-        </div>
+          {currentStep === 1 && (
+            <>
+              <label className="aa-label">Title*</label>
+              <input className="aa-input" name="title" value={form.title} onChange={handleChange} placeholder="e.g. Thailand Religious Tourism" />
 
-        <div className="aa-grid">
-          <div>
-            <label className="aa-label">Language</label>
-            <select className="aa-input" name="language" value={form.language} onChange={handleChange} >
-              {LANGUAGES.map((l) => (
-                <option key={l} value={l}>{l}</option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="aa-label">Date & time*</label>
-            <input className="aa-input" name="date_time" type="datetime-local" min={minDateTime} value={form.date_time} onChange={handleChange}  />
-          </div>
-        </div>
+              <div className="aa-grid">
+                <div>
+                  <label className="aa-label">Location name*</label>
+                  <input className="aa-input" name="location_name" value={form.location_name} onChange={handleChange} />
+                </div>
+                <div>
+                  <label className="aa-label">Country*</label>
+                  <input
+                    className="aa-input"
+                    name="country"
+                    list="aa-country-options"
+                    autoComplete="off"
+                    placeholder="Start typing your country..."
+                    value={form.country}
+                    onChange={handleChange}
+                  />
+                  <datalist id="aa-country-options">
+                    {COUNTRIES.map((c) => <option key={c} value={c} />)}
+                  </datalist>
+                </div>
+              </div>
 
-        <div className="aa-grid">
-          <div>
-            <label className="aa-label">Price (GBP)*</label>
-            <input className="aa-input" name="price" type="number" min="0" step="0.01" value={form.price} onChange={handleChange}  />
-          </div>
-          <div>
-            <label className="aa-label">Piggyback price (optional)</label>
-            <input className="aa-input" name="price_discounted" type="number" min="0" step="0.01" value={form.price_discounted} onChange={handleChange}  />
-          </div>
-        </div>
+              <div className="aa-grid">
+                <div>
+                  <label className="aa-label">Continent</label>
+                  <select className="aa-input" name="continent" value={form.continent} onChange={handleChange}>
+                    <option value="">— select —</option>
+                    {CONTINENTS.map((c) => (
+                      <option key={c} value={c}>{c}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="aa-label">Category</label>
+                  <select className="aa-input" name="category" value={form.category} onChange={handleChange}>
+                    <option value="">— select —</option>
+                    {CATEGORIES.map((c) => (
+                      <option key={c} value={c}>{c}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
 
-        <div className="aa-grid">
-          <div>
-            <label className="aa-label">Duration (minutes)</label>
-            <input className="aa-input" name="duration_minutes" type="number" min="15" value={form.duration_minutes} onChange={handleChange}  />
-          </div>
-          <div>
-            <label className="aa-label">Max visitors</label>
-            <input className="aa-input" name="max_visitors" type="number" min="1" value={form.max_visitors} onChange={handleChange}  />
-          </div>
-        </div>
+              <div className="aa-grid">
+                <div>
+                  <label className="aa-label">Language</label>
+                  <select className="aa-input" name="language" value={form.language} onChange={handleChange}>
+                    {LANGUAGES.map((l) => (
+                      <option key={l} value={l}>{l}</option>
+                    ))}
+                  </select>
+                </div>
+                <div />
+              </div>
 
-        <label className="aa-label">Pin the location on the map*</label>
-        {mapIsLoaded ? (
-          <>
-            <gmp-place-autocomplete
-              ref={autocompleteRef}
-              class="aa-input"
-              placeholder="Search a place (e.g. Eiffel Tower)"
-            ></gmp-place-autocomplete>
-            <GoogleMap
-              mapContainerStyle={mapContainerStyle}
-              center={
-                form.latitude !== "" && form.longitude !== ""
-                  ? { lat: Number(form.latitude), lng: Number(form.longitude) }
-                  : DEFAULT_MAP_CENTER
-              }
-              zoom={form.latitude !== "" && form.longitude !== "" ? 14 : 2}
-              onClick={onMapClick}
-            >
-              {form.latitude !== "" && form.longitude !== "" && (
-                <Marker
-                  position={{ lat: Number(form.latitude), lng: Number(form.longitude) }}
-                  draggable
-                  onDragEnd={onMarkerDragEnd}
-                />
+              <label className="aa-label">Description*</label>
+              <textarea className="aa-textarea" name="description" rows="5" value={form.description} onChange={handleChange} />
+
+              <label className="aa-label">Pin the location on the map*</label>
+              {mapIsLoaded ? (
+                <>
+                  <gmp-place-autocomplete
+                    ref={autocompleteRef}
+                    class="aa-input"
+                    placeholder="Search a place (e.g. Eiffel Tower)"
+                  ></gmp-place-autocomplete>
+                  <GoogleMap
+                    mapContainerStyle={mapContainerStyle}
+                    center={
+                      form.latitude !== "" && form.longitude !== ""
+                        ? { lat: Number(form.latitude), lng: Number(form.longitude) }
+                        : DEFAULT_MAP_CENTER
+                    }
+                    zoom={form.latitude !== "" && form.longitude !== "" ? 14 : 2}
+                    onClick={onMapClick}
+                  >
+                    {form.latitude !== "" && form.longitude !== "" && (
+                      <Marker
+                        position={{ lat: Number(form.latitude), lng: Number(form.longitude) }}
+                        draggable
+                        onDragEnd={onMarkerDragEnd}
+                      />
+                    )}
+                  </GoogleMap>
+                  {form.latitude !== "" && form.longitude !== "" && (
+                    <div className="aa-hint">
+                      Selected: {Number(form.latitude).toFixed(5)}, {Number(form.longitude).toFixed(5)}
+                    </div>
+                  )}
+                </>
+              ) : (
+                <div className="aa-hint">Loading map…</div>
               )}
-            </GoogleMap>
-            {form.latitude !== "" && form.longitude !== "" && (
+            </>
+          )}
+
+          {currentStep === 2 && (
+            <>
+              <label className="aa-label">Cover image*</label>
+              <input type="file" accept="image/*" onChange={(e) => handleImageUpload(e.target.files[0])} disabled={uploading} />
+              {uploading && <div className="aa-hint">Uploading… {uploadProgress}%</div>}
+              {coverImage && !uploading && (
+                <div className="aa-cover-preview">
+                  <button
+                    type="button"
+                    className="photo-trigger"
+                    onClick={() => setPreviewUrl(coverImage)}
+                    aria-label="Preview cover image"
+                  >
+                    <img src={coverImage} alt="cover preview" className="aa-preview" />
+                  </button>
+                  <button
+                    type="button"
+                    className="aa-additional-remove"
+                    onClick={() => setCoverImage("")}
+                  >
+                    Remove
+                  </button>
+                </div>
+              )}
+
+              <label className="aa-label">Additional photos* ({MIN_ADDITIONAL_IMAGES}–{MAX_ADDITIONAL_IMAGES})</label>
+              <input
+                type="file"
+                accept="image/*"
+                multiple
+                onChange={(e) => {
+                  handleAdditionalImagesUpload(Array.from(e.target.files));
+                  e.target.value = "";
+                }}
+                disabled={
+                  additionalUploading ||
+                  additionalImages.length >= MAX_ADDITIONAL_IMAGES
+                }
+              />
+              {additionalUploading && <div className="aa-hint">Uploading additional photos…</div>}
+              {additionalImages.length > 0 && (
+                <div className="aa-additional-grid">
+                  {additionalImages.map((url, i) => (
+                    <div key={url} className="aa-additional-thumb">
+                      <button
+                        type="button"
+                        className="photo-trigger"
+                        onClick={() => setPreviewUrl(url)}
+                        aria-label={`Preview photo ${i + 1}`}
+                      >
+                        <img src={url} alt={`additional ${i + 1}`} className="aa-preview" />
+                      </button>
+                      <button
+                        type="button"
+                        className="aa-additional-remove"
+                        onClick={() => removeAdditionalImage(i)}
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
               <div className="aa-hint">
-                Selected: {Number(form.latitude).toFixed(5)}, {Number(form.longitude).toFixed(5)}
+                {additionalImages.length} of {MAX_ADDITIONAL_IMAGES} uploaded.
+                {additionalImages.length < MIN_ADDITIONAL_IMAGES &&
+                  ` Add at least ${MIN_ADDITIONAL_IMAGES - additionalImages.length} more.`}
               </div>
-            )}
-          </>
-        ) : (
-          <div className="aa-hint">Loading map…</div>
-        )}
 
-        <div className="aa-grid">
-          <div>
-            <label className="aa-label">Gender preference</label>
-            <select className="aa-input" name="gender_preference" value={form.gender_preference} onChange={handleChange} >
-              {GENDER_PREFERENCES.map((g) => (
-                <option key={g} value={g}>{g.replace("_", " ")}</option>
-              ))}
-            </select>
+              <div className="aa-grid">
+                <div>
+                  <label className="aa-label">Date & time*</label>
+                  <input className="aa-input" name="date_time" type="datetime-local" min={minDateTime} value={form.date_time} onChange={handleChange} />
+                </div>
+                <div>
+                  <label className="aa-label">Duration (minutes)</label>
+                  <input className="aa-input" name="duration_minutes" type="number" min="15" value={form.duration_minutes} onChange={handleChange} />
+                </div>
+              </div>
+
+              <div className="aa-grid">
+                <div>
+                  <label className="aa-label">Capacity (max normal tickets)*</label>
+                  <input className="aa-input" name="max_visitors" type="number" min="1" value={form.max_visitors} onChange={handleChange} />
+                </div>
+                <div>
+                  <label className="aa-label">Price per viewer (GBP)*</label>
+                  <input className="aa-input" name="price" type="number" min="0" step="0.01" value={form.price} onChange={handleChange} />
+                </div>
+              </div>
+
+              <label className="aa-label">Sample video (YouTube link)*</label>
+              <input
+                className="aa-input"
+                type="url"
+                name="sample_video_url"
+                value={form.sample_video_url}
+                onChange={handleChange}
+                placeholder="https://youtube.com/watch?v=..."
+              />
+
+              <label className="aa-label">Video description*</label>
+              <textarea
+                className="aa-textarea"
+                name="video_description"
+                rows="4"
+                value={form.video_description}
+                onChange={handleChange}
+                placeholder="A short paragraph or two about what visitors will see in the sample video. Separate paragraphs with a blank line."
+              />
+
+              <label className="aa-label">Video highlights</label>
+              <textarea
+                className="aa-textarea"
+                name="video_highlights"
+                rows="4"
+                value={form.video_highlights}
+                onChange={handleChange}
+                placeholder={"One highlight per line, e.g.\nVisit the oldest temple in the city\nMeet local artisans\nTaste street food"}
+              />
+
+              <label className="aa-label">Meeting link*</label>
+              <input
+                className="aa-input"
+                type="url"
+                name="meeting_link"
+                value={form.meeting_link}
+                onChange={handleChange}
+                placeholder="https://meet.google.com/... or https://zoom.us/j/..."
+              />
+              <div className="aa-hint">Visitors will join your live experience using this link.</div>
+            </>
+          )}
+
+          {currentStep === 3 && (
+            <>
+              <div className="aa-grid">
+                <div>
+                  <label className="aa-label">Gender preference</label>
+                  <select className="aa-input" name="gender_preference" value={form.gender_preference} onChange={handleChange}>
+                    {GENDER_PREFERENCES.map((g) => (
+                      <option key={g} value={g}>{g.replace("_", " ")}</option>
+                    ))}
+                  </select>
+                </div>
+                <div />
+              </div>
+
+              <div className="aa-piggyback-toggle">
+                <label className="aa-checkbox">
+                  <input
+                    type="checkbox"
+                    name="allows_piggyback"
+                    checked={form.allows_piggyback}
+                    onChange={(e) => {
+                      const checked = e.target.checked;
+                      setForm((prev) => ({
+                        ...prev,
+                        allows_piggyback: checked,
+                        price_discounted: checked ? prev.price_discounted : "",
+                        max_piggyback_visitors: checked ? prev.max_piggyback_visitors : "",
+                      }));
+                    }}
+                  />
+                  Allow piggyback bookings
+                </label>
+                <InfoTooltip label="About piggyback bookings">
+                  When enabled, other visitors can buy a discounted &ldquo;watch-only&rdquo;
+                  ticket and join the same live session as the main booker. They can watch
+                  the stream but can&rsquo;t ask questions or interact.
+                </InfoTooltip>
+              </div>
+              {form.allows_piggyback && (
+                <div className="aa-grid">
+                  <div>
+                    <label className="aa-label">Piggyback price (GBP)*</label>
+                    <input
+                      className="aa-input"
+                      name="price_discounted"
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={form.price_discounted}
+                      onChange={handleChange}
+                    />
+                  </div>
+                  <div>
+                    <label className="aa-label">Max piggyback tickets*</label>
+                    <input
+                      className="aa-input"
+                      name="max_piggyback_visitors"
+                      type="number"
+                      min="1"
+                      value={form.max_piggyback_visitors}
+                      onChange={handleChange}
+                    />
+                  </div>
+                </div>
+              )}
+
+              <div className="aa-grid">
+                <div className="aa-checkbox-stack">
+                  <div className="aa-checkbox-row">
+                    <label className="aa-checkbox">
+                      <input type="checkbox" name="allows_souvenir_addon" checked={form.allows_souvenir_addon} onChange={handleChange} />
+                      Offer souvenir add-on
+                    </label>
+                    <InfoTooltip label="About the souvenir add-on">
+                      When enabled, visitors can request a souvenir at checkout. You&rsquo;ll
+                      email them after booking to arrange shipping details.
+                    </InfoTooltip>
+                  </div>
+                  {form.allows_souvenir_addon && (
+                    <div>
+                      <label className="aa-label">Souvenir price per unit (£)*</label>
+                      <input
+                        className="aa-input"
+                        type="number"
+                        name="souvenir_price"
+                        min="0"
+                        step="0.01"
+                        value={form.souvenir_price}
+                        onChange={handleChange}
+                      />
+                    </div>
+                  )}
+                </div>
+
+                <div className="aa-checkbox-stack">
+                  <div className="aa-checkbox-row">
+                    <label className="aa-checkbox">
+                      <input type="checkbox" name="allows_video_addon" checked={form.allows_video_addon} onChange={handleChange} />
+                      Offer video download add-on
+                    </label>
+                    <InfoTooltip label="About the video download add-on">
+                      When enabled, visitors can pay extra at checkout to download a recording
+                      of the live experience after it ends.
+                    </InfoTooltip>
+                  </div>
+                  {form.allows_video_addon && (
+                    <div>
+                      <label className="aa-label">Video download price (£)*</label>
+                      <input
+                        className="aa-input"
+                        type="number"
+                        name="video_addon_price"
+                        min="0"
+                        step="0.01"
+                        value={form.video_addon_price}
+                        onChange={handleChange}
+                      />
+                    </div>
+                  )}
+                </div>
+              </div>
+            </>
+          )}
+
+          {error && <div className="aa-error">{error}</div>}
+        </form>
+
+        <aside className="aa-preview-pane">
+          <div className="aa-preview-eyebrow">Preview</div>
+          <div className="aa-preview-card">
+            <div
+              className="aa-preview-cover"
+              style={coverImage ? { backgroundImage: `url(${coverImage})` } : undefined}
+            >
+              {form.country && <span className="aa-preview-pill">{form.country}</span>}
+            </div>
+            <div className="aa-preview-body">
+              <h3 className="aa-preview-title">{form.title || "Your listing title"}</h3>
+              <div className="aa-preview-meta">
+                <span>★ New</span>
+                {form.duration_minutes && <span>· {form.duration_minutes} min</span>}
+                <span>· You</span>
+              </div>
+              <p className="aa-preview-desc">
+                {form.description || "Your description appears here."}
+              </p>
+              <div className="aa-preview-footer">
+                <span className="aa-preview-price">£{form.price || "—"}</span>
+                <span className="aa-preview-date">{previewDate}</span>
+              </div>
+            </div>
           </div>
-          <div className="aa-checkbox-row">
-            <label className="aa-checkbox">
-              <input type="checkbox" name="allows_piggyback" checked={form.allows_piggyback} onChange={handleChange}  />
-              Allow piggyback bookings
-            </label>
-            <InfoTooltip label="About piggyback bookings">
-              When enabled, otherSample video (YouTube link) visitors can buy a discounted &ldquo;watch-only&rdquo;
-              ticket and join the same live session as the main booker. They can watch
-              the stream but can&rsquo;t ask questions or interact.
-            </InfoTooltip>
+          <div className="aa-preview-note">
+            <strong>Reviewed before going live.</strong> Our team checks every listing usually within 24 hours. We may ask for clarifications.
           </div>
-        </div>
+        </aside>
+      </div>
 
-        <label className="aa-label">Description*</label>
-        <textarea className="aa-textarea" name="description" rows="5" value={form.description} onChange={handleChange}  />
-
-        <label className="aa-label">Meeting link*</label>
-        <input
-          className="aa-input"
-          type="url"
-          name="meeting_link"
-          value={form.meeting_link}
-          onChange={handleChange}
-          placeholder="https://meet.google.com/... or https://zoom.us/j/..."
-        />
-        <div className="aa-hint">Visitors will join your live experience using this link.</div>
-
-        <label className="aa-label">Cover image*</label>
-        <input type="file" accept="image/*" onChange={(e) => handleImageUpload(e.target.files[0])} disabled={uploading} />
-        {uploading && <div className="aa-hint">Uploading… {uploadProgress}%</div>}
-        {coverImage && !uploading && (
-          <div className="aa-cover-preview">
+      <footer className="aa-footer">
+        <span className="aa-footer-info">
+          Step {currentStep} of {STEPS.length}{isEdit ? "" : " · Saved as draft"}
+        </span>
+        <div className="aa-footer-actions">
+          {currentStep > 1 && (
             <button
               type="button"
-              className="photo-trigger"
-              onClick={() => setPreviewUrl(coverImage)}
-              aria-label="Preview cover image"
+              className="aa-footer-btn aa-footer-btn--ghost"
+              onClick={() => goToStep(currentStep - 1)}
             >
-              <img src={coverImage} alt="cover preview" className="aa-preview" />
+              Back
             </button>
+          )}
+          <button
+            type="button"
+            className="aa-footer-btn aa-footer-btn--ghost"
+            onClick={() => navigate("/EhostDashboard")}
+          >
+            Save & exit
+          </button>
+          {currentStep < STEPS.length ? (
             <button
               type="button"
-              className="aa-additional-remove"
-              onClick={() => setCoverImage("")}
+              className="aa-footer-btn aa-footer-btn--primary"
+              onClick={() => goToStep(currentStep + 1)}
             >
-              Remove
+              Continue
             </button>
-          </div>
-        )}
-
-        <label className="aa-label">Additional photos* ({MIN_ADDITIONAL_IMAGES}–{MAX_ADDITIONAL_IMAGES})</label>
-        <input
-          type="file"
-          accept="image/*"
-          multiple
-          onChange={(e) => {
-            handleAdditionalImagesUpload(Array.from(e.target.files));
-            e.target.value = "";
-          }}
-          disabled={
-            additionalUploading ||
-            additionalImages.length >= MAX_ADDITIONAL_IMAGES
-          }
-        />
-        {additionalUploading && <div className="aa-hint">Uploading additional photos…</div>}
-        {additionalImages.length > 0 && (
-          <div className="aa-additional-grid">
-            {additionalImages.map((url, i) => (
-              <div key={url} className="aa-additional-thumb">
-                <button
-                  type="button"
-                  className="photo-trigger"
-                  onClick={() => setPreviewUrl(url)}
-                  aria-label={`Preview photo ${i + 1}`}
-                >
-                  <img src={url} alt={`additional ${i + 1}`} className="aa-preview" />
-                </button>
-                <button
-                  type="button"
-                  className="aa-additional-remove"
-                  onClick={() => removeAdditionalImage(i)}
-                >
-                  Remove
-                </button>
-              </div>
-            ))}
-          </div>
-        )}
-        <div className="aa-hint">
-          {additionalImages.length} of {MAX_ADDITIONAL_IMAGES} uploaded.
-          {additionalImages.length < MIN_ADDITIONAL_IMAGES &&
-            ` Add at least ${MIN_ADDITIONAL_IMAGES - additionalImages.length} more.`}
+          ) : (
+            <button
+              type="button"
+              className="aa-footer-btn aa-footer-btn--primary"
+              disabled={uploading || additionalUploading || submitting}
+              onClick={() => document.querySelector(".aa-form")?.requestSubmit?.()}
+            >
+              {submitting ? "Submitting…" : isEdit ? "Save changes" : "Submit for review"}
+            </button>
+          )}
         </div>
-
-        <label className="aa-label">Sample video (YouTube link)*</label>
-        <input
-          className="aa-input"
-          type="url"
-          name="sample_video_url"
-          value={form.sample_video_url}
-          onChange={handleChange}
-          placeholder="https://youtube.com/watch?v=..."
-                 />
-
-        <label className="aa-label">Video description*</label>
-        <textarea
-          className="aa-textarea"
-          name="video_description"
-          rows="4"
-          value={form.video_description}
-          onChange={handleChange}
-          placeholder="A short paragraph or two about what visitors will see in the sample video. Separate paragraphs with a blank line."
-                 />
-
-        <label className="aa-label">Video highlights</label>
-        <textarea
-          className="aa-textarea"
-          name="video_highlights"
-          rows="4"
-          value={form.video_highlights}
-          onChange={handleChange}
-          placeholder={"One highlight per line, e.g.\nVisit the oldest temple in the city\nMeet local artisans\nTaste street food"}
-                 />
-
-        {error && <div className="aa-error">{error}</div>}
-
-        <button className="aa-submit" type="submit" disabled={uploading || additionalUploading || submitting}>
-          {submitting ? "Submitting…" : isEdit ? "Save changes" : "Submit experience"}
-        </button>
-      </form>
+      </footer>
 
       {showGenderWarning && (
         <div className="aa-modal-overlay" role="dialog" aria-modal="true">

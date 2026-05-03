@@ -63,6 +63,36 @@ const parseDateTimeInput = (value) => {
   return parsed.toISOString();
 };
 
+const normalizePiggybackCap = (allowsFlag, capValue) => {
+  const allows = allowsFlag === true || allowsFlag === 'true';
+  if (!allows) {
+    return { value: null };
+  }
+  if (capValue === undefined || capValue === null || String(capValue).trim() === '') {
+    return { error: 'max_piggyback_visitors is required when piggyback bookings are enabled.' };
+  }
+  const parsed = Number(capValue);
+  if (!Number.isInteger(parsed) || parsed < 1) {
+    return { error: 'max_piggyback_visitors must be a positive integer.' };
+  }
+  return { value: parsed };
+};
+
+const normalizeAddonPrice = (allowsFlag, priceValue, fieldLabel) => {
+  const allows = allowsFlag === true || allowsFlag === 'true';
+  if (!allows) {
+    return { allows: false, price: null };
+  }
+  if (priceValue === undefined || priceValue === null || String(priceValue).trim() === '') {
+    return { error: `${fieldLabel} is required when the add-on is enabled.` };
+  }
+  const parsed = Number(priceValue);
+  if (!Number.isFinite(parsed) || parsed < 0) {
+    return { error: `${fieldLabel} must be a non-negative number.` };
+  }
+  return { allows: true, price: parsed };
+};
+
 const parsePositiveInteger = (value) => {
   const normalized = Number(value);
   if (!Number.isInteger(normalized) || normalized <= 0) {
@@ -116,6 +146,11 @@ try {
         price_discounted,
         meeting_link,
         additional_images,
+        allows_souvenir_addon,
+        souvenir_price,
+        allows_video_addon,
+        video_addon_price,
+        max_piggyback_visitors,
     } = req.body;
 
 
@@ -248,10 +283,24 @@ try {
       normalizedPriceDiscounted = parsedDiscount;
     }
 
+    const souvenirAddon = normalizeAddonPrice(allows_souvenir_addon, souvenir_price, 'souvenir_price');
+    if (souvenirAddon.error) {
+      return res.status(400).json({ success: false, message: souvenirAddon.error });
+    }
+    const videoAddon = normalizeAddonPrice(allows_video_addon, video_addon_price, 'video_addon_price');
+    if (videoAddon.error) {
+      return res.status(400).json({ success: false, message: videoAddon.error });
+    }
+
+    const piggybackCap = normalizePiggybackCap(allows_piggyback, max_piggyback_visitors);
+    if (piggybackCap.error) {
+      return res.status(400).json({ success: false, message: piggybackCap.error });
+    }
+
     const { rows } = await pool.query(
         `INSERT INTO experiences
-        (title, ehost_id, location_name, country, continent, latitude, longitude, category, language, description, price, price_discounted, duration_minutes, max_visitors, cover_image, gender_preference, allows_piggyback, sample_video_url, video_description, video_highlights, date_time, meeting_link, additional_images, status)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, 'pending')
+        (title, ehost_id, location_name, country, continent, latitude, longitude, category, language, description, price, price_discounted, duration_minutes, max_visitors, cover_image, gender_preference, allows_piggyback, sample_video_url, video_description, video_highlights, date_time, meeting_link, additional_images, allows_souvenir_addon, souvenir_price, allows_video_addon, video_addon_price, max_piggyback_visitors, status)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, 'pending')
         RETURNING *`,
         [
             title,
@@ -277,6 +326,11 @@ try {
             normalizedDateTime,
             normalizedMeetingLink,
             normalizedAdditionalImages,
+            souvenirAddon.allows,
+            souvenirAddon.price,
+            videoAddon.allows,
+            videoAddon.price,
+            piggybackCap.value,
         ]
     );
 
@@ -383,6 +437,11 @@ const updateExperience = async (req, res) => {
         price_discounted,
         meeting_link,
         additional_images,
+        allows_souvenir_addon,
+        souvenir_price,
+        allows_video_addon,
+        video_addon_price,
+        max_piggyback_visitors,
     } = req.body;
 
     if (!title || !location_name || !country || !price || !description) {
@@ -497,33 +556,51 @@ const updateExperience = async (req, res) => {
         }
     }
 
+    const souvenirAddon = normalizeAddonPrice(allows_souvenir_addon, souvenir_price, 'souvenir_price');
+    if (souvenirAddon.error) {
+        return res.status(400).json({ success: false, message: souvenirAddon.error });
+    }
+    const videoAddon = normalizeAddonPrice(allows_video_addon, video_addon_price, 'video_addon_price');
+    if (videoAddon.error) {
+        return res.status(400).json({ success: false, message: videoAddon.error });
+    }
+    const piggybackCap = normalizePiggybackCap(allows_piggyback, max_piggyback_visitors);
+    if (piggybackCap.error) {
+        return res.status(400).json({ success: false, message: piggybackCap.error });
+    }
+
     const { rows: updateRows } = await pool.query(
         `UPDATE experiences
-         SET title             = $1,
-             location_name     = $2,
-             country           = $3,
-             continent         = $4,
-             latitude          = $5,
-             longitude         = $6,
-             category          = $7,
-             language          = $8,
-             description       = $9,
-             price             = $10,
-             price_discounted  = $11,
-             duration_minutes  = $12,
-             max_visitors      = $13,
-             cover_image       = $14,
-             gender_preference = $15,
-             allows_piggyback  = $16,
-             sample_video_url  = $17,
-             video_description = $18,
-             video_highlights  = $19,
-             date_time         = $20,
-             meeting_link      = $21,
-             additional_images = $22,
-             status            = 'pending',
-             rejection_reason  = NULL
-         WHERE id = $23 AND ehost_id = $24
+         SET title                  = $1,
+             location_name          = $2,
+             country                = $3,
+             continent              = $4,
+             latitude               = $5,
+             longitude              = $6,
+             category               = $7,
+             language               = $8,
+             description            = $9,
+             price                  = $10,
+             price_discounted       = $11,
+             duration_minutes       = $12,
+             max_visitors           = $13,
+             cover_image            = $14,
+             gender_preference      = $15,
+             allows_piggyback       = $16,
+             sample_video_url       = $17,
+             video_description      = $18,
+             video_highlights       = $19,
+             date_time              = $20,
+             meeting_link           = $21,
+             additional_images      = $22,
+             allows_souvenir_addon  = $23,
+             souvenir_price         = $24,
+             allows_video_addon     = $25,
+             video_addon_price      = $26,
+             max_piggyback_visitors = $27,
+             status                 = 'pending',
+             rejection_reason       = NULL
+         WHERE id = $28 AND ehost_id = $29
          RETURNING *`,
         [
             title,
@@ -548,6 +625,11 @@ const updateExperience = async (req, res) => {
             normalizedDateTime,
             normalizedMeetingLink,
             normalizedAdditionalImages,
+            souvenirAddon.allows,
+            souvenirAddon.price,
+            videoAddon.allows,
+            videoAddon.price,
+            piggybackCap.value,
             experienceId,
             ehostId,
         ]
@@ -916,7 +998,7 @@ const getBookingPreferences = async (req, res) => {
     }
 
     const { rows } = await pool.query(
-      `SELECT id, gender_preference, max_visitors, date_time
+      `SELECT id, gender_preference, max_visitors, max_piggyback_visitors, date_time
        FROM experiences
        WHERE id = $1 AND ehost_id = $2 AND status != 'deleted'
        LIMIT 1`,
@@ -939,6 +1021,7 @@ const getBookingPreferences = async (req, res) => {
         experience_id: experience.id,
         gender_preference: normalizedGenderPreference,
         max_visitors: experience.max_visitors,
+        max_piggyback_visitors: experience.max_piggyback_visitors,
         booking_cutoff: {
           type: 'before_experience_start',
           experience_date_time: experience.date_time,
@@ -957,13 +1040,13 @@ const updateBookingPreferences = async (req, res) => {
   try {
     const experienceId = Number(req.params.id);
     const ehostId = req.user ? req.user.id : req.userId;
-    const { gender_preference, max_visitors } = req.body;
+    const { gender_preference, max_visitors, max_piggyback_visitors } = req.body;
 
     if (!Number.isInteger(experienceId) || experienceId <= 0) {
       return res.status(400).json({ success: false, message: 'Invalid experience id.' });
     }
 
-    if (gender_preference === undefined && max_visitors === undefined) {
+    if (gender_preference === undefined && max_visitors === undefined && max_piggyback_visitors === undefined) {
       return res.status(400).json({
         success: false,
         message: 'At least one preference field is required.',
@@ -997,6 +1080,23 @@ const updateBookingPreferences = async (req, res) => {
       updates.push(`max_visitors = $${values.length}`);
     }
 
+    if (max_piggyback_visitors !== undefined) {
+      if (max_piggyback_visitors === null) {
+        values.push(null);
+        updates.push(`max_piggyback_visitors = $${values.length}`);
+      } else {
+        const normalizedPiggybackCap = Number(max_piggyback_visitors);
+        if (!Number.isInteger(normalizedPiggybackCap) || normalizedPiggybackCap <= 0) {
+          return res.status(400).json({
+            success: false,
+            message: 'max_piggyback_visitors must be a positive integer.',
+          });
+        }
+        values.push(normalizedPiggybackCap);
+        updates.push(`max_piggyback_visitors = $${values.length}`);
+      }
+    }
+
     values.push(experienceId);
     values.push(ehostId);
 
@@ -1006,7 +1106,7 @@ const updateBookingPreferences = async (req, res) => {
            status = 'pending',
            rejection_reason = NULL
        WHERE id = $${values.length - 1} AND ehost_id = $${values.length} AND status != 'deleted'
-       RETURNING id, gender_preference, max_visitors, date_time`,
+       RETURNING id, gender_preference, max_visitors, max_piggyback_visitors, date_time`,
       values
     );
 
@@ -1027,6 +1127,7 @@ const updateBookingPreferences = async (req, res) => {
         experience_id: experience.id,
         gender_preference: normalizedGenderPreference,
         max_visitors: experience.max_visitors,
+        max_piggyback_visitors: experience.max_piggyback_visitors,
         booking_cutoff: {
           type: 'before_experience_start',
           experience_date_time: experience.date_time,

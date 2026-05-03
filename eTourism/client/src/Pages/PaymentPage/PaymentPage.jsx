@@ -32,6 +32,8 @@ export const PaymentPage = () => {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [groupGenderType, setGroupGenderType] = useState("");
+  const [souvenirQty, setSouvenirQty] = useState(0);
+  const [videoAddon, setVideoAddon] = useState(false);
 
   const genderPreference = experience?.gender_preference || "any";
   const requiresGroupGender = genderPreference !== "any";
@@ -63,6 +65,18 @@ export const PaymentPage = () => {
   }, [experience, qtyDiscounted]);
 
   useEffect(() => {
+    if (experience && !experience.allows_souvenir_addon && souvenirQty !== 0) {
+      setSouvenirQty(0);
+    }
+  }, [experience, souvenirQty]);
+
+  useEffect(() => {
+    if (experience && !experience.allows_video_addon && videoAddon) {
+      setVideoAddon(false);
+    }
+  }, [experience, videoAddon]);
+
+  useEffect(() => {
     fetch("/terms.txt")
       .then((r) => r.text())
       .then(setTermsText)
@@ -82,7 +96,12 @@ export const PaymentPage = () => {
       ? parseFloat(experience.price_discounted)
       : Math.max(0, normalPrice - 10)
     : 0;
-  const total = qtyNormal * normalPrice + qtyDiscounted * discountedPrice;
+  const souvenirPrice = experience?.souvenir_price ? parseFloat(experience.souvenir_price) : 0;
+  const videoAddonPrice = experience?.video_addon_price ? parseFloat(experience.video_addon_price) : 0;
+  const souvenirTotal = experience?.allows_souvenir_addon ? souvenirQty * souvenirPrice : 0;
+  const videoTotal = experience?.allows_video_addon && videoAddon ? videoAddonPrice : 0;
+  const showAddons = !!(experience?.allows_souvenir_addon || experience?.allows_video_addon);
+  const total = qtyNormal * normalPrice + qtyDiscounted * discountedPrice + souvenirTotal + videoTotal;
 
   const bookingUnavailableReason = experience
     ? experience.status && experience.status !== 'approved'
@@ -137,6 +156,8 @@ export const PaymentPage = () => {
         contact_name: name,
         contact_email: email,
         agreed_to_terms: true,
+        souvenir_qty: experience?.allows_souvenir_addon ? souvenirQty : 0,
+        video_addon: experience?.allows_video_addon ? videoAddon : false,
         ...(requiresGroupGender ? { group_gender_type: groupGenderType } : {}),
       },
       { headers: { Authorization: `Bearer ${token}` } }
@@ -228,11 +249,17 @@ export const PaymentPage = () => {
                 Normal ticket <span>£{normalPrice} / per ticket</span>
               </p>
               <span className="small-text">(include Q&A)</span>
+              {experience?.max_visitors != null && (
+                <span className="small-text"> &middot; {experience.max_visitors} spot(s) available</span>
+              )}
             </div>
             <div className="counter">
               <button onClick={() => setQtyNormal(Math.max(0, qtyNormal - 1))}>-</button>
               <span>{qtyNormal}</span>
-              <button onClick={() => setQtyNormal(qtyNormal + 1)}>+</button>
+              <button
+                onClick={() => setQtyNormal(Math.min(experience?.max_visitors ?? Infinity, qtyNormal + 1))}
+                disabled={experience?.max_visitors != null && qtyNormal >= experience.max_visitors}
+              >+</button>
             </div>
             <p className="ticket-text">Ticket(s)</p>
           </div>
@@ -250,14 +277,71 @@ export const PaymentPage = () => {
                   </InfoTooltip>
                 </p>
                 <span className="small-text">(no Q&A, stream only)</span>
+                {experience?.max_piggyback_visitors != null && (
+                  <span className="small-text"> &middot; {experience.max_piggyback_visitors} spot(s) available</span>
+                )}
                 <Link className="ticket-link" onClick={() => setShowWatchOnlyTerms(true)}>click to see the detail</Link>
               </div>
               <div className="counter">
                 <button onClick={() => setQtyDiscounted(Math.max(0, qtyDiscounted - 1))}>-</button>
                 <span>{qtyDiscounted}</span>
-                <button onClick={() => setQtyDiscounted(qtyDiscounted + 1)}>+</button>
+                <button
+                  onClick={() => setQtyDiscounted(Math.min(experience?.max_piggyback_visitors ?? Infinity, qtyDiscounted + 1))}
+                  disabled={experience?.max_piggyback_visitors != null && qtyDiscounted >= experience.max_piggyback_visitors}
+                >+</button>
               </div>
               <p className="ticket-text">Ticket(s)</p>
+            </div>
+          )}
+
+          {/* Add-ons */}
+          {showAddons && (
+            <div className="addons-section">
+              <h3 className="addons-title">Add-ons</h3>
+
+              {experience?.allows_souvenir_addon && (
+                <div className="ticket">
+                  <div>
+                    <p className="ticket-title">
+                      Souvenir <span>£{souvenirPrice.toFixed(2)} / each</span>
+                      <InfoTooltip label="About the souvenir add-on">
+                        Get a physical souvenir from this experience. The eHost will
+                        contact you by email after booking to arrange shipping details.
+                      </InfoTooltip>
+                    </p>
+                    <span className="small-text">(shipped after the live experience)</span>
+                  </div>
+                  <div className="counter">
+                    <button onClick={() => setSouvenirQty(Math.max(0, souvenirQty - 1))}>-</button>
+                    <span>{souvenirQty}</span>
+                    <button onClick={() => setSouvenirQty(souvenirQty + 1)}>+</button>
+                  </div>
+                  <p className="ticket-text">Souvenir(s)</p>
+                </div>
+              )}
+
+              {experience?.allows_video_addon && (
+                <div className="ticket addon-video">
+                  <div>
+                    <p className="ticket-title">
+                      Video download <span>£{videoAddonPrice.toFixed(2)}</span>
+                      <InfoTooltip label="About the video download">
+                        Pay extra to download a recording of the live experience after
+                        it ends. A download link will be emailed to you.
+                      </InfoTooltip>
+                    </p>
+                    <span className="small-text">(downloadable after the live)</span>
+                  </div>
+                  <label className="addon-checkbox">
+                    <input
+                      type="checkbox"
+                      checked={videoAddon}
+                      onChange={(e) => setVideoAddon(e.target.checked)}
+                    />
+                    Add to booking
+                  </label>
+                </div>
+              )}
             </div>
           )}
 
