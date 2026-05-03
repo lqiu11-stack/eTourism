@@ -815,7 +815,15 @@ const ExperienceRequests = ({
       {experiences.map((item) => (
         <div className="suit-table-row" key={item.id}>
           <span>#{item.id}</span>
-          <span>{item.title}</span>
+          <span>
+            <Link
+              to={`/DetailPage?id=${item.id}`}
+              state={{ from: "admin" }}
+              className="suit-title-link"
+            >
+              {item.title}
+            </Link>
+          </span>
           <span>{item.ehost_first_name ? `${item.ehost_first_name} ${item.ehost_last_name}` : "—"}</span>
           <span>{item.category || "—"}</span>
           <span>{item.country || "—"}</span>

@@ -740,6 +740,16 @@
   border: 1px solid #e8dada;
 }
 
+.suit-title-link {
+  color: #2d1f1f;
+  text-decoration: none;
+}
+
+.suit-title-link:hover {
+  color: #7b9eb8;
+  text-decoration: underline;
+}
+
 
 .suit-panel-right {
   flex: 1;
