@@ -82,7 +82,7 @@ export const LoginPage = () => {
       return;
     }
     setError("");
-    console.log("Normal Login:", { email, password });
+    console.log("Normal Login");
     try {
       const { data } = await axios.post(`${API_BASE}/auth/login`, { email, password });
       localStorage.setItem("token", data.token);
