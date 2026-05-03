@@ -17,6 +17,8 @@ import {
 import { isYouTubeUrl } from "../../utils/youtube";
 import { COUNTRIES } from "../../utils/countries";
 import { convertToWebp } from "../../utils/imageConvert";
+import { InfoTooltip } from "../../components/InfoTooltip";
+import { PhotoLightbox } from "../../components/PhotoLightbox";
 import "./ApplyActivity.css";
 
 const API_BASE = import.meta.env.VITE_API_URL;
@@ -96,6 +98,9 @@ export const ApplyActivity = () => {
   const [error, setError] = useState("");
   const [wasApproved, setWasApproved] = useState(false);
   const [showSubmittedModal, setShowSubmittedModal] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState(null);
+  const [showGenderWarning, setShowGenderWarning] = useState(false);
+  const [genderWarningAcknowledged, setGenderWarningAcknowledged] = useState(false);
   const minDateTime = toDateTimeLocal(new Date(Date.now() + 60 * 1000));
 
   useEffect(() => {
@@ -200,6 +205,7 @@ export const ApplyActivity = () => {
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
+    if (name === "gender_preference") setGenderWarningAcknowledged(false);
     setForm((prev) => ({ ...prev, [name]: type === "checkbox" ? checked : value }));
   };
 
@@ -297,6 +303,13 @@ export const ApplyActivity = () => {
       setError("Please fill in all required fields.");
       return;
     }
+    if (
+      (form.gender_preference === "female_only" || form.gender_preference === "male_only") &&
+      !genderWarningAcknowledged
+    ) {
+      setShowGenderWarning(true);
+      return;
+    }
     if (!COUNTRIES.includes(form.country)) {
       setError("Please select a country from the list.");
       return;
@@ -330,8 +343,17 @@ export const ApplyActivity = () => {
       return;
     }
     const trimmedVideoUrl = form.sample_video_url.trim();
-    if (trimmedVideoUrl && !isYouTubeUrl(trimmedVideoUrl)) {
+    if (!trimmedVideoUrl) {
+      setError("Please add a sample YouTube video link for your experience.");
+      return;
+    }
+    if (!isYouTubeUrl(trimmedVideoUrl)) {
       setError("Please paste a valid YouTube link (e.g. https://youtube.com/watch?v=...).");
+      return;
+    }
+    const trimmedVideoDescription = form.video_description.trim();
+    if (!trimmedVideoDescription) {
+      setError("Please add a video description.");
       return;
     }
     const trimmedMeetingLink = form.meeting_link.trim();
@@ -361,8 +383,8 @@ export const ApplyActivity = () => {
         date_time: new Date(form.date_time).toISOString(),
         cover_image: coverImage,
         additional_images: additionalImages,
-        sample_video_url: trimmedVideoUrl || null,
-        video_description: form.video_description.trim() || null,
+        sample_video_url: trimmedVideoUrl,
+        video_description: trimmedVideoDescription,
         video_highlights: highlightsArray.length ? highlightsArray : null,
         meeting_link: trimmedMeetingLink,
       };
@@ -529,6 +551,11 @@ export const ApplyActivity = () => {
               <input type="checkbox" name="allows_piggyback" checked={form.allows_piggyback} onChange={handleChange}  />
               Allow piggyback bookings
             </label>
+            <InfoTooltip label="About piggyback bookings">
+              When enabled, otherSample video (YouTube link) visitors can buy a discounted &ldquo;watch-only&rdquo;
+              ticket and join the same live session as the main booker. They can watch
+              the stream but can&rsquo;t ask questions or interact.
+            </InfoTooltip>
           </div>
         </div>
 
@@ -551,7 +578,14 @@ export const ApplyActivity = () => {
         {uploading && <div className="aa-hint">Uploading… {uploadProgress}%</div>}
         {coverImage && !uploading && (
           <div className="aa-cover-preview">
-            <img src={coverImage} alt="cover preview" className="aa-preview" />
+            <button
+              type="button"
+              className="photo-trigger"
+              onClick={() => setPreviewUrl(coverImage)}
+              aria-label="Preview cover image"
+            >
+              <img src={coverImage} alt="cover preview" className="aa-preview" />
+            </button>
             <button
               type="button"
               className="aa-additional-remove"
@@ -581,7 +615,14 @@ export const ApplyActivity = () => {
           <div className="aa-additional-grid">
             {additionalImages.map((url, i) => (
               <div key={url} className="aa-additional-thumb">
-                <img src={url} alt={`additional ${i + 1}`} className="aa-preview" />
+                <button
+                  type="button"
+                  className="photo-trigger"
+                  onClick={() => setPreviewUrl(url)}
+                  aria-label={`Preview photo ${i + 1}`}
+                >
+                  <img src={url} alt={`additional ${i + 1}`} className="aa-preview" />
+                </button>
                 <button
                   type="button"
                   className="aa-additional-remove"
@@ -599,7 +640,7 @@ export const ApplyActivity = () => {
             ` Add at least ${MIN_ADDITIONAL_IMAGES - additionalImages.length} more.`}
         </div>
 
-        <label className="aa-label">Sample video (YouTube link)</label>
+        <label className="aa-label">Sample video (YouTube link)*</label>
         <input
           className="aa-input"
           type="url"
@@ -609,7 +650,7 @@ export const ApplyActivity = () => {
           placeholder="https://youtube.com/watch?v=..."
                  />
 
-        <label className="aa-label">Video description</label>
+        <label className="aa-label">Video description*</label>
         <textarea
           className="aa-textarea"
           name="video_description"
@@ -636,6 +677,45 @@ export const ApplyActivity = () => {
         </button>
       </form>
 
+      {showGenderWarning && (
+        <div className="aa-modal-overlay" role="dialog" aria-modal="true">
+          <div className="aa-modal-panel">
+            <h3 className="aa-modal-title">Single-gender tour</h3>
+            <p className="aa-modal-body">
+              You&rsquo;ve set this experience to&nbsp;
+              <strong>
+                {form.gender_preference === "female_only" ? "female-only" : "male-only"}
+              </strong>. Single-gender tours are shown to a smaller audience, so you may
+              get fewer bookings. Are you sure you want to continue?
+            </p>
+            <div className="aa-modal-actions" style={{ display: "flex", gap: "10px", justifyContent: "center" }}>
+              <button
+                type="button"
+                className="aa-modal-ok"
+                style={{ background: "#e5e7eb", color: "#1f2937" }}
+                onClick={() => setShowGenderWarning(false)}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="aa-modal-ok"
+                onClick={() => {
+                  setGenderWarningAcknowledged(true);
+                  setShowGenderWarning(false);
+                  // Re-trigger submit on next tick now that the flag is set
+                  setTimeout(() => {
+                    document.querySelector(".aa-form")?.requestSubmit?.();
+                  }, 0);
+                }}
+              >
+                Continue
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {showSubmittedModal && (
         <div className="aa-modal-overlay" role="dialog" aria-modal="true">
           <div className="aa-modal-panel">
@@ -659,6 +739,8 @@ export const ApplyActivity = () => {
           </div>
         </div>
       )}
+
+      <PhotoLightbox url={previewUrl} onClose={() => setPreviewUrl(null)} />
     </div>
   );
 };

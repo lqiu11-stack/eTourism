@@ -11,16 +11,6 @@ const pool = require('./config/db');
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Keep Supabase DB awake every 4 mins to prevent cold starts
-setInterval(async () => {
-  try {
-    await pool.query('SELECT 1');
-    console.log('DB AWAKE');
-  } catch (err) {
-    console.error('DB FAILED', err.message);
-  }
-}, 4 * 60 * 1000);
-
 app.use(cors());
 
 // Stripe Webhook MUST use express.raw() and be placed BEFORE express.json()

@@ -11,7 +11,10 @@ export const useExperiences = () => {
   const fetchExperiences = useCallback(async () => {
     setLoading(true);
     try {
-      const { data } = await axios.get(`${API_BASE}/visitor/experiences`);
+      const token = localStorage.getItem("token");
+      const { data } = await axios.get(`${API_BASE}/visitor/experiences`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
       setExperiences(data);
       setError(null);
     } catch (err) {

@@ -43,7 +43,7 @@ const Experience = {
     return rows[0] || null;
   },
 
-  async findAll({ status, category, country, continent, ehost_id, language, price_min, price_max, search } = {}) {
+  async findAll({ status, category, country, continent, ehost_id, language, price_min, price_max, search, gender_preference, exclude_gender_preference } = {}) {
     let query = 'SELECT * FROM experiences WHERE 1=1';
     const values = [];
     if (status)    { values.push(status);    query += ` AND status = $${values.length}`; }
@@ -55,6 +55,14 @@ const Experience = {
     if (language)  { values.push(language);  query += ` AND language = $${values.length}`; }
     if (price_min) { values.push(Number(price_min)); query += ` AND price >= $${values.length}`; }
     if (price_max) { values.push(Number(price_max)); query += ` AND price <= $${values.length}`; }
+    if (gender_preference) {
+      values.push(gender_preference);
+      query += ` AND gender_preference = $${values.length}`;
+    }
+    if (exclude_gender_preference) {
+      values.push(exclude_gender_preference);
+      query += ` AND (gender_preference IS NULL OR gender_preference <> $${values.length})`;
+    }
     if (search)    { values.push(`%${search.toLowerCase()}%`); query += ` AND (LOWER(title) LIKE $${values.length} OR LOWER(location_name) LIKE $${values.length} OR LOWER(description) LIKE $${values.length})`; }
     query += ' ORDER BY date_time ASC';
     const { rows } = await pool.query(query, values);

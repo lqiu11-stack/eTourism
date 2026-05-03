@@ -18,6 +18,8 @@ import {
   ArcElement,
 } from "chart.js";
 import { Bar, Doughnut, Line } from "react-chartjs-2";
+import { InfoTooltip } from "../../components/InfoTooltip";
+import { PhotoLightbox } from "../../components/PhotoLightbox";
 
 ChartJS.register(
   CategoryScale, LinearScale, BarElement, LineElement, PointElement, Filler,
@@ -709,13 +711,19 @@ const UserData = ({
               >
                 Edit
               </button>
-              <button
-                className="sort-btn"
-                style={{ padding: "4px 10px", fontSize: "12px" }}
-                onClick={() => onUpdateStatus(item.id, item.status === "active" ? "suspended" : "active")}
-              >
-                {item.status === "active" ? "Suspend" : "Activate"}
-              </button>
+              <span style={{ display: "inline-flex", alignItems: "center" }}>
+                <button
+                  className="sort-btn"
+                  style={{ padding: "4px 10px", fontSize: "12px" }}
+                  onClick={() => onUpdateStatus(item.id, item.status === "active" ? "suspended" : "active")}
+                >
+                  {item.status === "active" ? "Suspend" : "Activate"}
+                </button>
+                <InfoTooltip label="About suspending users">
+                  Suspended users can&rsquo;t log in or book; reversible by clicking Activate.
+                  Use for policy violations or temporary holds.
+                </InfoTooltip>
+              </span>
             </div>
           </div>
         ))}
@@ -747,13 +755,21 @@ const UserData = ({
               <button className="save-btn" onClick={() => onUpdateRole(selectedUser.id, selectedUser.role)}>
                 Save role
               </button>
-              <button
-                className="action-btn"
-                style={{ marginTop: "10px", background: "#e57373", color: "white" }}
-                onClick={() => onDelete(selectedUser.id)}
-              >
-                Delete user
-              </button>
+              <div style={{ display: "inline-flex", alignItems: "center", marginTop: "10px" }}>
+                <button
+                  className="action-btn"
+                  style={{ background: "#e57373", color: "white" }}
+                  onClick={() => onDelete(selectedUser.id)}
+                >
+                  Delete user
+                </button>
+                <InfoTooltip label="About deleting users">
+                  Permanent: the account is removed and the user must register again.
+                  Their email becomes free for re-use. Past bookings and reviews are kept
+                  but anonymised. Use only when the user requests deletion or for
+                  fraudulent accounts &mdash; otherwise prefer Suspend.
+                </InfoTooltip>
+              </div>
             </div>
           </div>
         </div>
@@ -767,7 +783,10 @@ const ExperienceRequests = ({
   onReview, onDelete, expSearch, setExpSearch, onSearch,
   showPanel, setShowPanel, selectedExp, scores, scoresLoading,
   result, setResult, comment, setComment, submitting, onSubmitScore,
-}) => (
+}) => {
+  const [previewUrl, setPreviewUrl] = useState(null);
+
+  return (
   <div>
     <div className="booking-top">
       <div className="search-wrapper">
@@ -796,7 +815,15 @@ const ExperienceRequests = ({
       {experiences.map((item) => (
         <div className="suit-table-row" key={item.id}>
           <span>#{item.id}</span>
-          <span>{item.title}</span>
+          <span>
+            <Link
+              to={`/DetailPage?id=${item.id}`}
+              state={{ from: "admin" }}
+              className="suit-title-link"
+            >
+              {item.title}
+            </Link>
+          </span>
           <span>{item.ehost_first_name ? `${item.ehost_first_name} ${item.ehost_last_name}` : "—"}</span>
           <span>{item.category || "—"}</span>
           <span>{item.country || "—"}</span>
@@ -821,18 +848,96 @@ const ExperienceRequests = ({
           <div className="suit-panel-left">
             <h3>{selectedExp.title}</h3>
             {selectedExp.cover_image && (
-              <img
-                src={selectedExp.cover_image}
-                alt={`${selectedExp.title} cover`}
-                className="suit-cover-image"
-              />
+              <button
+                type="button"
+                className="photo-trigger"
+                onClick={() => setPreviewUrl(selectedExp.cover_image)}
+                aria-label="Preview cover image"
+              >
+                <img
+                  src={selectedExp.cover_image}
+                  alt={`${selectedExp.title} cover`}
+                  className="suit-cover-image"
+                />
+              </button>
             )}
-            <p><strong>Category:</strong> {selectedExp.category || "—"}</p>
-            <p><strong>Country:</strong> {selectedExp.country || "—"}</p>
-            <p><strong>Language:</strong> {selectedExp.language || "—"}</p>
-            <p><strong>Status:</strong> {selectedExp.status}</p>
+            <div className="suit-meta-grid">
+              <p><strong>Status:</strong> {selectedExp.status}</p>
+              <p><strong>Category:</strong> {selectedExp.category || "—"}</p>
+              <p><strong>Language:</strong> {selectedExp.language || "—"}</p>
+              <p><strong>Continent:</strong> {selectedExp.continent || "—"}</p>
+              <p><strong>Country:</strong> {selectedExp.country || "—"}</p>
+              <p><strong>Location:</strong> {selectedExp.location_name || "—"}</p>
+              <p>
+                <strong>Date / time:</strong>{" "}
+                {selectedExp.date_time ? new Date(selectedExp.date_time).toLocaleString() : "—"}
+              </p>
+              <p><strong>Duration:</strong> {selectedExp.duration_minutes ? `${selectedExp.duration_minutes} min` : "—"}</p>
+              <p><strong>Max visitors:</strong> {selectedExp.max_visitors ?? "—"}</p>
+              <p>
+                <strong>Price:</strong>{" "}
+                £{selectedExp.price ?? "—"}
+                {selectedExp.price_discounted != null && selectedExp.price_discounted !== "" && (
+                  <> &middot; £{selectedExp.price_discounted} watch-only</>
+                )}
+              </p>
+              <p><strong>Gender preference:</strong> {selectedExp.gender_preference || "any"}</p>
+              <p><strong>Piggyback:</strong> {selectedExp.allows_piggyback ? "Yes" : "No"}</p>
+            </div>
+            {(selectedExp.latitude !== null && selectedExp.latitude !== undefined && selectedExp.longitude !== null && selectedExp.longitude !== undefined) && (
+              <p>
+                <strong>Coordinates:</strong>{" "}
+                <a
+                  href={`https://www.google.com/maps?q=${selectedExp.latitude},${selectedExp.longitude}`}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  {Number(selectedExp.latitude).toFixed(5)}, {Number(selectedExp.longitude).toFixed(5)}
+                </a>
+              </p>
+            )}
+            <p>
+              <strong>Meeting link:</strong>{" "}
+              {selectedExp.meeting_link ? (
+                <a href={selectedExp.meeting_link} target="_blank" rel="noreferrer">
+                  {selectedExp.meeting_link}
+                </a>
+              ) : "—"}
+            </p>
+            {selectedExp.rejection_reason && (
+              <p style={{ background: "#fef2f2", padding: "6px 10px", borderRadius: 6 }}>
+                <strong>Last rejection reason:</strong> {selectedExp.rejection_reason}
+              </p>
+            )}
             {selectedExp.description && (
-              <p style={{ marginTop: "8px", fontSize: "13px" }}>{selectedExp.description}</p>
+              <>
+                <p style={{ marginTop: "12px", marginBottom: "4px" }}><strong>Description</strong></p>
+                <p style={{ fontSize: "13px", whiteSpace: "pre-wrap" }}>{selectedExp.description}</p>
+              </>
+            )}
+            {selectedExp.sample_video_url && (
+              <p style={{ marginTop: "12px" }}>
+                <strong>Sample video:</strong>{" "}
+                <a href={selectedExp.sample_video_url} target="_blank" rel="noreferrer">
+                  {selectedExp.sample_video_url}
+                </a>
+              </p>
+            )}
+            {selectedExp.video_description && (
+              <>
+                <p style={{ marginTop: "8px", marginBottom: "4px" }}><strong>Video description</strong></p>
+                <p style={{ fontSize: "13px", whiteSpace: "pre-wrap" }}>{selectedExp.video_description}</p>
+              </>
+            )}
+            {Array.isArray(selectedExp.video_highlights) && selectedExp.video_highlights.length > 0 && (
+              <>
+                <p style={{ marginTop: "8px", marginBottom: "4px" }}><strong>Video highlights</strong></p>
+                <ul style={{ fontSize: "13px", paddingLeft: "20px", margin: 0 }}>
+                  {selectedExp.video_highlights.map((h, i) => (
+                    <li key={i}>{h}</li>
+                  ))}
+                </ul>
+              </>
             )}
             {Array.isArray(selectedExp.additional_images) && selectedExp.additional_images.length > 0 && (
               <>
@@ -841,14 +946,20 @@ const ExperienceRequests = ({
                 </p>
                 <div className="suit-additional-grid">
                   {selectedExp.additional_images.map((url, i) => (
-                    <a key={url} href={url} target="_blank" rel="noreferrer">
+                    <button
+                      key={url}
+                      type="button"
+                      className="photo-trigger"
+                      onClick={() => setPreviewUrl(url)}
+                      aria-label={`Preview photo ${i + 1}`}
+                    >
                       <img
                         src={url}
                         alt={`additional ${i + 1}`}
                         className="suit-additional-thumb"
                         loading="lazy"
                       />
-                    </a>
+                    </button>
                   ))}
                 </div>
               </>
@@ -893,8 +1004,11 @@ const ExperienceRequests = ({
         </div>
       </div>
     )}
+
+    <PhotoLightbox url={previewUrl} onClose={() => setPreviewUrl(null)} />
   </div>
-);
+  );
+};
 
 const CHART_COLORS = [
   "#a88b8b", "#7b9eb8", "#8bb897", "#c4a05a", "#9b7bb8",
@@ -1312,10 +1426,13 @@ const NetworkIssues = ({ summary, loading, windowHours, onWindowChange }) => {
   return (
     <div className="ad-network">
       <div className="ad-network-header">
-        <p className="ad-network-intro">
-          Connection issues captured from client telemetry. Rows flagged in orange exceed the
-          unreliable-connection threshold.
-        </p>
+        <h3 className="ad-network-title">
+          Network issues
+          <InfoTooltip label="About network telemetry">
+            Connection issues captured from client telemetry. Rows flagged in orange exceed the
+            unreliable-connection threshold (&ge;30% poor events with &ge;5 samples).
+          </InfoTooltip>
+        </h3>
         {windowSelector}
       </div>
 
