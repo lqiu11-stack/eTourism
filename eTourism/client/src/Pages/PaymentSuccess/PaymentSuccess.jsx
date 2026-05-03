@@ -108,6 +108,7 @@ export const PaymentSuccessPage = () => {
           <img src={backIcon} alt="Back" className="detail-back-icon" />
         </button>
         <div className="nav-links">
+          <Link to="/register/ehost/step1" className="nav-link">Become E-host</Link>
           <AccountMenu />
         </div>
       </nav>

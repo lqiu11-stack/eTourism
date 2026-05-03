@@ -236,6 +236,60 @@
   border-radius:50%;
 }
 
+.detail-guide-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.detail-guide-meta {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin: 4px 0 8px;
+  flex-wrap: wrap;
+}
+
+.detail-guide-followers {
+  font-size: 13px;
+  color: #5a4a45;
+}
+
+.detail-follow-btn {
+  background: #a06767;
+  color: #fff;
+  border: 1px solid #a06767;
+  padding: 6px 16px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.detail-follow-btn:hover:not(:disabled) {
+  background: #8a5757;
+  border-color: #8a5757;
+}
+
+.detail-follow-btn--following {
+  background: #fff;
+  color: #2a1d18;
+  border-color: #d8c5c5;
+}
+
+.detail-follow-btn--following:hover,
+.detail-follow-btn--following.is-hover {
+  background: #fdecec;
+  color: #a3373b;
+  border-color: #f0b3b3;
+}
+
+.detail-follow-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 /* REVIEWS */
 
 .detail-review-section{

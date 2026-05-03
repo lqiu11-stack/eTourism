@@ -127,6 +127,7 @@ export const MapPage = () => {
                   </button>
 
           <div className="nav-links">
+            <Link to="/register/ehost/step1" className="nav-link">Become E-host</Link>
             <AccountMenu />
           </div>
         </nav>

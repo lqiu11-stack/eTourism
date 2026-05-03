@@ -16,7 +16,11 @@ const {
   capturePayPalOrder,
   refundBooking,
   captureStripePayment,
-  getReviews
+  getReviews,
+  followHost,
+  unfollowHost,
+  getFollowStatus,
+  listFollows,
 } = require('../controllers/visitorController');
 
 router.get('/me', requireRole('visitor'), getMe);
@@ -49,5 +53,14 @@ router.post('/payments/stripe/capture', requireRole('visitor'), captureStripePay
 router.post('/payments/paypal/create-order', requireRole('visitor'), createPayPalOrder);
 
 router.post('/payments/paypal/capture-order', requireRole('visitor'), capturePayPalOrder);
+
+// Follow / Following
+router.get('/follows', requireRole('visitor'), listFollows);
+router.post('/follows', requireRole('visitor'), followHost);
+router.delete('/follows/:ehostId', requireRole('visitor'), unfollowHost);
+
+// Public — anyone (logged in or not) can read a host's follower count;
+// when logged in as a visitor we also tell them whether they follow.
+router.get('/ehosts/:ehostId/follow-status', getFollowStatus);
 
 module.exports = router;

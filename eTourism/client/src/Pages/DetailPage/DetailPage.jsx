@@ -56,6 +56,9 @@ const { experiences } = useExperiences();
   const [experience, setExperience] = useState(null);
   const [reviews, setReviews] = useState([]);
   const [networkWarning, setNetworkWarning] = useState(null);
+  const [followState, setFollowState] = useState({ following: false, followers_count: 0 });
+  const [followBusy, setFollowBusy] = useState(false);
+  const [followHover, setFollowHover] = useState(false);
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -85,6 +88,47 @@ const { experiences } = useExperiences();
     }
     return () => setExperienceContext(null);
   }, [searchParams, token]);
+
+  useEffect(() => {
+    const ehostId = experience?.ehost_id;
+    if (!ehostId) return;
+    axios.get(`${API_BASE}/visitor/ehosts/${ehostId}/follow-status`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    })
+      .then(({ data }) => setFollowState(data))
+      .catch(() => {});
+  }, [experience?.ehost_id, token]);
+
+  const canFollow = !!token && !isEhost && !!experience?.ehost_id;
+
+  const handleToggleFollow = async () => {
+    if (!token) {
+      navigate(`/login?redirect=/DetailPage?id=${searchParams.get("id")}`);
+      return;
+    }
+    if (!canFollow || followBusy) return;
+    setFollowBusy(true);
+    try {
+      if (followState.following) {
+        const { data } = await axios.delete(
+          `${API_BASE}/visitor/follows/${experience.ehost_id}`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        setFollowState(data);
+      } else {
+        const { data } = await axios.post(
+          `${API_BASE}/visitor/follows`,
+          { ehost_id: experience.ehost_id },
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        setFollowState(data);
+      }
+    } catch {
+      /* ignore — could surface a toast later */
+    } finally {
+      setFollowBusy(false);
+    }
+  };
 
   return (
     <div className="tour-page">
@@ -225,8 +269,40 @@ const { experiences } = useExperiences();
             alt="detail-guide"
           />
 
-          <div>
+          <div className="detail-guide-info">
             <h4>{experience?.ehost_first_name}</h4>
+            <div className="detail-guide-meta">
+              <span className="detail-guide-followers">
+                {followState.followers_count} follower{followState.followers_count === 1 ? "" : "s"}
+              </span>
+              {canFollow && (
+                <button
+                  type="button"
+                  className={
+                    followState.following
+                      ? `detail-follow-btn detail-follow-btn--following${followHover ? " is-hover" : ""}`
+                      : "detail-follow-btn"
+                  }
+                  disabled={followBusy}
+                  onClick={handleToggleFollow}
+                  onMouseEnter={() => setFollowHover(true)}
+                  onMouseLeave={() => setFollowHover(false)}
+                >
+                  {followState.following
+                    ? (followHover ? "Unfollow" : "Following")
+                    : `Follow ${experience?.ehost_first_name || "host"}`}
+                </button>
+              )}
+              {!token && experience?.ehost_id && (
+                <button
+                  type="button"
+                  className="detail-follow-btn"
+                  onClick={handleToggleFollow}
+                >
+                  Follow {experience?.ehost_first_name || "host"}
+                </button>
+              )}
+            </div>
             <p>{experience?.ehost_bio}</p>
           </div>
 

@@ -8,6 +8,7 @@ const Payment = require('../models/Payment');
 const Refund = require('../models/Refund');
 const Review = require('../models/Review');
 const User = require('../models/User');
+const Follow = require('../models/Follow');
 
 const normalizeGenderPreference = (value) => {
   if (value === undefined || value === null || value === '') {
@@ -162,6 +163,69 @@ const updateMe = async (req, res) => {
   } catch (err) {
     console.error('[visitor.updateMe]', err);
     return res.status(500).json({ error: err.message || 'Failed to update profile' });
+  }
+};
+
+const followHost = async (req, res) => {
+  try {
+    const ehostId = Number(req.body?.ehost_id);
+    if (!Number.isInteger(ehostId) || ehostId <= 0) {
+      return res.status(400).json({ error: 'ehost_id is required.' });
+    }
+    if (ehostId === req.userId) {
+      return res.status(400).json({ error: 'You cannot follow yourself.' });
+    }
+    const target = await User.findById(ehostId);
+    if (!target || target.role !== 'ehost') {
+      return res.status(404).json({ error: 'Host not found.' });
+    }
+    await Follow.create(req.userId, ehostId);
+    const followers_count = await Follow.countForHost(ehostId);
+    return res.status(201).json({ following: true, followers_count });
+  } catch (err) {
+    console.error('[visitor.followHost]', err);
+    return res.status(500).json({ error: 'Failed to follow host.' });
+  }
+};
+
+const unfollowHost = async (req, res) => {
+  try {
+    const ehostId = Number(req.params.ehostId);
+    if (!Number.isInteger(ehostId) || ehostId <= 0) {
+      return res.status(400).json({ error: 'Invalid ehost id.' });
+    }
+    await Follow.remove(req.userId, ehostId);
+    const followers_count = await Follow.countForHost(ehostId);
+    return res.json({ following: false, followers_count });
+  } catch (err) {
+    console.error('[visitor.unfollowHost]', err);
+    return res.status(500).json({ error: 'Failed to unfollow host.' });
+  }
+};
+
+const getFollowStatus = async (req, res) => {
+  try {
+    const ehostId = Number(req.params.ehostId);
+    if (!Number.isInteger(ehostId) || ehostId <= 0) {
+      return res.status(400).json({ error: 'Invalid ehost id.' });
+    }
+    const followers_count = await Follow.countForHost(ehostId);
+    const viewerId = req.userId || decodeOptionalUserId(req);
+    const following = viewerId ? await Follow.exists(viewerId, ehostId) : false;
+    return res.json({ following, followers_count });
+  } catch (err) {
+    console.error('[visitor.getFollowStatus]', err);
+    return res.status(500).json({ error: 'Failed to load follow status.' });
+  }
+};
+
+const listFollows = async (req, res) => {
+  try {
+    const rows = await Follow.listForVisitor(req.userId);
+    return res.json(rows);
+  } catch (err) {
+    console.error('[visitor.listFollows]', err);
+    return res.status(500).json({ error: 'Failed to load following list.' });
   }
 };
 
@@ -839,5 +903,9 @@ module.exports = {
   capturePayPalOrder,
   refundBooking,
   captureStripePayment,
-  getReviews
+  getReviews,
+  followHost,
+  unfollowHost,
+  getFollowStatus,
+  listFollows,
 };
