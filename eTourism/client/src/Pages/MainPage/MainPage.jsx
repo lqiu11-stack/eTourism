@@ -21,6 +21,21 @@ import { ExperienceCard } from "../../components/ExperienceCard";
 const MAX_NEW_EVENTS = 8;
 const FILTER_CONTINENTS = CONTINENTS.filter(c => c !== "Antarctica");
 
+const GENDER_OPTIONS = [
+  { value: "", label: "All" },
+  { value: "any", label: "Any" },
+  { value: "mixed", label: "Mixed only" },
+  { value: "female_only", label: "Female-only" },
+  { value: "male_only", label: "Male-only" },
+];
+const GENDER_LABELS = GENDER_OPTIONS.reduce((acc, o) => { acc[o.value] = o.label; return acc; }, {});
+
+const filterGenderOptionsForViewer = (viewerGender) => {
+  if (viewerGender === "male") return GENDER_OPTIONS.filter(o => o.value !== "female_only");
+  if (viewerGender === "female") return GENDER_OPTIONS.filter(o => o.value !== "male_only");
+  return GENDER_OPTIONS;
+};
+
 const toggleIn = (list, value) =>
   list.includes(value) ? list.filter(v => v !== value) : [...list, value];
 
@@ -62,7 +77,8 @@ export const MainPage = () => {
     .catch(() => {});
 }, []);
 
-  const { isLoggedIn, isEhost, logout } = useAuth();
+  const { isLoggedIn, isEhost, logout, user } = useAuth();
+  const visibleGenderOptions = filterGenderOptionsForViewer(user?.gender);
   const { experiences } = useExperiences();
   const dateInputRef = useRef(null);
 
@@ -76,6 +92,17 @@ export const MainPage = () => {
 
   const toggleMenu = (name) => setOpenMenu(prev => (prev === name ? null : name));
 
+  useEffect(() => {
+    if (!openMenu) return undefined;
+    const handler = (e) => {
+      if (e.target.closest('.filter-chip') || e.target.closest('.filter-dropdown')) return;
+      if (e.target.closest('input, select, textarea, button, label, datalist')) return;
+      setOpenMenu(null);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [openMenu]);
+
   const continentCounts = useMemo(
     () => experiences.reduce((acc, e) => {
       if (e.continent) acc[e.continent] = (acc[e.continent] || 0) + 1;
@@ -85,9 +112,14 @@ export const MainPage = () => {
   );
 
   const newEvents = useMemo(
-    () => [...experiences]
-      .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
-      .slice(0, MAX_NEW_EVENTS),
+    () => {
+      // eslint-disable-next-line react-hooks/purity
+      const now = Date.now();
+      return [...experiences]
+        .filter((e) => e.date_time && new Date(e.date_time).getTime() > now)
+        .sort((a, b) => new Date(a.date_time) - new Date(b.date_time))
+        .slice(0, MAX_NEW_EVENTS);
+    },
     [experiences]
   );
 
@@ -214,7 +246,7 @@ export const MainPage = () => {
                                       }, 100);
                     }
                     }
-                    style={{ position: "absolute", opacity: 0 }}
+                    style={{ position: "absolute", inset: 0, opacity: 0, pointerEvents: "none" }}
                   />
                 </div>
               </div>
@@ -259,18 +291,31 @@ export const MainPage = () => {
                   isOpen={openMenu === "language"}
                   onToggle={() => toggleMenu("language")}
                 />
-                <select
-                  className={`filter-chip${genderFilter ? " filter-chip--active" : ""}`}
-                  value={genderFilter}
-                  onChange={(e) => setGenderFilter(e.target.value)}
-                  style={{ padding: "6px 10px" }}
-                >
-                  <option value="">+ Gender preference</option>
-                  <option value="any">Any</option>
-                  <option value="mixed">Mixed only</option>
-                  <option value="female_only">Female-only</option>
-                  <option value="male_only">Male-only</option>
-                </select>
+                <div style={{ position: "relative" }}>
+                  <button
+                    className={`filter-chip${genderFilter ? " filter-chip--active" : ""}`}
+                    onClick={() => toggleMenu("gender")}
+                  >
+                    {genderFilter
+                      ? `Gender: ${GENDER_LABELS[genderFilter]}`
+                      : "+ Gender preference"}
+                  </button>
+                  {openMenu === "gender" && (
+                    <div className="filter-dropdown">
+                      {visibleGenderOptions.map(({ value, label }) => (
+                        <label key={value || "all"} className="filter-check">
+                          <input
+                            type="radio"
+                            name="main-gender"
+                            checked={genderFilter === value}
+                            onChange={() => setGenderFilter(value)}
+                          />
+                          {label}
+                        </label>
+                      ))}
+                    </div>
+                  )}
+                </div>
 
                 <button className="filter-chip" onClick={resetFilters}>
                   Reset filter

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, useParams, useSearchParams, Link, useLocation } from "react-router-dom";
 import "../MainPage/Mainstyle.css";
 import "./ContinentPage.css";
@@ -30,7 +30,7 @@ export const ContinentPage = () => {
   const navigate = useNavigate();
   const { continent } = useParams();
   const [searchParams] = useSearchParams();
-  const { isLoggedIn, isEhost, logout } = useAuth();
+  const { isLoggedIn, isEhost, logout, user } = useAuth();
 
   const isAll = continent === ALL_VALUE;
   const lockedContinent = isAll
@@ -39,6 +39,21 @@ export const ContinentPage = () => {
   const heroBg = lockedContinent ? CONTINENT_BG[lockedContinent] : null;
 
   const parseList = (value) => (value ? value.split(",").map(v => v.trim()).filter(Boolean) : []);
+
+  const GENDER_OPTIONS = [
+    { value: "", label: "All" },
+    { value: "any", label: "Any" },
+    { value: "mixed", label: "Mixed only" },
+    { value: "female_only", label: "Female-only" },
+    { value: "male_only", label: "Male-only" },
+  ];
+  const GENDER_LABELS = GENDER_OPTIONS.reduce((acc, o) => { acc[o.value] = o.label; return acc; }, {});
+  const visibleGenderOptions =
+    user?.gender === "male"
+      ? GENDER_OPTIONS.filter(o => o.value !== "female_only")
+      : user?.gender === "female"
+        ? GENDER_OPTIONS.filter(o => o.value !== "male_only")
+        : GENDER_OPTIONS;
 
   const { experiences } = useExperiences();
   const [searchLocation, setSearchLocation] = useState(searchParams.get("q") || "");
@@ -52,6 +67,22 @@ export const ContinentPage = () => {
   const [showRegionMenu, setShowRegionMenu] = useState(false);
   const [showCategoryMenu, setShowCategoryMenu] = useState(false);
   const [showLanguageMenu, setShowLanguageMenu] = useState(false);
+  const [showGenderMenu, setShowGenderMenu] = useState(false);
+
+  useEffect(() => {
+    const anyOpen = showRegionMenu || showCategoryMenu || showLanguageMenu || showGenderMenu;
+    if (!anyOpen) return undefined;
+    const handler = (e) => {
+      if (e.target.closest('.filter-chip') || e.target.closest('.filter-dropdown')) return;
+      if (e.target.closest('input, select, textarea, button, label, datalist')) return;
+      setShowRegionMenu(false);
+      setShowCategoryMenu(false);
+      setShowLanguageMenu(false);
+      setShowGenderMenu(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [showRegionMenu, showCategoryMenu, showLanguageMenu, showGenderMenu]);
 
   const [appliedQ, setAppliedQ] = useState(searchParams.get("q") || "");
   const [appliedDate, setAppliedDate] = useState(searchParams.get("date") || "");
@@ -73,6 +104,12 @@ export const ContinentPage = () => {
     }
     if (appliedDate && (!e.date_time || e.date_time.slice(0, 10) !== appliedDate)) return false;
     return true;
+  })
+  .slice()
+  .sort((a, b) => {
+    if (!a.date_time) return 1;
+    if (!b.date_time) return -1;
+    return new Date(b.date_time) - new Date(a.date_time);
   });
 
   const headerTitle = isAll
@@ -98,6 +135,7 @@ export const ContinentPage = () => {
     setShowRegionMenu(false);
     setShowCategoryMenu(false);
     setShowLanguageMenu(false);
+    setShowGenderMenu(false);
   };
 
   const location = useLocation();
@@ -197,6 +235,7 @@ const handleCardClick = (exp) => {
                     className="textbox-word"
                     type="date"
                     value={searchDate}
+                    min={new Date().toISOString().split("T")[0]}
                     onChange={(e) => setSearchDate(e.target.value)}
                     style={{ position: "absolute", opacity: 0, pointerEvents: "none" }}
                   />
@@ -220,7 +259,7 @@ const handleCardClick = (exp) => {
                   <div style={{ position: "relative" }}>
                     <button
                       className={`filter-chip${activeContinents.length ? " filter-chip--active" : ""}`}
-                      onClick={() => { setShowRegionMenu(p => !p); setShowCategoryMenu(false); setShowLanguageMenu(false); }}
+                      onClick={() => { setShowRegionMenu(p => !p); setShowCategoryMenu(false); setShowLanguageMenu(false); setShowGenderMenu(false); }}
                     >
                       {activeContinents.length
                         ? `Region${activeContinents.length > 1 ? ` (${activeContinents.length})` : `: ${activeContinents[0]}`}`
@@ -246,7 +285,7 @@ const handleCardClick = (exp) => {
                 <div style={{ position: "relative" }}>
                   <button
                     className={`filter-chip${activeCategories.length ? " filter-chip--active" : ""}`}
-                    onClick={() => { setShowCategoryMenu(p => !p); setShowRegionMenu(false); setShowLanguageMenu(false); }}
+                    onClick={() => { setShowCategoryMenu(p => !p); setShowRegionMenu(false); setShowLanguageMenu(false); setShowGenderMenu(false); }}
                   >
                     {activeCategories.length
                       ? `Type${activeCategories.length > 1 ? ` (${activeCategories.length})` : `: ${activeCategories[0]}`}`
@@ -271,7 +310,7 @@ const handleCardClick = (exp) => {
                 <div style={{ position: "relative" }}>
                   <button
                     className={`filter-chip${activeLanguages.length ? " filter-chip--active" : ""}`}
-                    onClick={() => { setShowLanguageMenu(p => !p); setShowRegionMenu(false); setShowCategoryMenu(false); }}
+                    onClick={() => { setShowLanguageMenu(p => !p); setShowRegionMenu(false); setShowCategoryMenu(false); setShowGenderMenu(false); }}
                   >
                     {activeLanguages.length
                       ? `Language${activeLanguages.length > 1 ? ` (${activeLanguages.length})` : `: ${activeLanguages[0]}`}`
@@ -293,18 +332,36 @@ const handleCardClick = (exp) => {
                   )}
                 </div>
 
-                <select
-                  className={`filter-chip${genderFilter ? " filter-chip--active" : ""}`}
-                  value={genderFilter}
-                  onChange={(e) => setGenderFilter(e.target.value)}
-                  style={{ padding: "6px 10px" }}
-                >
-                  <option value="">+ Gender preference</option>
-                  <option value="any">Any</option>
-                  <option value="mixed">Mixed only</option>
-                  <option value="female_only">Female-only</option>
-                  <option value="male_only">Male-only</option>
-                </select>
+                <div style={{ position: "relative" }}>
+                  <button
+                    className={`filter-chip${genderFilter ? " filter-chip--active" : ""}`}
+                    onClick={() => {
+                      setShowGenderMenu(p => !p);
+                      setShowRegionMenu(false);
+                      setShowCategoryMenu(false);
+                      setShowLanguageMenu(false);
+                    }}
+                  >
+                    {genderFilter
+                      ? `Gender: ${GENDER_LABELS[genderFilter]}`
+                      : "+ Gender preference"}
+                  </button>
+                  {showGenderMenu && (
+                    <div className="filter-dropdown">
+                      {visibleGenderOptions.map(({ value, label }) => (
+                        <label key={value || "all"} className="filter-check">
+                          <input
+                            type="radio"
+                            name="continent-gender"
+                            checked={genderFilter === value}
+                            onChange={() => setGenderFilter(value)}
+                          />
+                          {label}
+                        </label>
+                      ))}
+                    </div>
+                  )}
+                </div>
 
                 <button className="filter-chip" onClick={resetAll}>
                   Reset filter

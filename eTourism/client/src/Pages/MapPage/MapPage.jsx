@@ -213,17 +213,33 @@ export const MapPage = () => {
         ))}
 
         <p>Gender preference</p>
-        <select
-          value={genderFilter}
-          onChange={(e) => setGenderFilter(e.target.value)}
-          style={{ padding: "6px 10px", width: "100%" }}
-        >
-          <option value="">All</option>
-          <option value="any">Any</option>
-          <option value="mixed">Mixed only</option>
-          <option value="female_only">Female-only</option>
-          <option value="male_only">Male-only</option>
-        </select>
+        {(() => {
+          const all = [
+            { value: "", label: "All" },
+            { value: "any", label: "Any" },
+            { value: "mixed", label: "Mixed only" },
+            { value: "female_only", label: "Female-only" },
+            { value: "male_only", label: "Male-only" },
+          ];
+          const viewer = (() => {
+            try { return JSON.parse(localStorage.getItem("user") || "{}"); } catch { return {}; }
+          })();
+          const opts =
+            viewer.gender === "male"   ? all.filter(o => o.value !== "female_only") :
+            viewer.gender === "female" ? all.filter(o => o.value !== "male_only")   :
+            all;
+          return opts.map(({ value, label }) => (
+            <label key={value || "all"}>
+              <input
+                type="radio"
+                name="map-gender"
+                checked={genderFilter === value}
+                onChange={() => setGenderFilter(value)}
+              />
+              {label}
+            </label>
+          ));
+        })()}
         </div>
     </div>
         <div className="sidebar-footer">
