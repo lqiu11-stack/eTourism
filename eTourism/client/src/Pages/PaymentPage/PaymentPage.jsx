@@ -16,13 +16,13 @@ export const PaymentPage = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const token = localStorage.getItem("token");
+  const currentUser = JSON.parse(localStorage.getItem("user") || "{}");
   const experienceId = searchParams.get("id");
 
   const [experience, setExperience] = useState(null);
   const [qtyNormal, setQtyNormal] = useState(0);
   const [qtyDiscounted, setQtyDiscounted] = useState(0);
   const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
   const [agreedTerms, setAgreedTerms] = useState(false);
   const [agreedAllAdults, setAgreedAllAdults] = useState(false);
   const [showTerms, setShowTerms] = useState(false);
@@ -114,12 +114,12 @@ export const PaymentPage = () => {
       setError("Please select at least one ticket.");
       return false;
     }
-    if (!name || !email) {
-      setError("Please fill in your name and email.");
+    if (!name) {
+      setError("Please fill in your name.");
       return false;
     }
-    if (!email.includes("@")) {
-      setError("Please enter a valid email.");
+    if (!currentUser.email) {
+      setError("Your account email is missing. Please sign in again.");
       return false;
     }
     if (!agreedTerms) {
@@ -146,7 +146,7 @@ export const PaymentPage = () => {
         qty_normal: qtyNormal,
         qty_discounted: qtyDiscounted,
         contact_name: name,
-        contact_email: email,
+        contact_email: currentUser.email,
         agreed_to_terms: true,
         souvenir_qty: experience?.allows_souvenir_addon ? souvenirQty : 0,
         video_addon: experience?.allows_video_addon ? videoAddon : false,
@@ -444,16 +444,6 @@ export const PaymentPage = () => {
             type="text"
             value={name}
             onChange={(e) => setName(e.target.value)}
-          />
-
-          <label>
-            Please tell us your email*
-            <span>(stream link will be sent through email)</span>
-          </label>
-          <input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
           />
 
           {bookingUnavailableReason && (
