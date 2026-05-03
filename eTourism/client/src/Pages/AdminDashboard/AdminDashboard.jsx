@@ -782,7 +782,17 @@ const ExperienceRequests = ({
   onReview, onDelete, expSearch, setExpSearch, onSearch,
   showPanel, setShowPanel, selectedExp, scores, scoresLoading,
   result, setResult, comment, setComment, submitting, onSubmitScore,
-}) => (
+}) => {
+  const [previewUrl, setPreviewUrl] = useState(null);
+
+  useEffect(() => {
+    if (!previewUrl) return undefined;
+    const onKey = (e) => { if (e.key === "Escape") setPreviewUrl(null); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [previewUrl]);
+
+  return (
   <div>
     <div className="booking-top">
       <div className="search-wrapper">
@@ -836,11 +846,18 @@ const ExperienceRequests = ({
           <div className="suit-panel-left">
             <h3>{selectedExp.title}</h3>
             {selectedExp.cover_image && (
-              <img
-                src={selectedExp.cover_image}
-                alt={`${selectedExp.title} cover`}
-                className="suit-cover-image"
-              />
+              <button
+                type="button"
+                className="suit-photo-btn"
+                onClick={() => setPreviewUrl(selectedExp.cover_image)}
+                aria-label="Preview cover image"
+              >
+                <img
+                  src={selectedExp.cover_image}
+                  alt={`${selectedExp.title} cover`}
+                  className="suit-cover-image"
+                />
+              </button>
             )}
             <div className="suit-meta-grid">
               <p><strong>Status:</strong> {selectedExp.status}</p>
@@ -927,14 +944,20 @@ const ExperienceRequests = ({
                 </p>
                 <div className="suit-additional-grid">
                   {selectedExp.additional_images.map((url, i) => (
-                    <a key={url} href={url} target="_blank" rel="noreferrer">
+                    <button
+                      key={url}
+                      type="button"
+                      className="suit-photo-btn"
+                      onClick={() => setPreviewUrl(url)}
+                      aria-label={`Preview photo ${i + 1}`}
+                    >
                       <img
                         src={url}
                         alt={`additional ${i + 1}`}
                         className="suit-additional-thumb"
                         loading="lazy"
                       />
-                    </a>
+                    </button>
                   ))}
                 </div>
               </>
@@ -979,8 +1002,27 @@ const ExperienceRequests = ({
         </div>
       </div>
     )}
+
+    {previewUrl && (
+      <div className="suit-lightbox" onClick={() => setPreviewUrl(null)} role="dialog" aria-modal="true">
+        <button
+          type="button"
+          className="suit-lightbox-close"
+          onClick={(e) => { e.stopPropagation(); setPreviewUrl(null); }}
+          aria-label="Close preview"
+        >
+          ✕
+        </button>
+        <img
+          src={previewUrl}
+          alt="Photo preview"
+          onClick={(e) => e.stopPropagation()}
+        />
+      </div>
+    )}
   </div>
-);
+  );
+};
 
 const CHART_COLORS = [
   "#a88b8b", "#7b9eb8", "#8bb897", "#c4a05a", "#9b7bb8",
