@@ -335,6 +335,9 @@ const { experiences } = useExperiences();
             <div className="detail-reviews">
               {reviews.slice(1).map((r) => (
                 <div className="detail-review" key={r.id}>
+                  <div className="detail-review-stars" aria-label={`Rated ${r.rating} out of 5`}>
+                    {renderStars(r.rating)}
+                  </div>
                   <h4>{r.first_name}{r.country ? ` from ${r.country}` : ""}</h4>
                   <p>{r.comment}</p>
                 </div>
