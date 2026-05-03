@@ -1,5 +1,6 @@
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const checkoutNodeJssdk = require('@paypal/checkout-server-sdk');
+const jwt = require('jsonwebtoken');
 const pool = require('../config/db');
 const Booking = require('../models/Booking');
 const Experience = require('../models/Experience');
@@ -132,9 +133,33 @@ const getMe = async (req, res) => {
   }
 };
 
+const decodeOptionalUserId = (req) => {
+  const auth = req.headers.authorization;
+  if (!auth || !auth.startsWith('Bearer ') || !process.env.JWT_SECRET) return null;
+  try {
+    const payload = jwt.verify(auth.slice(7), process.env.JWT_SECRET);
+    return payload.userId || null;
+  } catch {
+    return null;
+  }
+};
+
 const getExperiences = async (req, res) => {
   try {
-    const { category, country, continent, language, price_min, price_max, search } = req.query;
+    const { category, country, continent, language, price_min, price_max, search, gender_preference } = req.query;
+
+    // If the request is from a logged-in visitor with a known gender, exclude
+    // single-gender tours that don't match.
+    let excludeGenderPreference;
+    const userId = decodeOptionalUserId(req);
+    if (userId) {
+      const viewer = await User.findById(userId);
+      if (viewer?.role === 'visitor') {
+        if (viewer.gender === 'male')   excludeGenderPreference = 'female_only';
+        if (viewer.gender === 'female') excludeGenderPreference = 'male_only';
+      }
+    }
+
     const experiences = await Experience.findAll({
       status: 'approved',
       category:  category  || undefined,
@@ -144,6 +169,8 @@ const getExperiences = async (req, res) => {
       price_min: price_min || undefined,
       price_max: price_max || undefined,
       search:    search    || undefined,
+      gender_preference: gender_preference || undefined,
+      exclude_gender_preference: excludeGenderPreference,
     });
     return res.status(200).json(experiences);
   } catch (err) {

@@ -20,6 +20,7 @@ export const MapPage = () => {
   const [search, setSearch] = useState("");
   const [price, setPrice] = useState(7000);
   const [filters, setFilters] = useState({});
+  const [genderFilter, setGenderFilter] = useState("");
 
   const token = localStorage.getItem("token");
   const isLoggedIn = !!token;
@@ -85,6 +86,7 @@ export const MapPage = () => {
       if (activeLanguages.length > 0 && !activeLanguages.includes(item.language)) return false;
       if (activeCategories.length > 0 && !activeCategories.includes(item.category)) return false;
       if (activeContinents.length > 0 && !activeContinents.includes(item.continent)) return false;
+      if (genderFilter && item.gender_preference !== genderFilter) return false;
       return true;
     });
 
@@ -99,8 +101,11 @@ export const MapPage = () => {
   };
 
   useEffect(() => {
+    const token = localStorage.getItem("token");
     axios
-      .get(`${API_BASE}/visitor/experiences`)
+      .get(`${API_BASE}/visitor/experiences`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      })
       .then((res) => {
         setData(res.data);
         setFilteredData(res.data);
@@ -206,6 +211,19 @@ export const MapPage = () => {
             {cont}
           </label>
         ))}
+
+        <p>Gender preference</p>
+        <select
+          value={genderFilter}
+          onChange={(e) => setGenderFilter(e.target.value)}
+          style={{ padding: "6px 10px", width: "100%" }}
+        >
+          <option value="">All</option>
+          <option value="any">Any</option>
+          <option value="mixed">Mixed only</option>
+          <option value="female_only">Female-only</option>
+          <option value="male_only">Male-only</option>
+        </select>
         </div>
     </div>
         <div className="sidebar-footer">

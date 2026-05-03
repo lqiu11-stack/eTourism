@@ -16,6 +16,7 @@ export const VisitorRegister = () => {
     last_name: "",
     date_of_birth: "",
     country: "",
+    gender: "",
     bio: "",
   });
   const [agreements, setAgreements] = useState({
@@ -102,6 +103,10 @@ export const VisitorRegister = () => {
     const age = calculateAge(form.date_of_birth);
     if (age === null || age < 18) {
       setError("You must be at least 18 years old to register.");
+      return;
+    }
+    if (!["female", "male", "non_binary", "prefer_not_to_say"].includes(form.gender)) {
+      setError("Please select your gender.");
       return;
     }
     if (!COUNTRIES.includes(form.country)) {
@@ -231,6 +236,21 @@ export const VisitorRegister = () => {
                 <option key={c} value={c} />
               ))}
             </datalist>
+
+            <label className="vtext-wrapper-3">Gender*</label>
+            <select
+              className="vrectangle-2"
+              name="gender"
+              value={form.gender}
+              onChange={handleChange}
+              required
+            >
+              <option value="">Select your gender...</option>
+              <option value="female">Female</option>
+              <option value="male">Male</option>
+              <option value="non_binary">Non-binary</option>
+              <option value="prefer_not_to_say">Prefer not to say</option>
+            </select>
           </div>
         </div>
 

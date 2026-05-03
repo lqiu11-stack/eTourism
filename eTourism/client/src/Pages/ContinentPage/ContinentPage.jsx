@@ -47,6 +47,7 @@ export const ContinentPage = () => {
   const [activeContinents, setActiveContinents] = useState(() => parseList(searchParams.get("continents")));
   const [activeCategories, setActiveCategories] = useState(() => parseList(searchParams.get("categories")));
   const [activeLanguages, setActiveLanguages] = useState(() => parseList(searchParams.get("languages")));
+  const [genderFilter, setGenderFilter] = useState(searchParams.get("gender") || "");
 
   const [showRegionMenu, setShowRegionMenu] = useState(false);
   const [showCategoryMenu, setShowCategoryMenu] = useState(false);
@@ -63,6 +64,7 @@ export const ContinentPage = () => {
     if (isAll && activeContinents.length && !activeContinents.includes(e.continent)) return false;
     if (activeCategories.length && !activeCategories.includes(e.category)) return false;
     if (activeLanguages.length && !activeLanguages.includes(e.language)) return false;
+    if (genderFilter && e.gender_preference !== genderFilter) return false;
     if (appliedQ.trim()) {
       const needle = appliedQ.trim().toLowerCase();
       const locHit = e.location_name && e.location_name.toLowerCase().includes(needle);
@@ -88,6 +90,7 @@ export const ContinentPage = () => {
     setActiveContinents([]);
     setActiveCategories([]);
     setActiveLanguages([]);
+    setGenderFilter("");
     setSearchLocation("");
     setSearchDate("");
     setAppliedQ("");
@@ -289,6 +292,19 @@ const handleCardClick = (exp) => {
                     </div>
                   )}
                 </div>
+
+                <select
+                  className={`filter-chip${genderFilter ? " filter-chip--active" : ""}`}
+                  value={genderFilter}
+                  onChange={(e) => setGenderFilter(e.target.value)}
+                  style={{ padding: "6px 10px" }}
+                >
+                  <option value="">+ Gender preference</option>
+                  <option value="any">Any</option>
+                  <option value="mixed">Mixed only</option>
+                  <option value="female_only">Female-only</option>
+                  <option value="male_only">Male-only</option>
+                </select>
 
                 <button className="filter-chip" onClick={resetAll}>
                   Reset filter

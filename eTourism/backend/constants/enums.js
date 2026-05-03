@@ -260,6 +260,8 @@ const USER_ROLES = ['visitor', 'ehost', 'admin'];
 
 const USER_STATUSES = ['active', 'suspended'];
 
+const USER_GENDERS = ['male', 'female', 'non_binary', 'prefer_not_to_say'];
+
 const NETWORK_QUALITIES = ['good', 'slow', 'failed', 'offline'];
 const NETWORK_POOR_QUALITIES = ['slow', 'failed', 'offline'];
 const NETWORK_POOR_RATIO_THRESHOLD = 0.3;
@@ -280,6 +282,7 @@ module.exports = {
   APPLICATION_STATUSES,
   USER_ROLES,
   USER_STATUSES,
+  USER_GENDERS,
   NETWORK_QUALITIES,
   NETWORK_POOR_QUALITIES,
   NETWORK_POOR_RATIO_THRESHOLD,

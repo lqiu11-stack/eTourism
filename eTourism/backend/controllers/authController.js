@@ -3,6 +3,7 @@ const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const UserAgreement = require('../models/UserAgreement');
 const pool = require('../config/db');
+const { USER_GENDERS } = require('../constants/enums');
 
 const calculateAge = (dob) => {
   const birth = new Date(dob);
@@ -33,6 +34,7 @@ const register = async (req, res) => {
       language,
       bio,
       profile_image,
+      gender,
       accepted_terms,
       accepted_behaviour,
       accepted_recording,
@@ -40,6 +42,9 @@ const register = async (req, res) => {
     } = req.body;
     if (!email || !password) {
       return res.status(400).json({ error: 'Email and password are required' });
+    }
+    if (!gender || !USER_GENDERS.includes(gender)) {
+      return res.status(400).json({ error: `Gender is required. Allowed values: ${USER_GENDERS.join(', ')}` });
     }
     let first_name = firstNameInput ? String(firstNameInput).trim() : '';
     let last_name = lastNameInput ? String(lastNameInput).trim() : '';
@@ -95,6 +100,7 @@ const register = async (req, res) => {
       language: language || null,
       bio: bio || null,
       profile_image: profile_image || null,
+      gender,
     });
     try {
       await UserAgreement.create({
@@ -230,6 +236,7 @@ const completeOAuthProfile = async (req, res) => {
       country,
       bio,
       profile_image,
+      gender,
       accepted_terms,
       accepted_behaviour,
       accepted_recording,
@@ -267,6 +274,9 @@ const completeOAuthProfile = async (req, res) => {
         error: 'You must confirm you have a valid payment method on file',
       });
     }
+    if (!gender || !USER_GENDERS.includes(gender)) {
+      return res.status(400).json({ error: `Gender is required. Allowed values: ${USER_GENDERS.join(', ')}` });
+    }
 
     const placeholderHash = `${provider.toUpperCase()}_AUTH_NO_PASSWORD`;
     let user = await User.findByEmail(email);
@@ -278,6 +288,7 @@ const completeOAuthProfile = async (req, res) => {
         country: country || null,
         bio: bio || null,
         profile_image: profile_image || null,
+        gender,
         auth_provider: provider,
       });
     } else {
@@ -292,6 +303,7 @@ const completeOAuthProfile = async (req, res) => {
         language: null,
         bio: bio || null,
         profile_image: profile_image || null,
+        gender,
         auth_provider: provider,
       });
     }

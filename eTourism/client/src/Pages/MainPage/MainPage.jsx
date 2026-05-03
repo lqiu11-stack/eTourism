@@ -71,6 +71,7 @@ export const MainPage = () => {
   const [activeContinents, setActiveContinents] = useState([]);
   const [activeCategories, setActiveCategories] = useState([]);
   const [activeLanguages, setActiveLanguages] = useState([]);
+  const [genderFilter, setGenderFilter] = useState("");
   const [openMenu, setOpenMenu] = useState(null);
 
   const toggleMenu = (name) => setOpenMenu(prev => (prev === name ? null : name));
@@ -97,6 +98,7 @@ export const MainPage = () => {
     if (activeContinents.length) params.set("continents", activeContinents.join(","));
     if (activeCategories.length) params.set("categories", activeCategories.join(","));
     if (activeLanguages.length) params.set("languages", activeLanguages.join(","));
+    if (genderFilter) params.set("gender", genderFilter);
     const target = activeContinents.length === 1 ? activeContinents[0] : "all";
     navigate(`/continent/${target}${params.toString() ? `?${params}` : ""}`);
   };
@@ -105,6 +107,7 @@ export const MainPage = () => {
     setActiveContinents([]);
     setActiveCategories([]);
     setActiveLanguages([]);
+    setGenderFilter("");
     setSearchLocation("");
     setSearchDate("");
     setOpenMenu(null);
@@ -256,6 +259,19 @@ export const MainPage = () => {
                   isOpen={openMenu === "language"}
                   onToggle={() => toggleMenu("language")}
                 />
+                <select
+                  className={`filter-chip${genderFilter ? " filter-chip--active" : ""}`}
+                  value={genderFilter}
+                  onChange={(e) => setGenderFilter(e.target.value)}
+                  style={{ padding: "6px 10px" }}
+                >
+                  <option value="">+ Gender preference</option>
+                  <option value="any">Any</option>
+                  <option value="mixed">Mixed only</option>
+                  <option value="female_only">Female-only</option>
+                  <option value="male_only">Male-only</option>
+                </select>
+
                 <button className="filter-chip" onClick={resetFilters}>
                   Reset filter
                 </button>
