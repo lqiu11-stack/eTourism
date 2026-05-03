@@ -559,6 +559,8 @@ const updateExperience = async (req, res) => {
         return res.status(400).json({ success: false, message: piggybackCap.error });
     }
 
+    const derivedContinent = continentForCountry(country);
+
     const { rows: updateRows } = await pool.query(
         `UPDATE experiences
          SET title                  = $1,

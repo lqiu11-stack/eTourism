@@ -4,6 +4,16 @@ const { describe, it, beforeEach, mock } = require('node:test');
 const assert = require('node:assert/strict');
 const path = require('node:path');
 
+const fakePool = { query: mock.fn(async () => ({ rows: [] })), end: mock.fn() };
+require.cache[path.resolve(__dirname, '../config/db.js')] = {
+  id: path.resolve(__dirname, '../config/db.js'),
+  filename: path.resolve(__dirname, '../config/db.js'),
+  loaded: true,
+  exports: fakePool,
+  children: [],
+  paths: [],
+};
+
 const mockBooking = {
   create: mock.fn(),
   findByVisitor: mock.fn(),
@@ -11,6 +21,7 @@ const mockBooking = {
   reschedule: mock.fn(),
   updateStatus: mock.fn(),
   getRefundContext: mock.fn(),
+  findActiveByVisitorAndExperience: mock.fn(async () => null),
 };
 require.cache[path.resolve(__dirname, '../models/Booking.js')] = {
   id: path.resolve(__dirname, '../models/Booking.js'),
@@ -47,6 +58,56 @@ require.cache[path.resolve(__dirname, '../models/Refund.js')] = {
   filename: path.resolve(__dirname, '../models/Refund.js'),
   loaded: true,
   exports: mockRefund,
+  children: [],
+  paths: [],
+};
+
+const mockFollow = {
+  create: mock.fn(),
+  remove: mock.fn(),
+  exists: mock.fn(async () => false),
+  countForHost: mock.fn(async () => 0),
+  listForVisitor: mock.fn(async () => []),
+};
+require.cache[path.resolve(__dirname, '../models/Follow.js')] = {
+  id: path.resolve(__dirname, '../models/Follow.js'),
+  filename: path.resolve(__dirname, '../models/Follow.js'),
+  loaded: true,
+  exports: mockFollow,
+  children: [],
+  paths: [],
+};
+
+const mockUser = {
+  findById: mock.fn(async () => null),
+  findByEmail: mock.fn(),
+  create: mock.fn(),
+  update: mock.fn(),
+  findAll: mock.fn(),
+  updateStatus: mock.fn(),
+  updateRole: mock.fn(),
+  deleteUser: mock.fn(),
+};
+require.cache[path.resolve(__dirname, '../models/User.js')] = {
+  id: path.resolve(__dirname, '../models/User.js'),
+  filename: path.resolve(__dirname, '../models/User.js'),
+  loaded: true,
+  exports: mockUser,
+  children: [],
+  paths: [],
+};
+
+const mockReview = {
+  create: mock.fn(),
+  upsert: mock.fn(async () => ({ review: { id: 1 }, updated: false })),
+  findByBookingId: mock.fn(async () => null),
+  findByExperience: mock.fn(),
+};
+require.cache[path.resolve(__dirname, '../models/Review.js')] = {
+  id: path.resolve(__dirname, '../models/Review.js'),
+  filename: path.resolve(__dirname, '../models/Review.js'),
+  loaded: true,
+  exports: mockReview,
   children: [],
   paths: [],
 };
@@ -119,16 +180,20 @@ function makeRes() {
 }
 
 function makeReq(body = {}, params = {}, query = {}, userId = null) {
-  return { body, params, query, userId };
+  return { body, params, query, userId, headers: {} };
 }
 
 function resetMocks() {
+  fakePool.query.mock.resetCalls();
+  fakePool.query.mock.mockImplementation(async () => ({ rows: [] }));
   mockBooking.create.mock.resetCalls();
   mockBooking.findByVisitor.mock.resetCalls();
   mockBooking.findById.mock.resetCalls();
   mockBooking.reschedule.mock.resetCalls();
   mockBooking.updateStatus.mock.resetCalls();
   mockBooking.getRefundContext.mock.resetCalls();
+  mockBooking.findActiveByVisitorAndExperience.mock.resetCalls();
+  mockBooking.findActiveByVisitorAndExperience.mock.mockImplementation(async () => null);
   mockExperience.findById.mock.resetCalls();
   mockExperience.findByIdWithHost.mock.resetCalls();
   mockExperience.findAll.mock.resetCalls();
@@ -136,6 +201,21 @@ function resetMocks() {
   mockPayment.findByBooking.mock.resetCalls();
   mockRefund.create.mock.resetCalls();
   mockRefund.findByBookingId.mock.resetCalls();
+  mockFollow.create.mock.resetCalls();
+  mockFollow.remove.mock.resetCalls();
+  mockFollow.exists.mock.resetCalls();
+  mockFollow.countForHost.mock.resetCalls();
+  mockFollow.listForVisitor.mock.resetCalls();
+  mockUser.findById.mock.resetCalls();
+  mockUser.findById.mock.mockImplementation(async () => null);
+  mockUser.findByEmail.mock.resetCalls();
+  mockUser.create.mock.resetCalls();
+  mockUser.update.mock.resetCalls();
+  mockReview.create.mock.resetCalls();
+  mockReview.upsert.mock.resetCalls();
+  mockReview.upsert.mock.mockImplementation(async () => ({ review: { id: 1 }, updated: false }));
+  mockReview.findByBookingId.mock.resetCalls();
+  mockReview.findByBookingId.mock.mockImplementation(async () => null);
   fakeStripeClient.checkout.sessions.create.mock.resetCalls();
   fakeStripeClient.checkout.sessions.retrieve.mock.resetCalls();
   fakeStripeClient.refunds.create.mock.resetCalls();
@@ -178,17 +258,54 @@ describe('createBooking()', () => {
     assert.equal(res.json.mock.calls[0].arguments[0].message, 'experience_id is required');
   });
 
-  it('400 : total tickets exceed max_visitors', async () => {
+  it('400 : qty_normal exceeds max_visitors (normal-ticket cap)', async () => {
     const fakeExperience = { id: 1, max_visitors: 2, price: '50.00', title: 'Test Tour', date_time: futureSlot, status: 'approved' };
     mockExperience.findById.mock.mockImplementationOnce(async () => fakeExperience);
     const req = makeReq(
-      { experience_id: 1, agreed_to_terms: true, qty_normal: 2, qty_discounted: 1 },
+      { experience_id: 1, agreed_to_terms: true, qty_normal: 3 },
       {}, {}, 42
     );
     const res = makeRes();
     await createBooking(req, res);
     assert.equal(res.status.mock.calls[0].arguments[0], 400);
-    assert.match(res.json.mock.calls[0].arguments[0].message, /Sold out/);
+    assert.match(res.json.mock.calls[0].arguments[0].message, /normal-ticket spot/i);
+  });
+
+  it('400 : qty_discounted exceeds max_piggyback_visitors (piggyback cap)', async () => {
+    const fakeExperience = {
+      id: 1,
+      max_visitors: 10,
+      max_piggyback_visitors: 1,
+      allows_piggyback: true,
+      price: '50.00',
+      price_discounted: '40.00',
+      title: 'Test Tour',
+      date_time: futureSlot,
+      status: 'approved',
+    };
+    mockExperience.findById.mock.mockImplementationOnce(async () => fakeExperience);
+    const req = makeReq(
+      { experience_id: 1, agreed_to_terms: true, qty_normal: 0, qty_discounted: 2 },
+      {}, {}, 42
+    );
+    const res = makeRes();
+    await createBooking(req, res);
+    assert.equal(res.status.mock.calls[0].arguments[0], 400);
+    assert.match(res.json.mock.calls[0].arguments[0].message, /watch-only spot/i);
+  });
+
+  it('400 : duplicate booking blocked when active booking already exists', async () => {
+    const fakeExperience = { id: 1, max_visitors: 10, price: '50.00', title: 'Test Tour', date_time: futureSlot, status: 'approved' };
+    mockExperience.findById.mock.mockImplementationOnce(async () => fakeExperience);
+    mockBooking.findActiveByVisitorAndExperience.mock.mockImplementationOnce(async () => ({ id: 7, status: 'confirmed' }));
+    const req = makeReq(
+      { experience_id: 1, agreed_to_terms: true, qty_normal: 1 },
+      {}, {}, 42
+    );
+    const res = makeRes();
+    await createBooking(req, res);
+    assert.equal(res.status.mock.calls[0].arguments[0], 400);
+    assert.match(res.json.mock.calls[0].arguments[0].message, /already have a booking/i);
   });
 
   it('400 : invalid quantity values', async () => {
@@ -574,15 +691,20 @@ describe('captureStripePayment()', () => {
       amount_total: 5000,
       payment_intent: 'pi_test_123',
     };
+    const fakeBooking = { id: 1, experience_id: 9, status: 'confirmed' };
+    const fakeExperience = { id: 9, title: 'Tour A' };
     fakeStripeClient.checkout.sessions.retrieve.mock.mockImplementationOnce(async () => fakeSession);
     mockPayment.findByBooking.mock.mockImplementationOnce(async () => []);
     mockPayment.create.mock.mockImplementationOnce(async () => {});
     mockBooking.updateStatus.mock.mockImplementationOnce(async () => {});
+    mockBooking.findById.mock.mockImplementationOnce(async () => fakeBooking);
+    mockExperience.findById.mock.mockImplementationOnce(async () => fakeExperience);
     const req = makeReq({ session_id: 'cs_test_123' }, {}, {}, 42);
     const res = makeRes();
     await captureStripePayment(req, res);
     assert.equal(res.status.mock.calls[0].arguments[0], 200);
-    assert.equal(res.json.mock.calls[0].arguments[0].message, 'Stripe payment successful and recorded');
+    assert.equal(res.json.mock.calls[0].arguments[0].status, 'success');
+    assert.deepEqual(res.json.mock.calls[0].arguments[0].booking, fakeBooking);
   });
 
   it('200 : payment already captured', async () => {
@@ -592,13 +714,17 @@ describe('captureStripePayment()', () => {
       amount_total: 5000,
       payment_intent: 'pi_test_123',
     };
+    const fakeBooking = { id: 1, experience_id: 9, status: 'confirmed' };
+    const fakeExperience = { id: 9, title: 'Tour A' };
     fakeStripeClient.checkout.sessions.retrieve.mock.mockImplementationOnce(async () => fakeSession);
     mockPayment.findByBooking.mock.mockImplementationOnce(async () => [{ id: 1 }]);
+    mockBooking.findById.mock.mockImplementationOnce(async () => fakeBooking);
+    mockExperience.findById.mock.mockImplementationOnce(async () => fakeExperience);
     const req = makeReq({ session_id: 'cs_test_123' }, {}, {}, 42);
     const res = makeRes();
     await captureStripePayment(req, res);
     assert.equal(res.status.mock.calls[0].arguments[0], 200);
-    assert.equal(res.json.mock.calls[0].arguments[0].message, 'Payment already captured');
+    assert.equal(res.json.mock.calls[0].arguments[0].status, 'success');
   });
 
   it('400 : missing session_id', async () => {
@@ -693,7 +819,7 @@ describe('refundBooking()', () => {
     const res = makeRes();
     await refundBooking(req, res);
     assert.equal(res.status.mock.calls[0].arguments[0], 200);
-    assert.equal(res.json.mock.calls[0].arguments[0].message, 'Refund processed successfully');
+    assert.match(res.json.mock.calls[0].arguments[0].message, /Refund request submitted/i);
   });
 
   it('200 : submits 50% refund request when >= 7 and < 14 days before event', async () => {
@@ -713,7 +839,7 @@ describe('refundBooking()', () => {
     const res = makeRes();
     await refundBooking(req, res);
     assert.equal(res.status.mock.calls[0].arguments[0], 200);
-    assert.equal(res.json.mock.calls[0].arguments[0].message, 'Refund processed successfully');
+    assert.match(res.json.mock.calls[0].arguments[0].message, /Refund request submitted/i);
   });
 
   it('200 : rejects refund when < 7 days before event', async () => {
@@ -788,10 +914,13 @@ describe('getMe()', () => {
   beforeEach(resetMocks);
 
   it('returns visitor profile', async () => {
+    const fakeUser = { id: 42, email: 'a@b.com', first_name: 'Alice' };
+    mockUser.findById.mock.mockImplementationOnce(async () => fakeUser);
     const req = makeReq({}, {}, {}, 42);
     const res = makeRes();
     await getMe(req, res);
     assert.equal(res.status.mock.calls.length, 0);
+    assert.deepEqual(res.json.mock.calls[0].arguments[0], fakeUser);
   });
 });
 
@@ -826,10 +955,12 @@ describe('getExperienceById()', () => {
 describe('createReview()', () => {
   beforeEach(resetMocks);
 
-  it('creates a review for a booking', async () => {
-    const req = makeReq({ booking_id: 1, rating: 5, comment: 'Great!' }, {}, {}, 42);
+  it('creates a review for an attended experience', async () => {
+    fakePool.query.mock.mockImplementationOnce(async () => ({ rows: [{ id: 99 }] })); // eligibility check
+    const req = makeReq({ experience_id: 1, rating: 5, comment: 'Great!' }, {}, {}, 42);
     const res = makeRes();
     await createReview(req, res);
-    assert.equal(res.status.mock.calls.length, 0);
+    assert.equal(res.status.mock.calls[0].arguments[0], 201);
+    assert.equal(mockReview.upsert.mock.callCount(), 1);
   });
 });
