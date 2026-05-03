@@ -134,7 +134,7 @@ const getMe = async (req, res) => {
   }
 };
 
-const VISITOR_EDITABLE_FIELDS = ['first_name', 'last_name', 'display_name'];
+const VISITOR_EDITABLE_FIELDS = ['first_name', 'last_name', 'display_name', 'profile_image'];
 
 const updateMe = async (req, res) => {
   try {

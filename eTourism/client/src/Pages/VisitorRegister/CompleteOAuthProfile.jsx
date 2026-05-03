@@ -43,6 +43,7 @@ export const CompleteOAuthProfile = () => {
     last_name: initialName.last_name,
     date_of_birth: "",
     country: "",
+    gender: "",
     bio: "",
     profile_image: "",
   });
@@ -143,6 +144,10 @@ export const CompleteOAuthProfile = () => {
       setError("Please select a country from the list.");
       return;
     }
+    if (!["female", "male", "non_binary", "prefer_not_to_say"].includes(form.gender)) {
+      setError("Please select your gender.");
+      return;
+    }
     if (!allAgreementsChecked) {
       setError("Please confirm all eligibility and agreement items.");
       return;
@@ -157,6 +162,7 @@ export const CompleteOAuthProfile = () => {
         last_name: form.last_name,
         date_of_birth: form.date_of_birth,
         country: form.country,
+        gender: form.gender,
         bio: form.bio,
         profile_image: form.profile_image,
         accepted_terms: agreements.accepted_terms,
@@ -250,6 +256,21 @@ export const CompleteOAuthProfile = () => {
                 <option key={c} value={c} />
               ))}
             </datalist>
+
+            <label className="vtext-wrapper-3">Gender*</label>
+            <select
+              className="vrectangle-2"
+              name="gender"
+              value={form.gender}
+              onChange={handleChange}
+              required
+            >
+              <option value="">Select your gender...</option>
+              <option value="female">Female</option>
+              <option value="male">Male</option>
+              <option value="non_binary">Non-binary</option>
+              <option value="prefer_not_to_say">Prefer not to say</option>
+            </select>
           </div>
         </div>
 

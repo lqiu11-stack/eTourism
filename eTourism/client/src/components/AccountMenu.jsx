@@ -60,6 +60,22 @@ export const AccountMenu = () => {
   const initials = initialsOf(user);
   const avatarColor = colorFor(user);
   const fullName = fullNameOf(user);
+  const profileImage = user?.profile_image || "";
+
+  const renderAvatar = (extraClass = "") => (
+    profileImage ? (
+      <img
+        src={profileImage}
+        alt=""
+        className={`account-avatar ${extraClass}`.trim()}
+        style={{ objectFit: "cover" }}
+      />
+    ) : (
+      <span className={`account-avatar ${extraClass}`.trim()} style={{ background: avatarColor }}>
+        {initials}
+      </span>
+    )
+  );
 
   const close = () => setOpen(false);
 
@@ -79,14 +95,14 @@ export const AccountMenu = () => {
         aria-expanded={open}
         aria-haspopup="menu"
       >
-        <span className="account-avatar" style={{ background: avatarColor }}>{initials}</span>
+        {renderAvatar()}
         <span className="account-menu-name">{fullName}</span>
       </button>
 
       {open && (
         <div className="account-menu-panel" role="menu">
           <div className="account-menu-header">
-            <span className="account-avatar account-avatar--lg" style={{ background: avatarColor }}>{initials}</span>
+            {renderAvatar("account-avatar--lg")}
             <div>
               <div className="account-menu-header-name">{fullName}</div>
               {user.email && <div className="account-menu-header-email">{user.email}</div>}
