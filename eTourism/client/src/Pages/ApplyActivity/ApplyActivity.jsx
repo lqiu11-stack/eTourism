@@ -481,11 +481,11 @@ export const ApplyActivity = () => {
 
         <div className="aa-grid">
           <div>
-            <label className="aa-label">Price (USD)*</label>
+            <label className="aa-label">Price (GBP)*</label>
             <input className="aa-input" name="price" type="number" min="0" step="0.01" value={form.price} onChange={handleChange}  />
           </div>
           <div>
-            <label className="aa-label">Discounted price (optional)</label>
+            <label className="aa-label">Piggyback price (optional)</label>
             <input className="aa-input" name="price_discounted" type="number" min="0" step="0.01" value={form.price_discounted} onChange={handleChange}  />
           </div>
         </div>
