@@ -133,6 +133,38 @@ const getMe = async (req, res) => {
   }
 };
 
+const VISITOR_EDITABLE_FIELDS = ['first_name', 'last_name', 'display_name'];
+
+const updateMe = async (req, res) => {
+  try {
+    const updates = {};
+    for (const key of VISITOR_EDITABLE_FIELDS) {
+      if (Object.prototype.hasOwnProperty.call(req.body, key)) {
+        const value = req.body[key];
+        const trimmed = typeof value === 'string' ? value.trim() : value;
+        updates[key] = trimmed === '' ? null : trimmed;
+      }
+    }
+    if (Object.keys(updates).length === 0) {
+      return res.status(400).json({ error: 'No editable fields supplied.' });
+    }
+    if (Object.prototype.hasOwnProperty.call(updates, 'first_name') && !updates.first_name) {
+      return res.status(400).json({ error: 'First name cannot be empty.' });
+    }
+    if (Object.prototype.hasOwnProperty.call(updates, 'last_name') && !updates.last_name) {
+      return res.status(400).json({ error: 'Last name cannot be empty.' });
+    }
+    const updated = await User.update(req.userId, updates);
+    if (!updated) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    return res.json(updated);
+  } catch (err) {
+    console.error('[visitor.updateMe]', err);
+    return res.status(500).json({ error: err.message || 'Failed to update profile' });
+  }
+};
+
 const decodeOptionalUserId = (req) => {
   const auth = req.headers.authorization;
   if (!auth || !auth.startsWith('Bearer ') || !process.env.JWT_SECRET) return null;
@@ -793,6 +825,7 @@ const capturePayPalOrder = async (req, res) => {
 
 module.exports = {
   getMe,
+  updateMe,
   getExperiences,
   getExperienceById,
   createBooking,

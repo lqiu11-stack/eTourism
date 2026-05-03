@@ -38,6 +38,13 @@ const formatDate = (dt) => {
 export const MyBooking = () => {
   const [showTerms, setShowTerms] = useState(false);
   const [termsText, setTermsText] = useState("");
+  const [joinModal, setJoinModal] = useState({ open: false, link: "" });
+  const visitorUser = JSON.parse(localStorage.getItem("user") || "{}");
+  const visitorDisplayName =
+    visitorUser.display_name ||
+    `${visitorUser.first_name || ""} ${visitorUser.last_name || ""}`.trim() ||
+    visitorUser.email ||
+    "your name";
   useEffect(() => {
   fetch("/terms.txt")
     .then((r) => r.text())
@@ -103,9 +110,13 @@ export const MyBooking = () => {
     // Future — join button depends on how close the event is
     const joinBtn = (isWithin2h && b.meeting_link)
       ? (
-        <a href={b.meeting_link} className="Mybooking-main-btn" target="_blank" rel="noreferrer" onClick={stop}>
+        <button
+          type="button"
+          className="Mybooking-main-btn"
+          onClick={(e) => { stop(e); setJoinModal({ open: true, link: b.meeting_link }); }}
+        >
           Join the stream
-        </a>
+        </button>
       ) : (
         <button className="Mybooking-main-btn Mybooking-main-btn--disabled" disabled onClick={stop}>
           {isWithin2h ? 'Link not yet available' : 'Not started yet'}
@@ -151,6 +162,9 @@ export const MyBooking = () => {
         </button>
         <div className="nav-links">
           <Link to="/Mybooking" className="nav-link">My booking</Link>
+          {isLoggedIn && (
+            <Link to="/VisitorProfile" className="nav-link">My profile</Link>
+          )}
           {isLoggedIn ? (
             <button className="nav-link nav-btn-link" onClick={handleLogout}>Logout</button>
           ) : (
@@ -248,6 +262,50 @@ export const MyBooking = () => {
               {termsText.split("\n\n").map((para, i) => (
                 <p key={i} style={{ whiteSpace: "pre-wrap" }}>{para}</p>
               ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {joinModal.open && (
+        <div className="modal-overlay" onClick={() => setJoinModal({ open: false, link: "" })}>
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <button
+              className="modal-close"
+              onClick={() => setJoinModal({ open: false, link: "" })}
+            >
+              ✕
+            </button>
+            <h2>Before you join</h2>
+            <div className="modal-content">
+              <p>
+                Please set your display name in the meeting to:
+              </p>
+              <p style={{ fontSize: 18, fontWeight: 600, margin: "12px 0", color: "#a3373b" }}>
+                {visitorDisplayName}
+              </p>
+              <p style={{ fontSize: 13, color: "#6b6b6b" }}>
+                This helps the e-host recognise you and tick you off the booking list when you arrive.
+              </p>
+            </div>
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, marginTop: 18 }}>
+              <button
+                type="button"
+                className="Mybooking-small-btn"
+                onClick={() => setJoinModal({ open: false, link: "" })}
+              >
+                Cancel
+              </button>
+              <a
+                href={joinModal.link}
+                target="_blank"
+                rel="noreferrer"
+                className="Mybooking-main-btn"
+                onClick={() => setJoinModal({ open: false, link: "" })}
+                style={{ display: "inline-block", textDecoration: "none" }}
+              >
+                Open meeting
+              </a>
             </div>
           </div>
         </div>

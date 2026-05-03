@@ -264,6 +264,30 @@
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
 }
 
+.eh-modal-panel--wide {
+  width: min(1100px, 96vw);
+}
+
+.eh-bookings-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.eh-bookings-table th,
+.eh-bookings-table td {
+  text-align: left;
+  padding: 8px 12px;
+  border-bottom: 1px solid #eee;
+  white-space: nowrap;
+}
+
+.eh-bookings-table th {
+  color: #6b6b6b;
+  font-weight: 600;
+  background: #faf6f3;
+}
+
 .eh-modal-title {
   margin: 0 0 6px 0;
   font-size: 18px;

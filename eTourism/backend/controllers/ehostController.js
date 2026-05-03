@@ -657,6 +657,47 @@ const deleteExperience = async (req, res) => {
 };
 
 
+const getBookingsByExperience = async (req, res) => {
+  try {
+    const ehostId = req.user ? req.user.id : req.userId;
+    const experienceId = Number(req.params.id);
+    if (!Number.isInteger(experienceId) || experienceId <= 0) {
+      return res.status(400).json({ success: false, message: 'Invalid experience id.' });
+    }
+
+    const { rows: ownerRows } = await pool.query(
+      `SELECT id, title FROM experiences WHERE id = $1 AND ehost_id = $2`,
+      [experienceId, ehostId]
+    );
+    if (ownerRows.length === 0) {
+      return res.status(404).json({ success: false, message: 'Experience not found or you do not have permission.' });
+    }
+
+    const { rows } = await pool.query(
+      `SELECT b.id, b.status, b.amount_paid, b.qty_normal, b.qty_discounted,
+              b.contact_name, b.contact_email, b.created_at,
+              b.souvenir_qty, b.video_addon,
+              u.first_name, u.last_name, u.email, u.display_name,
+              p.method AS payment_method, p.status AS payment_status
+         FROM bookings b
+         JOIN users u ON u.id = b.visitor_id
+         LEFT JOIN payments p ON p.booking_id = b.id
+        WHERE b.experience_id = $1
+        ORDER BY b.created_at DESC`,
+      [experienceId]
+    );
+
+    res.status(200).json({
+      success: true,
+      data: { experience: ownerRows[0], bookings: rows },
+    });
+  } catch (error) {
+    console.error('Failed to load bookings for experience:', error);
+    res.status(500).json({ success: false, message: 'Server internal error' });
+  }
+};
+
+
 const getBookings = async (req, res) => {
   try {
     const ehostId = req.user ? req.user.id : req.userId;
@@ -1265,6 +1306,7 @@ module.exports = {
   updateExperience, 
   deleteExperience, 
   getBookings,
+  getBookingsByExperience,
   getCalendarSlots,
   createCalendarSlot,
   updateCalendarSlot,

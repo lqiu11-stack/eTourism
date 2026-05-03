@@ -29,7 +29,20 @@ export const EhostDashboard = () => {
   const [loading, setLoading] = useState(false);
   const [rejectionModal, setRejectionModal] = useState({ open: false, reason: "", title: "" });
   const [deleteModal, setDeleteModal] = useState({ open: false, id: null, title: "" });
+  const [bookingsModal, setBookingsModal] = useState({ open: false, title: "", bookings: null, loading: false, error: "" });
   const [networkQuality, setNetworkQuality] = useState(null);
+
+  const openBookings = async (exp) => {
+    setBookingsModal({ open: true, title: exp.title || exp.location_name || `Experience #${exp.id}`, bookings: null, loading: true, error: "" });
+    try {
+      const { data } = await axios.get(`${API_BASE}/ehost/experiences/${exp.id}/bookings`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setBookingsModal((prev) => ({ ...prev, loading: false, bookings: data?.data?.bookings || [] }));
+    } catch (err) {
+      setBookingsModal((prev) => ({ ...prev, loading: false, error: err.response?.data?.message || "Failed to load bookings." }));
+    }
+  };
 
   useEffect(() => {
     if (!token || user.role !== "ehost") {
@@ -188,6 +201,15 @@ export const EhostDashboard = () => {
               Edit
             </button>
           )}
+          {exp.status === "approved" && (
+            <button
+              type="button"
+              className="eh-row-btn"
+              onClick={stop(() => openBookings(exp))}
+            >
+              View bookings
+            </button>
+          )}
           {button}
           {exp.status !== "approved" && (
             <button
@@ -266,6 +288,68 @@ export const EhostDashboard = () => {
           reason={rejectionModal.reason}
           onClose={() => setRejectionModal({ open: false, reason: "", title: "" })}
         />
+      )}
+
+      {bookingsModal.open && (
+        <div className="eh-modal-overlay" role="dialog" aria-modal="true" onClick={() => setBookingsModal({ open: false, title: "", bookings: null, loading: false, error: "" })}>
+          <div className="eh-modal-panel eh-modal-panel--wide" onClick={(e) => e.stopPropagation()}>
+            <h3 className="eh-modal-title">Bookings — {bookingsModal.title}</h3>
+            <div className="eh-modal-body" style={{ maxHeight: 460, overflow: "auto" }}>
+              {bookingsModal.loading && <p>Loading…</p>}
+              {bookingsModal.error && <p style={{ color: "#a3373b" }}>{bookingsModal.error}</p>}
+              {!bookingsModal.loading && !bookingsModal.error && bookingsModal.bookings && (
+                bookingsModal.bookings.length === 0 ? (
+                  <p>No bookings yet.</p>
+                ) : (
+                  <table className="eh-bookings-table">
+                    <thead>
+                      <tr>
+                        <th>Visitor</th>
+                        <th>Email</th>
+                        <th>Tickets</th>
+                        <th>Add-ons</th>
+                        <th>Status</th>
+                        <th>Booked</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {bookingsModal.bookings.map((b) => {
+                        const visitorName = b.display_name || `${b.first_name || ""} ${b.last_name || ""}`.trim() || b.contact_name || "—";
+                        const tickets = [
+                          b.qty_normal > 0 ? `${b.qty_normal} normal` : null,
+                          b.qty_discounted > 0 ? `${b.qty_discounted} watch-only` : null,
+                        ].filter(Boolean).join(", ") || "—";
+                        const addons = [
+                          b.souvenir_qty > 0 ? `Souvenir × ${b.souvenir_qty}` : null,
+                          b.video_addon ? "Video download" : null,
+                        ].filter(Boolean).join(", ") || "—";
+                        return (
+                          <tr key={b.id}>
+                            <td>{visitorName}</td>
+                            <td>{b.email || b.contact_email}</td>
+                            <td>{tickets}</td>
+                            <td>{addons}</td>
+                            <td>{b.status}</td>
+                            <td>{formatDateTime(b.created_at)}</td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                )
+              )}
+            </div>
+            <div className="eh-modal-actions">
+              <button
+                type="button"
+                className="eh-modal-close"
+                onClick={() => setBookingsModal({ open: false, title: "", bookings: null, loading: false, error: "" })}
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {deleteModal.open && (

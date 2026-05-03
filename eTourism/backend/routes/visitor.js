@@ -2,6 +2,7 @@ const router = require('express').Router();
 const { requireRole } = require('../middleware/auth');
 const {
   getMe,
+  updateMe,
   getExperiences,
   getExperienceById,
   createBooking,
@@ -19,6 +20,8 @@ const {
 } = require('../controllers/visitorController');
 
 router.get('/me', requireRole('visitor'), getMe);
+
+router.patch('/me', requireRole('visitor'), updateMe);
 
 router.get('/experiences', getExperiences);
 

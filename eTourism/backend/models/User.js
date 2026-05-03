@@ -33,7 +33,7 @@ const User = {
     const set = keys.map((k, i) => `${k} = $${i + 2}`).join(', ');
     const { rows } = await pool.query(
       `UPDATE users SET ${set} WHERE id = $1
-       RETURNING id, email, role, first_name, last_name, date_of_birth, country, language, bio, profile_image, status`,
+       RETURNING id, email, role, first_name, last_name, display_name, date_of_birth, country, language, bio, profile_image, status`,
       [id, ...values]
     );
     return rows[0] || null;
