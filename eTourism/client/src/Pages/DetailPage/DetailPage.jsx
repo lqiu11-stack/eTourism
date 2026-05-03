@@ -26,6 +26,8 @@ export const DetailPage = () => {
     navigate("/MapPage");
   } else if (from === "ehost") {
     navigate("/EhostDashboard");
+  } else if (from === "main") {
+    navigate("/MainPage");
   } else if (from) {
       navigate(from);
   }

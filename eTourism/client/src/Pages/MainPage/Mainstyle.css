@@ -407,15 +407,6 @@
   background: rgba(0,0,0,0.2);
 }
 
-.tour-card--past{
-  opacity: 0.55;
-  filter: grayscale(0.5);
-}
-
-.tour-card--past:hover{
-  opacity: 0.75;
-}
-
 .tour-image{
   position: relative;
   height: 180px;
