@@ -68,7 +68,7 @@ describe('submitApplication()', () => {
     });
 
     const req = makeReq({
-      name: 'John Smith', birthday: '1990-01-01', country: 'UK',
+      name: 'John Smith', birthday: '1990-01-01', country: 'UK', gender: 'male',
       email: 'john@example.com', password: 'Secret123!', hasExperience: true, preferredCountry: 'UK',
       description: 'Great tour guide', videoLink: 'https://youtube.com/x',
       isContractAgreed: true,
@@ -83,7 +83,7 @@ describe('submitApplication()', () => {
   it('409 : email already submitted an application', async () => {
     fakePool.query.mock.mockImplementation(() => Promise.resolve({ rows: [{ id: 99 }] }));
 
-    const req = makeReq({ email: 'existing@example.com' });
+    const req = makeReq({ email: 'existing@example.com', gender: 'male' });
     const res = makeRes();
     await submitApplication(req, res);
 
@@ -94,7 +94,7 @@ describe('submitApplication()', () => {
   it('500 : database error on duplicate check', async () => {
     fakePool.query.mock.mockImplementation(() => Promise.reject(new Error('DB fail')));
 
-    const req = makeReq({ email: 'john@example.com' });
+    const req = makeReq({ email: 'john@example.com', gender: 'male' });
     const res = makeRes();
     await submitApplication(req, res);
 
@@ -111,7 +111,7 @@ describe('submitApplication()', () => {
     });
 
     const req = makeReq({
-      name: 'John Smith', birthday: '1990-01-01', country: 'UK',
+      name: 'John Smith', birthday: '1990-01-01', country: 'UK', gender: 'male',
       email: 'john@example.com', password: 'Secret123!', hasExperience: true, preferredCountry: 'UK',
       description: 'Great tour guide', videoLink: 'https://youtube.com/x',
       isContractAgreed: true,
