@@ -11,7 +11,6 @@ import {
 import {
   CATEGORIES,
   LANGUAGES,
-  CONTINENTS,
   GENDER_PREFERENCES,
 } from "../../constants/enums";
 import { isYouTubeUrl } from "../../utils/youtube";
@@ -71,7 +70,6 @@ export const ApplyActivity = () => {
     title: "",
     location_name: "",
     country: "",
-    continent: "",
     category: "",
     language: "English",
     description: "",
@@ -115,7 +113,47 @@ export const ApplyActivity = () => {
     { n: 3, title: "Preferences & extras", subtitle: "Set who can book, piggyback options, and on-the-day add-ons." },
   ];
 
+  const validateStep = (n) => {
+    if (n === 1) {
+      if (!form.title.trim()) return "Please enter a title.";
+      if (!form.location_name.trim()) return "Please enter a location name.";
+      if (!form.country.trim()) return "Please enter a country.";
+      if (!COUNTRIES.includes(form.country)) return "Please select a country from the list.";
+      if (!form.description.trim()) return "Please enter a description.";
+      if (form.latitude === "" || form.longitude === "") return "Please pin the location on the map.";
+      return null;
+    }
+    if (n === 2) {
+      if (!coverImage) return "Please upload a cover image.";
+      if (additionalImages.length < MIN_ADDITIONAL_IMAGES) return `Please upload at least ${MIN_ADDITIONAL_IMAGES} additional photos.`;
+      if (!form.date_time) return "Please pick a date and time.";
+      if (new Date(form.date_time).getTime() <= Date.now()) return "Date & time must be in the future.";
+      if (!form.max_visitors || Number(form.max_visitors) < 1) return "Please set the max normal tickets.";
+      if (form.price === "" || Number(form.price) < 0) return "Please enter a price.";
+      const trimmedVideoUrl = form.sample_video_url.trim();
+      if (!trimmedVideoUrl) return "Please add a sample YouTube video link.";
+      if (!isYouTubeUrl(trimmedVideoUrl)) return "Please paste a valid YouTube link.";
+      if (!form.video_description.trim()) return "Please add a video description.";
+      const trimmedMeetingLink = form.meeting_link.trim();
+      if (!trimmedMeetingLink) return "Please add a meeting link.";
+      if (!/^https?:\/\//i.test(trimmedMeetingLink)) return "Meeting link must start with http:// or https://.";
+      return null;
+    }
+    return null;
+  };
+
   const goToStep = (n) => {
+    if (n > currentStep) {
+      for (let s = currentStep; s < n; s++) {
+        const err = validateStep(s);
+        if (err) {
+          setError(err);
+          setCurrentStep(s);
+          window.scrollTo({ top: 0, behavior: "smooth" });
+          return;
+        }
+      }
+    }
     setError("");
     setCurrentStep(n);
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -144,7 +182,6 @@ export const ApplyActivity = () => {
           title: exp.title || "",
           location_name: exp.location_name || "",
           country: exp.country || "",
-          continent: exp.continent || "",
           category: exp.category || "",
           language: exp.language || "English",
           description: exp.description || "",
@@ -533,15 +570,6 @@ export const ApplyActivity = () => {
 
               <div className="aa-grid">
                 <div>
-                  <label className="aa-label">Continent</label>
-                  <select className="aa-input" name="continent" value={form.continent} onChange={handleChange}>
-                    <option value="">— select —</option>
-                    {CONTINENTS.map((c) => (
-                      <option key={c} value={c}>{c}</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
                   <label className="aa-label">Category</label>
                   <select className="aa-input" name="category" value={form.category} onChange={handleChange}>
                     <option value="">— select —</option>
@@ -911,13 +939,6 @@ export const ApplyActivity = () => {
               Back
             </button>
           )}
-          <button
-            type="button"
-            className="aa-footer-btn aa-footer-btn--ghost"
-            onClick={() => navigate("/EhostDashboard")}
-          >
-            Save & exit
-          </button>
           {currentStep < STEPS.length ? (
             <button
               type="button"

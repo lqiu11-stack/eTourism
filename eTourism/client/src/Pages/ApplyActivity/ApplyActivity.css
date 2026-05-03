@@ -9,8 +9,8 @@
   position: sticky;
   top: 0;
   z-index: 10;
-  display: flex;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
   align-items: center;
   padding: 22px 48px;
   color: #fff;
@@ -23,6 +23,7 @@
   font-weight: 600;
   margin: 0;
   letter-spacing: 0.5px;
+  text-align: center;
 }
 
 .aa-nav-links {

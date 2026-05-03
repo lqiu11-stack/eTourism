@@ -1,6 +1,7 @@
 const pool = require('../config/db');
 const bcrypt = require('bcrypt');
 const User = require('../models/User');
+const { continentForCountry } = require('../constants/countryContinents');
 const { CATEGORIES, LANGUAGES, CONTINENTS, GENDER_PREFERENCES } = require('../constants/enums');
 
 const YOUTUBE_URL_RE = /^(https?:\/\/)?(www\.)?(youtube\.com\/(watch\?v=|shorts\/|embed\/)|youtu\.be\/)([\w-]{11})([&?].*)?$/i;
@@ -127,7 +128,6 @@ try {
         title,
         location_name,
         country,
-        continent,
         latitude,
         longitude,
         category,
@@ -206,13 +206,6 @@ try {
       return res.status(400).json({
         success: false,
         message: `Invalid language. Allowed values: ${LANGUAGES.join(', ')}`,
-      });
-    }
-
-    if (continent && !CONTINENTS.includes(continent)) {
-      return res.status(400).json({
-        success: false,
-        message: `Invalid continent. Allowed values: ${CONTINENTS.join(', ')}`,
       });
     }
 
@@ -297,6 +290,8 @@ try {
       return res.status(400).json({ success: false, message: piggybackCap.error });
     }
 
+    const derivedContinent = continentForCountry(country);
+
     const { rows } = await pool.query(
         `INSERT INTO experiences
         (title, ehost_id, location_name, country, continent, latitude, longitude, category, language, description, price, price_discounted, duration_minutes, max_visitors, cover_image, gender_preference, allows_piggyback, sample_video_url, video_description, video_highlights, date_time, meeting_link, additional_images, allows_souvenir_addon, souvenir_price, allows_video_addon, video_addon_price, max_piggyback_visitors, status)
@@ -307,7 +302,7 @@ try {
             ehostId,
             location_name,
             country,
-            continent || null,
+            derivedContinent,
             latitude || null,
             longitude || null,
             category || null,
@@ -418,7 +413,6 @@ const updateExperience = async (req, res) => {
         title,
         location_name,
         country,
-        continent,
         latitude,
         longitude,
         category,
@@ -478,14 +472,10 @@ const updateExperience = async (req, res) => {
     if (language && !LANGUAGES.includes(language)) {
         return res.status(400).json({ success: false, message: `Invalid language. Allowed values: ${LANGUAGES.join(', ')}` });
     }
-    if (continent && !CONTINENTS.includes(continent)) {
-        return res.status(400).json({ success: false, message: `Invalid continent. Allowed values: ${CONTINENTS.join(', ')}` });
-    }
     const normalizedGenderPreference = normalizeGenderPreference(gender_preference);
     if (!normalizedGenderPreference) {
         return res.status(400).json({ success: false, message: `Invalid gender_preference. Allowed values: ${supportedGenderPreferences.join(', ')}` });
     }
-
     const trimmedSampleVideoUrl =
         sample_video_url !== undefined && sample_video_url !== null
             ? String(sample_video_url).trim()
@@ -606,7 +596,7 @@ const updateExperience = async (req, res) => {
             title,
             location_name,
             country,
-            continent || null,
+            derivedContinent,
             latitude || null,
             longitude || null,
             category || null,

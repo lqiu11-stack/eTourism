@@ -31,18 +31,15 @@ export const PaymentPage = () => {
   const [watchOnlyTermsText, setWatchOnlyTermsText] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const [groupGenderType, setGroupGenderType] = useState("");
   const [souvenirQty, setSouvenirQty] = useState(0);
   const [videoAddon, setVideoAddon] = useState(false);
 
   const genderPreference = experience?.gender_preference || "any";
-  const requiresGroupGender = genderPreference !== "any";
-
-  const genderPreferenceHint = {
-    female_only: "This experience is for all-female groups only.",
-    male_only: "This experience is for all-male groups only.",
-    no_all_male_groups: "The eHost does not accept all-male groups for this experience.",
-    no_all_female_groups: "The eHost does not accept all-female groups for this experience.",
+  const autoGroupGenderType = {
+    female_only: "all_female",
+    male_only: "all_male",
+    no_all_male_groups: "mixed",
+    no_all_female_groups: "mixed",
   }[genderPreference];
 
   const handleLogout = () => {
@@ -134,10 +131,6 @@ export const PaymentPage = () => {
       setError("Please confirm all viewers are 18+ before checkout.");
       return false;
     }
-    if (requiresGroupGender && !groupGenderType) {
-      setError("Please tell us the gender make-up of your group.");
-      return false;
-    }
     if (!token) {
       navigate(`/login?redirect=/PaymentPage?id=${experienceId}`);
       return false;
@@ -158,7 +151,7 @@ export const PaymentPage = () => {
         agreed_to_terms: true,
         souvenir_qty: experience?.allows_souvenir_addon ? souvenirQty : 0,
         video_addon: experience?.allows_video_addon ? videoAddon : false,
-        ...(requiresGroupGender ? { group_gender_type: groupGenderType } : {}),
+        ...(autoGroupGenderType ? { group_gender_type: autoGroupGenderType } : {}),
       },
       { headers: { Authorization: `Bearer ${token}` } }
     );
@@ -368,9 +361,37 @@ export const PaymentPage = () => {
             <label>I confirm that all viewers using these tickets are 18 or older.</label>
           </div>
 
-          {/* Total */}
+          {/* Price breakdown + Total */}
           <div className="total">
             <h3>Total</h3>
+            {(qtyNormal > 0 || qtyDiscounted > 0 || souvenirTotal > 0 || videoTotal > 0) && (
+              <ul className="price-breakdown">
+                {qtyNormal > 0 && (
+                  <li>
+                    <span>Normal ticket × {qtyNormal}</span>
+                    <span>£{(qtyNormal * normalPrice).toFixed(2)}</span>
+                  </li>
+                )}
+                {qtyDiscounted > 0 && (
+                  <li>
+                    <span>Watch-only × {qtyDiscounted}</span>
+                    <span>£{(qtyDiscounted * discountedPrice).toFixed(2)}</span>
+                  </li>
+                )}
+                {souvenirTotal > 0 && (
+                  <li>
+                    <span>Souvenir × {souvenirQty}</span>
+                    <span>£{souvenirTotal.toFixed(2)}</span>
+                  </li>
+                )}
+                {videoTotal > 0 && (
+                  <li>
+                    <span>Video download</span>
+                    <span>£{videoTotal.toFixed(2)}</span>
+                  </li>
+                )}
+              </ul>
+            )}
             <div className="price">£{total.toFixed(2)}</div>
           </div>
         </div>
@@ -395,24 +416,6 @@ export const PaymentPage = () => {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
           />
-
-          {requiresGroupGender && (
-            <>
-              <label>
-                Group make-up*
-                {genderPreferenceHint && <span> ({genderPreferenceHint})</span>}
-              </label>
-              <select
-                value={groupGenderType}
-                onChange={(e) => { setGroupGenderType(e.target.value); setError(""); }}
-              >
-                <option value="">Select your group type...</option>
-                <option value="all_female">All female</option>
-                <option value="all_male">All male</option>
-                <option value="mixed">Mixed group</option>
-              </select>
-            </>
-          )}
 
           {bookingUnavailableReason && (
             <p className="input-error">{bookingUnavailableReason}</p>

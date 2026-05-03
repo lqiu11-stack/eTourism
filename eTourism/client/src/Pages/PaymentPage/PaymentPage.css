@@ -181,6 +181,25 @@
   margin-bottom: 10px;
 }
 
+.price-breakdown {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 10px;
+  font-size: 14px;
+  color: #4a4a4a;
+}
+
+.price-breakdown li {
+  display: flex;
+  justify-content: space-between;
+  padding: 4px 0;
+  border-bottom: 1px dashed rgba(0, 0, 0, 0.08);
+}
+
+.price-breakdown li:last-child {
+  border-bottom: none;
+}
+
 .price {
   font-size: 22px;
   font-weight: bold;
