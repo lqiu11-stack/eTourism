@@ -548,7 +548,15 @@ describe('approveApplication()', () => {
   beforeEach(resetMocks);
 
   it('200 : approves application and creates ehost user', async () => {
-    const app = { id: 1, email: 'john@test.com', name: 'John Smith', birthday: '1990-01-01', preferred_country: 'UK', status: 'pending' };
+    const app = {
+      id: 1,
+      email: 'john@test.com',
+      name: 'John Smith',
+      birthday: '1990-01-01',
+      country: 'UK',
+      password_hash: 'hashed_pw_from_application',
+      status: 'pending',
+    };
     const createdUser = { id: 10, email: 'john@test.com', role: 'ehost' };
 
     let calls = 0;
@@ -558,7 +566,6 @@ describe('approveApplication()', () => {
       return Promise.resolve({ rows: [] });                      // update status
     });
     mockUser.findByEmail.mock.mockImplementation(async () => null);
-    fakeBcrypt.hash.mock.mockImplementation(async () => 'hashed_pw');
     mockUser.create.mock.mockImplementation(async () => createdUser);
 
     const req = makeReq({}, { id: '1' });
@@ -568,7 +575,6 @@ describe('approveApplication()', () => {
     const body = res.json.mock.calls[0].arguments[0];
     assert.match(body.message, /approved/i);
     assert.deepEqual(body.user, createdUser);
-    assert.ok(body.temp_password);
   });
 
   it('404 : application not found', async () => {
@@ -880,7 +886,7 @@ describe('deleteExperience()', () => {
   beforeEach(resetMocks);
 
   it('200 : deletes experience successfully', async () => {
-    mockExperience.delete.mock.mockImplementation(async () => true);
+    mockExperience.update.mock.mockImplementation(async () => ({ id: 1, status: 'deleted' }));
 
     const req = makeReq({}, { id: '1' });
     const res = makeRes();
@@ -890,7 +896,7 @@ describe('deleteExperience()', () => {
   });
 
   it('404 : experience not found', async () => {
-    mockExperience.delete.mock.mockImplementation(async () => false);
+    mockExperience.update.mock.mockImplementation(async () => null);
 
     const req = makeReq({}, { id: '99' });
     const res = makeRes();
@@ -901,7 +907,7 @@ describe('deleteExperience()', () => {
   });
 
   it('500 : database error', async () => {
-    mockExperience.delete.mock.mockImplementation(async () => { throw new Error('DB fail'); });
+    mockExperience.update.mock.mockImplementation(async () => { throw new Error('DB fail'); });
 
     const req = makeReq({}, { id: '1' });
     const res = makeRes();
@@ -955,11 +961,11 @@ describe('getAnalytics()', () => {
   it('200 : returns all analytics data', async () => {
     const topExp = [{ id: 1, title: 'Trip A' }];
     const topHosts = [{ id: 2, name: 'Host B' }];
-    const countries = ['UK', 'Japan'];
+    const revenue = [{ category: 'Adventure', revenue: 1234 }];
     const categories = [{ name: 'Adventure', count: 5 }];
     mockAnalytics.getTopExperiences.mock.mockImplementation(async () => topExp);
     mockAnalytics.getTopHosts.mock.mockImplementation(async () => topHosts);
-    mockAnalytics.getVisitorCountries.mock.mockImplementation(async () => countries);
+    mockAnalytics.getRevenueByCategory = mock.fn(async () => revenue);
     mockAnalytics.getCategoryBreakdown.mock.mockImplementation(async () => categories);
 
     const req = makeReq();
@@ -969,7 +975,7 @@ describe('getAnalytics()', () => {
     const body = res.json.mock.calls[0].arguments[0];
     assert.deepEqual(body.topExperiences, topExp);
     assert.deepEqual(body.topHosts, topHosts);
-    assert.deepEqual(body.visitorCountries, countries);
+    assert.deepEqual(body.revenueByCategory, revenue);
     assert.deepEqual(body.categoryBreakdown, categories);
   });
 

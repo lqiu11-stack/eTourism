@@ -7,6 +7,7 @@ const {
   updateExperience,
   deleteExperience,
   getBookings,
+  getBookingsByExperience,
   getCalendarSlots,
   createCalendarSlot,
   updateCalendarSlot,
@@ -42,6 +43,9 @@ router.delete('/experiences/:id', requireRole('ehost'), deleteExperience);
 
 // GET /api/ehost/bookings
 router.get('/bookings', requireRole('ehost'), getBookings);
+
+// GET /api/ehost/experiences/:id/bookings
+router.get('/experiences/:id/bookings', requireRole('ehost'), getBookingsByExperience);
 
 router.get('/calendar/slots', requireRole('ehost'), getCalendarSlots);
 

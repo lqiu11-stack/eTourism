@@ -10,6 +10,7 @@ import axios from "axios";
 import "./MapPage.css";
 import backIcon from "../icon/back.png";
 import { useNavigate, Link } from "react-router-dom";
+import { AccountMenu } from "../../components/AccountMenu";
 
 const API_BASE = import.meta.env.VITE_API_URL;
 const DEFAULT_CENTER = { lat: 51.5101, lng: -0.1340 };
@@ -21,14 +22,6 @@ export const MapPage = () => {
   const [price, setPrice] = useState(7000);
   const [filters, setFilters] = useState({});
   const [genderFilter, setGenderFilter] = useState("");
-
-  const token = localStorage.getItem("token");
-  const isLoggedIn = !!token;
-  const handleLogout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
-    navigate("/login");
-  };
 
   const { isLoaded } = useJsApiLoader({
     googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY,
@@ -134,15 +127,9 @@ export const MapPage = () => {
                   </button>
 
           <div className="nav-links">
-              <Link to="/Mybooking" className="nav-link">My booking</Link>
-               {isLoggedIn ? (
-                  <button className="nav-link nav-btn-link" onClick={handleLogout}>
-                    Logout
-                  </button>
-                ) : (
-                  <Link to="/login" className="nav-link">Login</Link>
-                )}
-            </div>
+            <Link to="/register/ehost/step1" className="nav-link">Become E-host</Link>
+            <AccountMenu />
+          </div>
         </nav>
     <div className="map-layout">
       

@@ -1,5 +1,9 @@
 import { useMemo, useRef, useState, useEffect } from "react";
+import axios from "axios";
 import "./Mainstyle.css";
+import { AccountMenu } from "../../components/AccountMenu";
+
+const API_BASE = import.meta.env.VITE_API_URL;
 import searchIcon from "../icon/search.png";
 import continentIcon from "../icon/continents.png";
 import dateIcon from "../icon/calendar.png";
@@ -77,10 +81,23 @@ export const MainPage = () => {
     .catch(() => {});
 }, []);
 
-  const { isLoggedIn, isEhost, logout, user } = useAuth();
+  const { user } = useAuth();
   const visibleGenderOptions = filterGenderOptionsForViewer(user?.gender);
   const { experiences } = useExperiences();
   const dateInputRef = useRef(null);
+  const [followedHosts, setFollowedHosts] = useState([]);
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (!token || user?.role !== "visitor") {
+      setFollowedHosts([]);
+      return;
+    }
+    axios.get(`${API_BASE}/visitor/follows`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then(({ data }) => setFollowedHosts(Array.isArray(data) ? data : []))
+      .catch(() => setFollowedHosts([]));
+  }, [user?.role]);
 
   const [searchLocation, setSearchLocation] = useState("");
   const [searchDate, setSearchDate] = useState("");
@@ -162,31 +179,7 @@ export const MainPage = () => {
 
             <div className="nav-links">
               <Link to="/register/ehost/step1" className="nav-link">Become E-host</Link>
-              {isLoggedIn && (
-                <Link
-              
-                to="/MyBooking"
-                className="nav-link"
-                onClick={(e) => {
-                  if (isEhost) {
-                    e.preventDefault();
-                    alert("My booking is only available to visitors. You are signed in as an e-host.");
-                    return;
-                  }
-                  window.scrollTo(0, 0);
-                }}
-              >
-                My booking
-              </Link>
-              )}
-              
-              {isLoggedIn ? (
-                <button className="nav-link nav-btn-link" onClick={() => logout(navigate)}>
-                  Logout
-                </button>
-              ) : (
-                <Link to="/login" className="nav-link">Login</Link>
-              )}
+              <AccountMenu />
             </div>
           </nav>
 
@@ -355,6 +348,63 @@ export const MainPage = () => {
           <p>Friendly to customer</p>
         </div>
       </section>
+
+      {/* Hosts you follow */}
+      {followedHosts.length > 0 && (
+        <section className="follow-rail-section">
+          <div className="follow-rail-header">
+            <div>
+              <h2 className="section-title">Hosts you follow</h2>
+              <p className="section-subtitle">Catch their next live experience.</p>
+            </div>
+            <button className="more-btn" onClick={() => navigate("/Following")}>See all</button>
+          </div>
+          <div className="follow-rail">
+            {followedHosts.map((h) => {
+              const next = h.next_experience_id;
+              const goTo = next
+                ? `/DetailPage?id=${next}`
+                : `/Following`;
+              const date = h.next_experience_date_time
+                ? new Date(h.next_experience_date_time).toLocaleDateString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })
+                : null;
+              return (
+                <button
+                  key={h.ehost_id}
+                  type="button"
+                  className="follow-card"
+                  onClick={() => navigate(goTo)}
+                >
+                  <div
+                    className="follow-card-cover"
+                    style={h.next_experience_cover ? { backgroundImage: `url(${h.next_experience_cover})` } : undefined}
+                  />
+                  <div className="follow-card-body">
+                    <div className="follow-card-host">
+                      {h.profile_image
+                        ? <img src={h.profile_image} alt="" className="follow-card-avatar" />
+                        : <span className="follow-card-avatar follow-card-avatar--placeholder">
+                            {(h.first_name?.[0] || "?").toUpperCase()}
+                          </span>}
+                      <span className="follow-card-name">
+                        {h.display_name || `${h.first_name || ""} ${h.last_name || ""}`.trim() || "Host"}
+                      </span>
+                    </div>
+                    {next ? (
+                      <>
+                        <div className="follow-card-title">{h.next_experience_title}</div>
+                        <div className="follow-card-meta">{date} · {h.next_experience_country}</div>
+                      </>
+                    ) : (
+                      <div className="follow-card-meta">No upcoming experiences</div>
+                    )}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </section>
+      )}
 
       {/* Where Next */}
       <section className="where-wrapper">

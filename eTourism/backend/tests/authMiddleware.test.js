@@ -348,8 +348,7 @@ describe('validateApplication()', () => {
 
   it('400 : missing hasExperience', () => {
     const req = makeReq({}, {
-      name: 'John', birthday: '1990-01-01', country: 'UK', email: 'test@test.com',
-      preferredCountry: 'UK',
+      name: 'John', birthday: '1990-01-01', country: 'UK', email: 'test@test.com', password: 'Secret123',
       description: 'Great guide', videoLink: 'https://yt.com/x', isContractAgreed: true,
     });
     const res = makeRes();
@@ -361,7 +360,7 @@ describe('validateApplication()', () => {
     assert.equal(next.mock.callCount(), 0);
   });
 
-  it('400 : missing preferredCountry', () => {
+  it('400 : missing password', () => {
     const req = makeReq({}, {
       name: 'John', birthday: '1990-01-01', country: 'UK', email: 'test@test.com',
       hasExperience: false,
@@ -372,14 +371,14 @@ describe('validateApplication()', () => {
     validateApplication(req, res, next);
 
     assert.equal(res.status.mock.calls[0].arguments[0], 400);
-    assert.match(res.json.mock.calls[0].arguments[0].message, /experience details/i);
+    assert.match(res.json.mock.calls[0].arguments[0].message, /password/i);
     assert.equal(next.mock.callCount(), 0);
   });
 
   it('400 : missing description', () => {
     const req = makeReq({}, {
-      name: 'John', birthday: '1990-01-01', country: 'UK', email: 'test@test.com',
-      hasExperience: true, preferredCountry: 'UK',
+      name: 'John', birthday: '1990-01-01', country: 'UK', email: 'test@test.com', password: 'Secret123',
+      hasExperience: true,
       videoLink: 'https://yt.com/x', isContractAgreed: true,
     });
     const res = makeRes();
@@ -393,8 +392,8 @@ describe('validateApplication()', () => {
 
   it('400 : missing videoLink', () => {
     const req = makeReq({}, {
-      name: 'John', birthday: '1990-01-01', country: 'UK', email: 'test@test.com',
-      hasExperience: true, preferredCountry: 'UK',
+      name: 'John', birthday: '1990-01-01', country: 'UK', email: 'test@test.com', password: 'Secret123',
+      hasExperience: true,
       description: 'Great guide', isContractAgreed: true,
     });
     const res = makeRes();
@@ -408,8 +407,8 @@ describe('validateApplication()', () => {
 
   it('400 : isContractAgreed is false', () => {
     const req = makeReq({}, {
-      name: 'John', birthday: '1990-01-01', country: 'UK', email: 'test@test.com',
-      hasExperience: true, preferredCountry: 'UK',
+      name: 'John', birthday: '1990-01-01', country: 'UK', email: 'test@test.com', password: 'Secret123',
+      hasExperience: true,
       description: 'Great guide', videoLink: 'https://yt.com/x', isContractAgreed: false,
     });
     const res = makeRes();
@@ -423,8 +422,8 @@ describe('validateApplication()', () => {
 
   it('400 : isContractAgreed is undefined', () => {
     const req = makeReq({}, {
-      name: 'John', birthday: '1990-01-01', country: 'UK', email: 'test@test.com',
-      hasExperience: true, preferredCountry: 'UK',
+      name: 'John', birthday: '1990-01-01', country: 'UK', email: 'test@test.com', password: 'Secret123',
+      hasExperience: true,
       description: 'Great guide', videoLink: 'https://yt.com/x',
     });
     const res = makeRes();
@@ -438,8 +437,8 @@ describe('validateApplication()', () => {
 
   it('passes : all required fields present with isContractAgreed true', () => {
     const req = makeReq({}, {
-      name: 'John Smith', birthday: '1990-01-01', country: 'UK', email: 'john@test.com',
-      hasExperience: true, preferredCountry: 'UK',
+      name: 'John Smith', birthday: '1990-01-01', country: 'UK', email: 'john@test.com', password: 'Secret123',
+      hasExperience: true,
       description: 'Experienced guide', videoLink: 'https://youtube.com/x',
       isContractAgreed: true,
     });
@@ -453,8 +452,8 @@ describe('validateApplication()', () => {
 
   it('passes : hasExperience false is valid when all other fields provided', () => {
     const req = makeReq({}, {
-      name: 'Jane Smith', birthday: '1995-05-15', country: 'FR', email: 'jane@test.com',
-      hasExperience: false, preferredCountry: 'France',
+      name: 'Jane Smith', birthday: '1995-05-15', country: 'FR', email: 'jane@test.com', password: 'Secret123',
+      hasExperience: false,
       description: 'New guide eager to learn', videoLink: 'https://youtube.com/y',
       isContractAgreed: true,
     });

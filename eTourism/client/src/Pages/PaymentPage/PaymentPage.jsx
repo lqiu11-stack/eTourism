@@ -8,6 +8,7 @@ import { useState, useEffect } from "react";
 import axios from "axios";
 import bg from "../icon/worldtravel.jpg";
 import { InfoTooltip } from "../../components/InfoTooltip";
+import { AccountMenu } from "../../components/AccountMenu";
 
 const API_BASE = import.meta.env.VITE_API_URL;
 
@@ -15,7 +16,6 @@ export const PaymentPage = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const token = localStorage.getItem("token");
-  const isLoggedIn = !!token;
   const experienceId = searchParams.get("id");
 
   const [experience, setExperience] = useState(null);
@@ -31,23 +31,18 @@ export const PaymentPage = () => {
   const [watchOnlyTermsText, setWatchOnlyTermsText] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const [groupGenderType, setGroupGenderType] = useState("");
+  const [souvenirQty, setSouvenirQty] = useState(0);
+  const [videoAddon, setVideoAddon] = useState(false);
+  const [donationPreset, setDonationPreset] = useState(0);
+  const [donationCustom, setDonationCustom] = useState("");
 
   const genderPreference = experience?.gender_preference || "any";
-  const requiresGroupGender = genderPreference !== "any";
-
-  const genderPreferenceHint = {
-    female_only: "This experience is for all-female groups only.",
-    male_only: "This experience is for all-male groups only.",
-    no_all_male_groups: "The eHost does not accept all-male groups for this experience.",
-    no_all_female_groups: "The eHost does not accept all-female groups for this experience.",
+  const autoGroupGenderType = {
+    female_only: "all_female",
+    male_only: "all_male",
+    no_all_male_groups: "mixed",
+    no_all_female_groups: "mixed",
   }[genderPreference];
-
-  const handleLogout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
-    navigate("/login");
-  };
 
   useEffect(() => {
     if (!experienceId) return;
@@ -61,6 +56,18 @@ export const PaymentPage = () => {
       setQtyDiscounted(0);
     }
   }, [experience, qtyDiscounted]);
+
+  useEffect(() => {
+    if (experience && !experience.allows_souvenir_addon && souvenirQty !== 0) {
+      setSouvenirQty(0);
+    }
+  }, [experience, souvenirQty]);
+
+  useEffect(() => {
+    if (experience && !experience.allows_video_addon && videoAddon) {
+      setVideoAddon(false);
+    }
+  }, [experience, videoAddon]);
 
   useEffect(() => {
     fetch("/terms.txt")
@@ -82,7 +89,15 @@ export const PaymentPage = () => {
       ? parseFloat(experience.price_discounted)
       : Math.max(0, normalPrice - 10)
     : 0;
-  const total = qtyNormal * normalPrice + qtyDiscounted * discountedPrice;
+  const souvenirPrice = experience?.souvenir_price ? parseFloat(experience.souvenir_price) : 0;
+  const videoAddonPrice = experience?.video_addon_price ? parseFloat(experience.video_addon_price) : 0;
+  const souvenirTotal = experience?.allows_souvenir_addon ? souvenirQty * souvenirPrice : 0;
+  const videoTotal = experience?.allows_video_addon && videoAddon ? videoAddonPrice : 0;
+  const showAddons = !!(experience?.allows_souvenir_addon || experience?.allows_video_addon);
+  const donationAmount = donationPreset === "other"
+    ? Math.max(0, Number(donationCustom) || 0)
+    : Number(donationPreset) || 0;
+  const total = qtyNormal * normalPrice + qtyDiscounted * discountedPrice + souvenirTotal + videoTotal + donationAmount;
 
   const bookingUnavailableReason = experience
     ? experience.status && experience.status !== 'approved'
@@ -115,10 +130,6 @@ export const PaymentPage = () => {
       setError("Please confirm all viewers are 18+ before checkout.");
       return false;
     }
-    if (requiresGroupGender && !groupGenderType) {
-      setError("Please tell us the gender make-up of your group.");
-      return false;
-    }
     if (!token) {
       navigate(`/login?redirect=/PaymentPage?id=${experienceId}`);
       return false;
@@ -137,7 +148,10 @@ export const PaymentPage = () => {
         contact_name: name,
         contact_email: email,
         agreed_to_terms: true,
-        ...(requiresGroupGender ? { group_gender_type: groupGenderType } : {}),
+        souvenir_qty: experience?.allows_souvenir_addon ? souvenirQty : 0,
+        video_addon: experience?.allows_video_addon ? videoAddon : false,
+        donation_amount: donationAmount,
+        ...(autoGroupGenderType ? { group_gender_type: autoGroupGenderType } : {}),
       },
       { headers: { Authorization: `Bearer ${token}` } }
     );
@@ -201,12 +215,8 @@ export const PaymentPage = () => {
             <img src={backIcon} alt="Back" className="detail-back-icon" />
           </button>
           <div className="nav-links">
-            <Link to="/Mybooking" className="nav-link">My booking</Link>
-            {isLoggedIn ? (
-              <button className="nav-link nav-btn-link" onClick={handleLogout}>Logout</button>
-            ) : (
-              <Link to="/login" className="nav-link">Login</Link>
-            )}
+            <Link to="/register/ehost/step1" className="nav-link">Become E-host</Link>
+            <AccountMenu />
           </div>
         </nav>
 
@@ -228,11 +238,17 @@ export const PaymentPage = () => {
                 Normal ticket <span>£{normalPrice} / per ticket</span>
               </p>
               <span className="small-text">(include Q&A)</span>
+              {experience?.max_visitors != null && (
+                <span className="small-text"> &middot; {experience.max_visitors} spot(s) available</span>
+              )}
             </div>
             <div className="counter">
               <button onClick={() => setQtyNormal(Math.max(0, qtyNormal - 1))}>-</button>
               <span>{qtyNormal}</span>
-              <button onClick={() => setQtyNormal(qtyNormal + 1)}>+</button>
+              <button
+                onClick={() => setQtyNormal(Math.min(experience?.max_visitors ?? Infinity, qtyNormal + 1))}
+                disabled={experience?.max_visitors != null && qtyNormal >= experience.max_visitors}
+              >+</button>
             </div>
             <p className="ticket-text">Ticket(s)</p>
           </div>
@@ -250,16 +266,110 @@ export const PaymentPage = () => {
                   </InfoTooltip>
                 </p>
                 <span className="small-text">(no Q&A, stream only)</span>
+                {experience?.max_piggyback_visitors != null && (
+                  <span className="small-text"> &middot; {experience.max_piggyback_visitors} spot(s) available</span>
+                )}
                 <Link className="ticket-link" onClick={() => setShowWatchOnlyTerms(true)}>click to see the detail</Link>
               </div>
               <div className="counter">
                 <button onClick={() => setQtyDiscounted(Math.max(0, qtyDiscounted - 1))}>-</button>
                 <span>{qtyDiscounted}</span>
-                <button onClick={() => setQtyDiscounted(qtyDiscounted + 1)}>+</button>
+                <button
+                  onClick={() => setQtyDiscounted(Math.min(experience?.max_piggyback_visitors ?? Infinity, qtyDiscounted + 1))}
+                  disabled={experience?.max_piggyback_visitors != null && qtyDiscounted >= experience.max_piggyback_visitors}
+                >+</button>
               </div>
               <p className="ticket-text">Ticket(s)</p>
             </div>
           )}
+
+          {/* Add-ons */}
+          {showAddons && (
+            <div className="addons-section">
+              <h3 className="addons-title">Add-ons</h3>
+
+              {experience?.allows_souvenir_addon && (
+                <div className="ticket">
+                  <div>
+                    <p className="ticket-title">
+                      Souvenir <span>£{souvenirPrice.toFixed(2)} / each</span>
+                      <InfoTooltip label="About the souvenir add-on">
+                        Get a physical souvenir from this experience. The eHost will
+                        contact you by email after booking to arrange shipping details.
+                      </InfoTooltip>
+                    </p>
+                    <span className="small-text">(shipped after the live experience)</span>
+                  </div>
+                  <div className="counter">
+                    <button onClick={() => setSouvenirQty(Math.max(0, souvenirQty - 1))}>-</button>
+                    <span>{souvenirQty}</span>
+                    <button onClick={() => setSouvenirQty(souvenirQty + 1)}>+</button>
+                  </div>
+                  <p className="ticket-text">Souvenir(s)</p>
+                </div>
+              )}
+
+              {experience?.allows_video_addon && (
+                <div className="ticket addon-video">
+                  <div>
+                    <p className="ticket-title">
+                      Video download <span>£{videoAddonPrice.toFixed(2)}</span>
+                      <InfoTooltip label="About the video download">
+                        Pay extra to download a recording of the live experience after
+                        it ends. A download link will be emailed to you.
+                      </InfoTooltip>
+                    </p>
+                    <span className="small-text">(downloadable after the live)</span>
+                  </div>
+                  <label className="addon-checkbox">
+                    <input
+                      type="checkbox"
+                      checked={videoAddon}
+                      onChange={(e) => setVideoAddon(e.target.checked)}
+                    />
+                    Add to booking
+                  </label>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Donation */}
+          <div className="donation-section">
+            <h3 className="donation-title">Support {experience?.ehost_first_name || "your e-host"}</h3>
+            <p className="small-text">100% goes to the e-host as a thank-you tip.</p>
+            <div className="donation-chips">
+              {[0, 2, 5, 10].map((amt) => (
+                <button
+                  key={amt}
+                  type="button"
+                  className={`donation-chip${donationPreset === amt ? " is-active" : ""}`}
+                  onClick={() => { setDonationPreset(amt); setDonationCustom(""); }}
+                >
+                  {amt === 0 ? "None" : `£${amt}`}
+                </button>
+              ))}
+              <button
+                type="button"
+                className={`donation-chip${donationPreset === "other" ? " is-active" : ""}`}
+                onClick={() => setDonationPreset("other")}
+              >
+                Other
+              </button>
+            </div>
+            {donationPreset === "other" && (
+              <input
+                className="donation-input"
+                type="number"
+                min="0"
+                max="1000"
+                step="0.01"
+                placeholder="£0.00"
+                value={donationCustom}
+                onChange={(e) => setDonationCustom(e.target.value)}
+              />
+            )}
+          </div>
 
           {/* Terms */}
           <div className="terms">
@@ -284,9 +394,43 @@ export const PaymentPage = () => {
             <label>I confirm that all viewers using these tickets are 18 or older.</label>
           </div>
 
-          {/* Total */}
+          {/* Price breakdown + Total */}
           <div className="total">
             <h3>Total</h3>
+            {(qtyNormal > 0 || qtyDiscounted > 0 || souvenirTotal > 0 || videoTotal > 0 || donationAmount > 0) && (
+              <ul className="price-breakdown">
+                {qtyNormal > 0 && (
+                  <li>
+                    <span>Normal ticket × {qtyNormal}</span>
+                    <span>£{(qtyNormal * normalPrice).toFixed(2)}</span>
+                  </li>
+                )}
+                {qtyDiscounted > 0 && (
+                  <li>
+                    <span>Watch-only × {qtyDiscounted}</span>
+                    <span>£{(qtyDiscounted * discountedPrice).toFixed(2)}</span>
+                  </li>
+                )}
+                {souvenirTotal > 0 && (
+                  <li>
+                    <span>Souvenir × {souvenirQty}</span>
+                    <span>£{souvenirTotal.toFixed(2)}</span>
+                  </li>
+                )}
+                {videoTotal > 0 && (
+                  <li>
+                    <span>Video download</span>
+                    <span>£{videoTotal.toFixed(2)}</span>
+                  </li>
+                )}
+                {donationAmount > 0 && (
+                  <li>
+                    <span>Tip / donation</span>
+                    <span>£{donationAmount.toFixed(2)}</span>
+                  </li>
+                )}
+              </ul>
+            )}
             <div className="price">£{total.toFixed(2)}</div>
           </div>
         </div>
@@ -311,24 +455,6 @@ export const PaymentPage = () => {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
           />
-
-          {requiresGroupGender && (
-            <>
-              <label>
-                Group make-up*
-                {genderPreferenceHint && <span> ({genderPreferenceHint})</span>}
-              </label>
-              <select
-                value={groupGenderType}
-                onChange={(e) => { setGroupGenderType(e.target.value); setError(""); }}
-              >
-                <option value="">Select your group type...</option>
-                <option value="all_female">All female</option>
-                <option value="all_male">All male</option>
-                <option value="mixed">Mixed group</option>
-              </select>
-            </>
-          )}
 
           {bookingUnavailableReason && (
             <p className="input-error">{bookingUnavailableReason}</p>

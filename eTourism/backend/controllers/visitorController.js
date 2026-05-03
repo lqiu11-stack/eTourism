@@ -8,6 +8,7 @@ const Payment = require('../models/Payment');
 const Refund = require('../models/Refund');
 const Review = require('../models/Review');
 const User = require('../models/User');
+const Follow = require('../models/Follow');
 
 const normalizeGenderPreference = (value) => {
   if (value === undefined || value === null || value === '') {
@@ -133,6 +134,101 @@ const getMe = async (req, res) => {
   }
 };
 
+const VISITOR_EDITABLE_FIELDS = ['first_name', 'last_name', 'display_name'];
+
+const updateMe = async (req, res) => {
+  try {
+    const updates = {};
+    for (const key of VISITOR_EDITABLE_FIELDS) {
+      if (Object.prototype.hasOwnProperty.call(req.body, key)) {
+        const value = req.body[key];
+        const trimmed = typeof value === 'string' ? value.trim() : value;
+        updates[key] = trimmed === '' ? null : trimmed;
+      }
+    }
+    if (Object.keys(updates).length === 0) {
+      return res.status(400).json({ error: 'No editable fields supplied.' });
+    }
+    if (Object.prototype.hasOwnProperty.call(updates, 'first_name') && !updates.first_name) {
+      return res.status(400).json({ error: 'First name cannot be empty.' });
+    }
+    if (Object.prototype.hasOwnProperty.call(updates, 'last_name') && !updates.last_name) {
+      return res.status(400).json({ error: 'Last name cannot be empty.' });
+    }
+    const updated = await User.update(req.userId, updates);
+    if (!updated) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    return res.json(updated);
+  } catch (err) {
+    console.error('[visitor.updateMe]', err);
+    return res.status(500).json({ error: err.message || 'Failed to update profile' });
+  }
+};
+
+const followHost = async (req, res) => {
+  try {
+    const ehostId = Number(req.body?.ehost_id);
+    if (!Number.isInteger(ehostId) || ehostId <= 0) {
+      return res.status(400).json({ error: 'ehost_id is required.' });
+    }
+    if (ehostId === req.userId) {
+      return res.status(400).json({ error: 'You cannot follow yourself.' });
+    }
+    const target = await User.findById(ehostId);
+    if (!target || target.role !== 'ehost') {
+      return res.status(404).json({ error: 'Host not found.' });
+    }
+    await Follow.create(req.userId, ehostId);
+    const followers_count = await Follow.countForHost(ehostId);
+    return res.status(201).json({ following: true, followers_count });
+  } catch (err) {
+    console.error('[visitor.followHost]', err);
+    return res.status(500).json({ error: 'Failed to follow host.' });
+  }
+};
+
+const unfollowHost = async (req, res) => {
+  try {
+    const ehostId = Number(req.params.ehostId);
+    if (!Number.isInteger(ehostId) || ehostId <= 0) {
+      return res.status(400).json({ error: 'Invalid ehost id.' });
+    }
+    await Follow.remove(req.userId, ehostId);
+    const followers_count = await Follow.countForHost(ehostId);
+    return res.json({ following: false, followers_count });
+  } catch (err) {
+    console.error('[visitor.unfollowHost]', err);
+    return res.status(500).json({ error: 'Failed to unfollow host.' });
+  }
+};
+
+const getFollowStatus = async (req, res) => {
+  try {
+    const ehostId = Number(req.params.ehostId);
+    if (!Number.isInteger(ehostId) || ehostId <= 0) {
+      return res.status(400).json({ error: 'Invalid ehost id.' });
+    }
+    const followers_count = await Follow.countForHost(ehostId);
+    const viewerId = req.userId || decodeOptionalUserId(req);
+    const following = viewerId ? await Follow.exists(viewerId, ehostId) : false;
+    return res.json({ following, followers_count });
+  } catch (err) {
+    console.error('[visitor.getFollowStatus]', err);
+    return res.status(500).json({ error: 'Failed to load follow status.' });
+  }
+};
+
+const listFollows = async (req, res) => {
+  try {
+    const rows = await Follow.listForVisitor(req.userId);
+    return res.json(rows);
+  } catch (err) {
+    console.error('[visitor.listFollows]', err);
+    return res.status(500).json({ error: 'Failed to load following list.' });
+  }
+};
+
 const decodeOptionalUserId = (req) => {
   const auth = req.headers.authorization;
   if (!auth || !auth.startsWith('Bearer ') || !process.env.JWT_SECRET) return null;
@@ -204,13 +300,16 @@ const getReviews = async (req, res) => {
 const createBooking = async (req, res) => {
   try {
   
-    const { 
-      experience_id, 
-      qty_normal = 0, 
-      qty_discounted = 0, 
-      contact_name, 
+    const {
+      experience_id,
+      qty_normal = 0,
+      qty_discounted = 0,
+      contact_name,
       contact_email,
-      agreed_to_terms
+      agreed_to_terms,
+      souvenir_qty = 0,
+      video_addon = false,
+      donation_amount = 0
     } = req.body;
     
     const visitor_id = req.userId;
@@ -233,6 +332,13 @@ const createBooking = async (req, res) => {
       return res.status(400).json({ message: 'This experience has no available time slot.' });
     }
 
+    const existing = await Booking.findActiveByVisitorAndExperience(visitor_id, experience_id);
+    if (existing) {
+      return res.status(400).json({
+        message: 'You already have a booking for this experience. Cancel or refund the existing one before booking again.',
+      });
+    }
+
     const qtyNormal = Number(qty_normal);
     const qtyDiscounted = Number(qty_discounted);
     if (!Number.isInteger(qtyNormal) || !Number.isInteger(qtyDiscounted) || qtyNormal < 0 || qtyDiscounted < 0) {
@@ -243,8 +349,11 @@ const createBooking = async (req, res) => {
     if (totalTickets <= 0) {
       return res.status(400).json({ message: 'At least one ticket is required.' });
     }
-    if (totalTickets > experience.max_visitors) {
-      return res.status(400).json({ message: `Sold out! Only ${experience.max_visitors} spots available.` });
+    if (qtyNormal > experience.max_visitors) {
+      return res.status(400).json({ message: `Sold out! Only ${experience.max_visitors} normal-ticket spot(s) available.` });
+    }
+    if (qtyDiscounted > 0 && experience.allows_piggyback && experience.max_piggyback_visitors != null && qtyDiscounted > experience.max_piggyback_visitors) {
+      return res.status(400).json({ message: `Sold out! Only ${experience.max_piggyback_visitors} watch-only spot(s) available.` });
     }
 
     if (experience.date_time && new Date(experience.date_time).getTime() <= Date.now()) {
@@ -257,12 +366,44 @@ const createBooking = async (req, res) => {
     }
 
     const normalPrice = parseFloat(experience.price || 0);
-    
-    const discountedPrice = experience.price_discounted 
-      ? parseFloat(experience.price_discounted) 
+
+    const discountedPrice = experience.price_discounted
+      ? parseFloat(experience.price_discounted)
       : Math.max(0, normalPrice - 10);
 
-    let totalAmount = Number(((normalPrice * qtyNormal) + (discountedPrice * qtyDiscounted)).toFixed(2));
+    const souvenirQty = Number(souvenir_qty);
+    if (!Number.isInteger(souvenirQty) || souvenirQty < 0) {
+      return res.status(400).json({ message: 'souvenir_qty must be a non-negative integer.' });
+    }
+    if (souvenirQty > 0 && experience.allows_souvenir_addon !== true) {
+      return res.status(400).json({ message: 'This experience does not offer the souvenir add-on.' });
+    }
+
+    const wantsVideoAddon = video_addon === true;
+    if (wantsVideoAddon && experience.allows_video_addon !== true) {
+      return res.status(400).json({ message: 'This experience does not offer the video download add-on.' });
+    }
+
+    const souvenirTotal = souvenirQty > 0
+      ? souvenirQty * parseFloat(experience.souvenir_price || 0)
+      : 0;
+    const videoTotal = wantsVideoAddon
+      ? parseFloat(experience.video_addon_price || 0)
+      : 0;
+
+    const parsedDonation = Number(donation_amount);
+    if (!Number.isFinite(parsedDonation) || parsedDonation < 0 || parsedDonation > 1000) {
+      return res.status(400).json({ message: 'Donation must be between £0 and £1000.' });
+    }
+    const donation = Math.round(parsedDonation * 100) / 100;
+
+    let totalAmount = Number((
+      (normalPrice * qtyNormal) +
+      (discountedPrice * qtyDiscounted) +
+      souvenirTotal +
+      videoTotal +
+      donation
+    ).toFixed(2));
 
     const newBooking = await Booking.create({
       visitor_id,
@@ -272,7 +413,10 @@ const createBooking = async (req, res) => {
       qty_normal: qtyNormal,
       qty_discounted: qtyDiscounted,
       contact_name,
-      contact_email
+      contact_email,
+      souvenir_qty: souvenirQty,
+      video_addon: wantsVideoAddon,
+      donation_amount: donation
     });
 
     return res.status(201).json({
@@ -761,6 +905,7 @@ const capturePayPalOrder = async (req, res) => {
 
 module.exports = {
   getMe,
+  updateMe,
   getExperiences,
   getExperienceById,
   createBooking,
@@ -774,5 +919,9 @@ module.exports = {
   capturePayPalOrder,
   refundBooking,
   captureStripePayment,
-  getReviews
+  getReviews,
+  followHost,
+  unfollowHost,
+  getFollowStatus,
+  listFollows,
 };

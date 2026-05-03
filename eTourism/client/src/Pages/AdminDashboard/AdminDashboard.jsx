@@ -873,16 +873,29 @@ const ExperienceRequests = ({
                 {selectedExp.date_time ? new Date(selectedExp.date_time).toLocaleString() : "—"}
               </p>
               <p><strong>Duration:</strong> {selectedExp.duration_minutes ? `${selectedExp.duration_minutes} min` : "—"}</p>
-              <p><strong>Max visitors:</strong> {selectedExp.max_visitors ?? "—"}</p>
+              <p><strong>Max normal tickets:</strong> {selectedExp.max_visitors ?? "—"}</p>
               <p>
-                <strong>Price:</strong>{" "}
-                £{selectedExp.price ?? "—"}
-                {selectedExp.price_discounted != null && selectedExp.price_discounted !== "" && (
-                  <> &middot; £{selectedExp.price_discounted} watch-only</>
-                )}
+                <strong>Price:</strong> £{selectedExp.price ?? "—"}
               </p>
               <p><strong>Gender preference:</strong> {selectedExp.gender_preference || "any"}</p>
-              <p><strong>Piggyback:</strong> {selectedExp.allows_piggyback ? "Yes" : "No"}</p>
+              <p>
+                <strong>Piggyback:</strong>{" "}
+                {selectedExp.allows_piggyback
+                  ? `Yes — £${selectedExp.price_discounted ?? "—"} / ticket, max ${selectedExp.max_piggyback_visitors ?? "—"}`
+                  : "No"}
+              </p>
+              <p>
+                <strong>Souvenir add-on:</strong>{" "}
+                {selectedExp.allows_souvenir_addon
+                  ? `Yes — £${selectedExp.souvenir_price ?? "—"} / unit`
+                  : "No"}
+              </p>
+              <p>
+                <strong>Video download add-on:</strong>{" "}
+                {selectedExp.allows_video_addon
+                  ? `Yes — £${selectedExp.video_addon_price ?? "—"} / booking`
+                  : "No"}
+              </p>
             </div>
             {(selectedExp.latitude !== null && selectedExp.latitude !== undefined && selectedExp.longitude !== null && selectedExp.longitude !== undefined) && (
               <p>

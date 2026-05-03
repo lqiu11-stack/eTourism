@@ -6,6 +6,7 @@ import axios from "axios";
 import { Link } from "react-router-dom";
 import { useLocation } from "react-router-dom";
 import { useLayoutEffect } from "react";
+import { AccountMenu } from "../../components/AccountMenu";
 
 export const RefundPage = () => {
   const API_BASE = import.meta.env.VITE_API_URL;
@@ -33,14 +34,6 @@ export const RefundPage = () => {
 
 
   const token = localStorage.getItem("token");
-  const isLoggedIn = !!token; 
-  
-  const handleLogout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
-    navigate("/login");
-  };
-  
   const navigate = useNavigate();
 
   const [reason, setReason] = useState("");
@@ -158,12 +151,8 @@ const refundAmount = Number(booking?.amount_paid || 0) * refundRate;
           <img src={backIcon} alt="Back" className="detail-back-icon" />
         </button>
         <div className="nav-links">
-          <Link to="/Mybooking" className="nav-link">My booking</Link>
-          {isLoggedIn ? (
-            <button className="nav-link nav-btn-link" onClick={handleLogout}>Logout</button>
-          ) : (
-            <Link to="/login" className="nav-link">Login</Link>
-          )}
+          <Link to="/register/ehost/step1" className="nav-link">Become E-host</Link>
+          <AccountMenu />
         </div>
       </nav>
 

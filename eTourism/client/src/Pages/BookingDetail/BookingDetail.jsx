@@ -8,6 +8,7 @@ import approveIcon from "../icon/approve.png";
 import enjoyIcon from "../icon/enjoy.png";
 import { useLayoutEffect } from "react";
 import { saveBookingToCalendar } from "../../utils/calendar";
+import { AccountMenu } from "../../components/AccountMenu";
 
 
 
@@ -23,6 +24,13 @@ export const MyBookingDetail = () => {
   const navigate = useNavigate();
   const [showTerms, setShowTerms] = useState(false);
   const [termsText, setTermsText] = useState("");
+  const [joinModal, setJoinModal] = useState({ open: false, link: "" });
+  const visitorUser = JSON.parse(localStorage.getItem("user") || "{}");
+  const visitorDisplayName =
+    visitorUser.display_name ||
+    `${visitorUser.first_name || ""} ${visitorUser.last_name || ""}`.trim() ||
+    visitorUser.email ||
+    "your name";
   useEffect(() => {
   fetch("/terms.txt")
     .then((r) => r.text())
@@ -45,13 +53,6 @@ export const MyBookingDetail = () => {
   }, [location.key]);
 
   const token = localStorage.getItem("token");
-  const isLoggedIn = !!token;
-
-  const handleLogout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
-    navigate("/login");
-  };
 
   const [searchParams] = useSearchParams();
   const sessionId = searchParams.get("session_id");
@@ -211,12 +212,8 @@ export const MyBookingDetail = () => {
           <img src={backIcon} alt="Back" className="detail-back-icon" />
         </button>
         <div className="nav-links">
-          <Link to="/Mybooking" className="nav-link">My booking</Link>
-          {isLoggedIn ? (
-            <button className="nav-link nav-btn-link" onClick={handleLogout}>Logout</button>
-          ) : (
-            <Link to="/login" className="nav-link">Login</Link>
-          )}
+          <Link to="/register/ehost/step1" className="nav-link">Become E-host</Link>
+          <AccountMenu />
         </div>
       </nav>
 
@@ -291,14 +288,13 @@ export const MyBookingDetail = () => {
                   isPast ? (
                     null /* <button className="primary-btn">Contact customer service</button> */
                   ) : isWithin2h && booking.meeting_link ? (
-                    <a
-                      href={booking.meeting_link}
+                    <button
+                      type="button"
                       className="primary-btn"
-                      target="_blank"
-                      rel="noreferrer"
+                      onClick={() => setJoinModal({ open: true, link: booking.meeting_link })}
                     >
                       Join the stream
-                    </a>
+                    </button>
                   ) : (
                     <button className="primary-btn primary-btn--disabled" disabled>
                       {isWithin2h ? 'Link not yet available' : 'Not started yet'}
@@ -516,6 +512,49 @@ export const MyBookingDetail = () => {
               {termsText.split("\n\n").map((para, i) => (
                 <p key={i} style={{ whiteSpace: "pre-wrap" }}>{para}</p>
               ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {joinModal.open && (
+        <div className="modal-overlay" onClick={() => setJoinModal({ open: false, link: "" })}>
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <button
+              className="modal-close"
+              onClick={() => setJoinModal({ open: false, link: "" })}
+            >
+              ✕
+            </button>
+            <h2>Before you join</h2>
+            <div className="modal-content">
+              <p>Please set your display name in the meeting to:</p>
+              <p style={{ fontSize: 18, fontWeight: 600, margin: "12px 0", color: "#a3373b" }}>
+                {visitorDisplayName}
+              </p>
+              <p style={{ fontSize: 13, color: "#6b6b6b" }}>
+                This helps the e-host recognise you and tick you off the booking list when you arrive.
+              </p>
+            </div>
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, marginTop: 18 }}>
+              <button
+                type="button"
+                className="primary-btn primary-btn--disabled"
+                style={{ cursor: "pointer", opacity: 1 }}
+                onClick={() => setJoinModal({ open: false, link: "" })}
+              >
+                Cancel
+              </button>
+              <a
+                href={joinModal.link}
+                target="_blank"
+                rel="noreferrer"
+                className="primary-btn"
+                onClick={() => setJoinModal({ open: false, link: "" })}
+                style={{ display: "inline-block", textDecoration: "none" }}
+              >
+                Open meeting
+              </a>
             </div>
           </div>
         </div>

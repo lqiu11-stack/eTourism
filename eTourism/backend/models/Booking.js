@@ -12,18 +12,35 @@ const Booking = {
     return rows[0] || null;
   },
 
+  // Returns the visitor's existing active booking for an experience, if any.
+  // "Active" excludes refund-related states so they can rebook after a refund.
+  async findActiveByVisitorAndExperience(visitor_id, experience_id) {
+    const { rows } = await pool.query(
+      `SELECT id, status FROM bookings
+       WHERE visitor_id = $1
+         AND experience_id = $2
+         AND status NOT IN ('refunded', 'refund_pending')
+       LIMIT 1`,
+      [visitor_id, experience_id]
+    );
+    return rows[0] || null;
+  },
+
   async create({
     visitor_id, experience_id, amount_paid, booking_type,
     qty_normal = 1, qty_discounted = 0, contact_name, contact_email,
+    souvenir_qty = 0, video_addon = false, donation_amount = 0,
   }) {
     const { rows } = await pool.query(
       `INSERT INTO bookings
          (visitor_id, experience_id, amount_paid, booking_type,
-          qty_normal, qty_discounted, contact_name, contact_email)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+          qty_normal, qty_discounted, contact_name, contact_email,
+          souvenir_qty, video_addon, donation_amount)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
        RETURNING *`,
       [visitor_id, experience_id, amount_paid, booking_type,
-       qty_normal, qty_discounted, contact_name, contact_email]
+       qty_normal, qty_discounted, contact_name, contact_email,
+       souvenir_qty, video_addon, donation_amount]
     );
     return rows[0];
   },
