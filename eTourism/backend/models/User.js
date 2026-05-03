@@ -3,7 +3,7 @@ const pool = require('../config/db');
 const User = {
   async findById(id) {
     const { rows } = await pool.query(
-      'SELECT id, email, role, first_name, last_name, date_of_birth, country, language, bio, profile_image, gender, status, auth_provider, created_at FROM users WHERE id = $1',
+      'SELECT id, email, role, first_name, last_name, display_name, date_of_birth, country, language, bio, profile_image, gender, status, auth_provider, created_at FROM users WHERE id = $1',
       [id]
     );
     return rows[0] || null;
