@@ -590,6 +590,13 @@ input[type="file"]:disabled {
   border-radius: 8px;
 }
 
+.aa-field-error {
+  margin-top: 4px;
+  color: #a3373b;
+  font-size: 13px;
+  line-height: 1.3;
+}
+
 .aa-submit {
   margin-top: 8px;
   background: #5a1a1a;

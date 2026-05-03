@@ -40,6 +40,9 @@ const extractCountryFromComponents = (components) => {
   return COUNTRIES.includes(name) ? name : "";
 };
 
+const fieldError = (errorObj, name) =>
+  errorObj && errorObj.field === name ? errorObj.message : null;
+
 const reverseGeocodeCountry = async (lat, lng) => {
   if (!window.google?.maps?.Geocoder) return "";
   try {
@@ -98,7 +101,7 @@ export const ApplyActivity = () => {
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState("");
+  const [error, setError] = useState(null);
   const [wasApproved, setWasApproved] = useState(false);
   const [showSubmittedModal, setShowSubmittedModal] = useState(false);
   const [previewUrl, setPreviewUrl] = useState(null);
@@ -115,28 +118,28 @@ export const ApplyActivity = () => {
 
   const validateStep = (n) => {
     if (n === 1) {
-      if (!form.title.trim()) return "Please enter a title.";
-      if (!form.location_name.trim()) return "Please enter a location name.";
-      if (!form.country.trim()) return "Please enter a country.";
-      if (!COUNTRIES.includes(form.country)) return "Please select a country from the list.";
-      if (!form.description.trim()) return "Please enter a description.";
-      if (form.latitude === "" || form.longitude === "") return "Please pin the location on the map.";
+      if (!form.title.trim()) return { field: "title", message: "Please enter a title." };
+      if (!form.location_name.trim()) return { field: "location_name", message: "Please enter a location name." };
+      if (!form.country.trim()) return { field: "country", message: "Please enter a country." };
+      if (!COUNTRIES.includes(form.country)) return { field: "country", message: "Please select a country from the list." };
+      if (!form.description.trim()) return { field: "description", message: "Please enter a description." };
+      if (form.latitude === "" || form.longitude === "") return { field: "latitude", message: "Please pin the location on the map." };
       return null;
     }
     if (n === 2) {
-      if (!coverImage) return "Please upload a cover image.";
-      if (additionalImages.length < MIN_ADDITIONAL_IMAGES) return `Please upload at least ${MIN_ADDITIONAL_IMAGES} additional photos.`;
-      if (!form.date_time) return "Please pick a date and time.";
-      if (new Date(form.date_time).getTime() <= Date.now()) return "Date & time must be in the future.";
-      if (!form.max_visitors || Number(form.max_visitors) < 1) return "Please set the max normal tickets.";
-      if (form.price === "" || Number(form.price) < 0) return "Please enter a price.";
+      if (!coverImage) return { field: "cover_image", message: "Please upload a cover image." };
+      if (additionalImages.length < MIN_ADDITIONAL_IMAGES) return { field: "additional_images", message: `Please upload at least ${MIN_ADDITIONAL_IMAGES} additional photos.` };
+      if (!form.date_time) return { field: "date_time", message: "Please pick a date and time." };
+      if (new Date(form.date_time).getTime() <= Date.now()) return { field: "date_time", message: "Date & time must be in the future." };
+      if (!form.max_visitors || Number(form.max_visitors) < 1) return { field: "max_visitors", message: "Please set the max normal tickets." };
+      if (form.price === "" || Number(form.price) < 0) return { field: "price", message: "Please enter a price." };
       const trimmedVideoUrl = form.sample_video_url.trim();
-      if (!trimmedVideoUrl) return "Please add a sample YouTube video link.";
-      if (!isYouTubeUrl(trimmedVideoUrl)) return "Please paste a valid YouTube link.";
-      if (!form.video_description.trim()) return "Please add a video description.";
+      if (!trimmedVideoUrl) return { field: "sample_video_url", message: "Please add a sample YouTube video link." };
+      if (!isYouTubeUrl(trimmedVideoUrl)) return { field: "sample_video_url", message: "Please paste a valid YouTube link." };
+      if (!form.video_description.trim()) return { field: "video_description", message: "Please add a video description." };
       const trimmedMeetingLink = form.meeting_link.trim();
-      if (!trimmedMeetingLink) return "Please add a meeting link.";
-      if (!/^https?:\/\//i.test(trimmedMeetingLink)) return "Meeting link must start with http:// or https://.";
+      if (!trimmedMeetingLink) return { field: "meeting_link", message: "Please add a meeting link." };
+      if (!/^https?:\/\//i.test(trimmedMeetingLink)) return { field: "meeting_link", message: "Meeting link must start with http:// or https://." };
       return null;
     }
     return null;
@@ -154,7 +157,7 @@ export const ApplyActivity = () => {
         }
       }
     }
-    setError("");
+    setError(null);
     setCurrentStep(n);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
@@ -273,12 +276,12 @@ export const ApplyActivity = () => {
     if (!file) return;
     setUploading(true);
     setUploadProgress(0);
-    setError("");
+    setError(null);
     let uploadFile;
     try {
       uploadFile = await convertToWebp(file);
     } catch {
-      setError("Failed to process image. Please try a different file.");
+      setError({ field: "cover_image", message: "Failed to process image. Please try a different file." });
       setUploading(false);
       return;
     }
@@ -290,7 +293,7 @@ export const ApplyActivity = () => {
         setUploadProgress(Math.round((snap.bytesTransferred / snap.totalBytes) * 100));
       },
       () => {
-        setError("Image upload failed. Please try again.");
+        setError({ field: "cover_image", message: "Image upload failed. Please try again." });
         setUploading(false);
       },
       async () => {
@@ -333,11 +336,11 @@ export const ApplyActivity = () => {
     const remaining = MAX_ADDITIONAL_IMAGES - additionalImages.length;
     if (remaining <= 0) return;
     if (files.length > remaining) {
-      setError(`You can upload at most ${MAX_ADDITIONAL_IMAGES} additional photos.`);
+      setError({ field: "additional_images", message: `You can upload at most ${MAX_ADDITIONAL_IMAGES} additional photos.` });
       files = files.slice(0, remaining);
       if (files.length === 0) return;
     } else {
-      setError("");
+      setError(null);
     }
     setAdditionalUploading(true);
     try {
@@ -346,7 +349,7 @@ export const ApplyActivity = () => {
         setAdditionalImages((prev) => [...prev, url]);
       }
     } catch (err) {
-      setError(err.message || "Image upload failed. Please try again.");
+      setError({ field: "additional_images", message: err.message || "Image upload failed. Please try again." });
     } finally {
       setAdditionalUploading(false);
     }
@@ -360,7 +363,7 @@ export const ApplyActivity = () => {
     e.preventDefault();
     if (uploading || additionalUploading) return;
     if (!form.title || !form.location_name || !form.country || !form.price || !form.description) {
-      setError("Please fill in all required fields.");
+      setError({ field: null, message: "Please fill in all required fields." });
       return;
     }
     if (
@@ -371,88 +374,88 @@ export const ApplyActivity = () => {
       return;
     }
     if (!COUNTRIES.includes(form.country)) {
-      setError("Please select a country from the list.");
+      setError({ field: "country", message: "Please select a country from the list." });
       return;
     }
     if (!form.date_time) {
-      setError("Please pick a date and time for the experience.");
+      setError({ field: "date_time", message: "Please pick a date and time for the experience." });
       return;
     }
     if (new Date(form.date_time).getTime() <= Date.now()) {
-      setError("Date & time must be in the future.");
+      setError({ field: "date_time", message: "Date & time must be in the future." });
       return;
     }
     if (form.latitude === "" || form.longitude === "") {
-      setError("Please pin the location on the map.");
+      setError({ field: "latitude", message: "Please pin the location on the map." });
       return;
     }
     if (form.allows_piggyback && (form.price_discounted === "" || Number.isNaN(Number(form.price_discounted)) || Number(form.price_discounted) < 0)) {
-      setError("Please set a piggyback price (£0 or more) when piggyback bookings are enabled.");
+      setError({ field: "price_discounted", message: "Please set a piggyback price (£0 or more) when piggyback bookings are enabled." });
       return;
     }
     if (form.allows_piggyback) {
       const cap = Number(form.max_piggyback_visitors);
       if (form.max_piggyback_visitors === "" || !Number.isInteger(cap) || cap < 1) {
-        setError("Please set a max piggyback tickets (1 or more) when piggyback bookings are enabled.");
+        setError({ field: "max_piggyback_visitors", message: "Please set a max piggyback tickets (1 or more) when piggyback bookings are enabled." });
         return;
       }
     }
     if (form.price_discounted !== "" && Number(form.price_discounted) >= Number(form.price)) {
-      setError("Discounted price must be lower than the regular price.");
+      setError({ field: "price_discounted", message: "Discounted price must be lower than the regular price." });
       return;
     }
     if (form.allows_souvenir_addon) {
       if (form.souvenir_price === "" || Number(form.souvenir_price) < 0 || Number.isNaN(Number(form.souvenir_price))) {
-        setError("Please set a souvenir price (£0 or more) when the souvenir add-on is enabled.");
+        setError({ field: "souvenir_price", message: "Please set a souvenir price (£0 or more) when the souvenir add-on is enabled." });
         return;
       }
     }
     if (form.allows_video_addon) {
       if (form.video_addon_price === "" || Number(form.video_addon_price) < 0 || Number.isNaN(Number(form.video_addon_price))) {
-        setError("Please set a video download price (£0 or more) when the video add-on is enabled.");
+        setError({ field: "video_addon_price", message: "Please set a video download price (£0 or more) when the video add-on is enabled." });
         return;
       }
     }
     if (!coverImage) {
-      setError("Please upload a cover image.");
+      setError({ field: "cover_image", message: "Please upload a cover image." });
       return;
     }
     if (additionalImages.length < MIN_ADDITIONAL_IMAGES) {
-      setError(`Please upload at least ${MIN_ADDITIONAL_IMAGES} additional photos.`);
+      setError({ field: "additional_images", message: `Please upload at least ${MIN_ADDITIONAL_IMAGES} additional photos.` });
       return;
     }
     if (additionalImages.length > MAX_ADDITIONAL_IMAGES) {
-      setError(`You can upload at most ${MAX_ADDITIONAL_IMAGES} additional photos.`);
+      setError({ field: "additional_images", message: `You can upload at most ${MAX_ADDITIONAL_IMAGES} additional photos.` });
       return;
     }
     const trimmedVideoUrl = form.sample_video_url.trim();
     if (!trimmedVideoUrl) {
-      setError("Please add a sample YouTube video link for your experience.");
+      setError({ field: "sample_video_url", message: "Please add a sample YouTube video link for your experience." });
       return;
     }
     if (!isYouTubeUrl(trimmedVideoUrl)) {
-      setError("Please paste a valid YouTube link (e.g. https://youtube.com/watch?v=...).");
+      setError({ field: "sample_video_url", message: "Please paste a valid YouTube link (e.g. https://youtube.com/watch?v=...)." });
       return;
     }
     const trimmedVideoDescription = form.video_description.trim();
     if (!trimmedVideoDescription) {
-      setError("Please add a video description.");
+      setError({ field: "video_description", message: "Please add a video description." });
       return;
     }
     const trimmedMeetingLink = form.meeting_link.trim();
     if (!trimmedMeetingLink) {
-      setError("Please add a meeting link for your live experience.");
+      setError({ field: "meeting_link", message: "Please add a meeting link for your live experience." });
       return;
     }
     if (!/^https?:\/\//i.test(trimmedMeetingLink)) {
-      setError("Meeting link must start with http:// or https://.");
+      setError({ field: "meeting_link", message: "Meeting link must start with http:// or https://." });
       return;
     }
     const highlightsArray = form.video_highlights
       .split("\n")
       .map((s) => s.trim())
       .filter(Boolean);
-    setError("");
+    setError(null);
     setSubmitting(true);
     try {
       const payload = {
@@ -484,7 +487,7 @@ export const ApplyActivity = () => {
       }
       setShowSubmittedModal(true);
     } catch (err) {
-      setError(err.response?.data?.message || "Failed to submit experience. Please try again.");
+      setError({ field: null, message: err.response?.data?.message || "Failed to submit experience. Please try again." });
     } finally {
       setSubmitting(false);
     }
@@ -545,11 +548,13 @@ export const ApplyActivity = () => {
             <>
               <label className="aa-label">Title*</label>
               <input className="aa-input" name="title" value={form.title} onChange={handleChange} placeholder="e.g. Thailand Religious Tourism" />
+              {fieldError(error, "title") && <div className="aa-field-error">{fieldError(error, "title")}</div>}
 
               <div className="aa-grid">
                 <div>
                   <label className="aa-label">Location name*</label>
                   <input className="aa-input" name="location_name" value={form.location_name} onChange={handleChange} />
+                  {fieldError(error, "location_name") && <div className="aa-field-error">{fieldError(error, "location_name")}</div>}
                 </div>
                 <div>
                   <label className="aa-label">Country*</label>
@@ -565,6 +570,7 @@ export const ApplyActivity = () => {
                   <datalist id="aa-country-options">
                     {COUNTRIES.map((c) => <option key={c} value={c} />)}
                   </datalist>
+                  {fieldError(error, "country") && <div className="aa-field-error">{fieldError(error, "country")}</div>}
                 </div>
               </div>
 
@@ -594,6 +600,7 @@ export const ApplyActivity = () => {
 
               <label className="aa-label">Description*</label>
               <textarea className="aa-textarea" name="description" rows="5" value={form.description} onChange={handleChange} />
+              {fieldError(error, "description") && <div className="aa-field-error">{fieldError(error, "description")}</div>}
 
               <label className="aa-label">Pin the location on the map*</label>
               {mapIsLoaded ? (
@@ -630,6 +637,7 @@ export const ApplyActivity = () => {
               ) : (
                 <div className="aa-hint">Loading map…</div>
               )}
+              {fieldError(error, "latitude") && <div className="aa-field-error">{fieldError(error, "latitude")}</div>}
             </>
           )}
 
@@ -638,6 +646,7 @@ export const ApplyActivity = () => {
               <label className="aa-label">Cover image*</label>
               <input type="file" accept="image/*" onChange={(e) => handleImageUpload(e.target.files[0])} disabled={uploading} />
               {uploading && <div className="aa-hint">Uploading… {uploadProgress}%</div>}
+              {fieldError(error, "cover_image") && <div className="aa-field-error">{fieldError(error, "cover_image")}</div>}
               {coverImage && !uploading && (
                 <div className="aa-cover-preview">
                   <button
@@ -701,11 +710,13 @@ export const ApplyActivity = () => {
                 {additionalImages.length < MIN_ADDITIONAL_IMAGES &&
                   ` Add at least ${MIN_ADDITIONAL_IMAGES - additionalImages.length} more.`}
               </div>
+              {fieldError(error, "additional_images") && <div className="aa-field-error">{fieldError(error, "additional_images")}</div>}
 
               <div className="aa-grid">
                 <div>
                   <label className="aa-label">Date & time*</label>
                   <input className="aa-input" name="date_time" type="datetime-local" min={minDateTime} value={form.date_time} onChange={handleChange} />
+                  {fieldError(error, "date_time") && <div className="aa-field-error">{fieldError(error, "date_time")}</div>}
                 </div>
                 <div>
                   <label className="aa-label">Duration (minutes)</label>
@@ -717,10 +728,12 @@ export const ApplyActivity = () => {
                 <div>
                   <label className="aa-label">Capacity (max normal tickets)*</label>
                   <input className="aa-input" name="max_visitors" type="number" min="1" value={form.max_visitors} onChange={handleChange} />
+                  {fieldError(error, "max_visitors") && <div className="aa-field-error">{fieldError(error, "max_visitors")}</div>}
                 </div>
                 <div>
                   <label className="aa-label">Price per viewer (GBP)*</label>
                   <input className="aa-input" name="price" type="number" min="0" step="0.01" value={form.price} onChange={handleChange} />
+                  {fieldError(error, "price") && <div className="aa-field-error">{fieldError(error, "price")}</div>}
                 </div>
               </div>
 
@@ -733,6 +746,7 @@ export const ApplyActivity = () => {
                 onChange={handleChange}
                 placeholder="https://youtube.com/watch?v=..."
               />
+              {fieldError(error, "sample_video_url") && <div className="aa-field-error">{fieldError(error, "sample_video_url")}</div>}
 
               <label className="aa-label">Video description*</label>
               <textarea
@@ -743,6 +757,7 @@ export const ApplyActivity = () => {
                 onChange={handleChange}
                 placeholder="A short paragraph or two about what visitors will see in the sample video. Separate paragraphs with a blank line."
               />
+              {fieldError(error, "video_description") && <div className="aa-field-error">{fieldError(error, "video_description")}</div>}
 
               <label className="aa-label">Video highlights</label>
               <textarea
@@ -764,6 +779,7 @@ export const ApplyActivity = () => {
                 placeholder="https://meet.google.com/... or https://zoom.us/j/..."
               />
               <div className="aa-hint">Visitors will join your live experience using this link.</div>
+              {fieldError(error, "meeting_link") && <div className="aa-field-error">{fieldError(error, "meeting_link")}</div>}
             </>
           )}
 
@@ -818,6 +834,7 @@ export const ApplyActivity = () => {
                       value={form.price_discounted}
                       onChange={handleChange}
                     />
+                    {fieldError(error, "price_discounted") && <div className="aa-field-error">{fieldError(error, "price_discounted")}</div>}
                   </div>
                   <div>
                     <label className="aa-label">Max piggyback tickets*</label>
@@ -829,6 +846,7 @@ export const ApplyActivity = () => {
                       value={form.max_piggyback_visitors}
                       onChange={handleChange}
                     />
+                    {fieldError(error, "max_piggyback_visitors") && <div className="aa-field-error">{fieldError(error, "max_piggyback_visitors")}</div>}
                   </div>
                 </div>
               )}
@@ -857,6 +875,7 @@ export const ApplyActivity = () => {
                         value={form.souvenir_price}
                         onChange={handleChange}
                       />
+                      {fieldError(error, "souvenir_price") && <div className="aa-field-error">{fieldError(error, "souvenir_price")}</div>}
                     </div>
                   )}
                 </div>
@@ -884,6 +903,7 @@ export const ApplyActivity = () => {
                         value={form.video_addon_price}
                         onChange={handleChange}
                       />
+                      {fieldError(error, "video_addon_price") && <div className="aa-field-error">{fieldError(error, "video_addon_price")}</div>}
                     </div>
                   )}
                 </div>
@@ -891,7 +911,7 @@ export const ApplyActivity = () => {
             </>
           )}
 
-          {error && <div className="aa-error">{error}</div>}
+          {error && !error.field && <div className="aa-error">{error.message}</div>}
         </form>
 
         <aside className="aa-preview-pane">
