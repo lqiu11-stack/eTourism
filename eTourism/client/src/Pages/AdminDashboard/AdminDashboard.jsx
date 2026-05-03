@@ -842,12 +842,83 @@ const ExperienceRequests = ({
                 className="suit-cover-image"
               />
             )}
-            <p><strong>Category:</strong> {selectedExp.category || "—"}</p>
-            <p><strong>Country:</strong> {selectedExp.country || "—"}</p>
-            <p><strong>Language:</strong> {selectedExp.language || "—"}</p>
-            <p><strong>Status:</strong> {selectedExp.status}</p>
+            <div className="suit-meta-grid">
+              <p><strong>Status:</strong> {selectedExp.status}</p>
+              <p><strong>Category:</strong> {selectedExp.category || "—"}</p>
+              <p><strong>Language:</strong> {selectedExp.language || "—"}</p>
+              <p><strong>Continent:</strong> {selectedExp.continent || "—"}</p>
+              <p><strong>Country:</strong> {selectedExp.country || "—"}</p>
+              <p><strong>Location:</strong> {selectedExp.location_name || "—"}</p>
+              <p>
+                <strong>Date / time:</strong>{" "}
+                {selectedExp.date_time ? new Date(selectedExp.date_time).toLocaleString() : "—"}
+              </p>
+              <p><strong>Duration:</strong> {selectedExp.duration_minutes ? `${selectedExp.duration_minutes} min` : "—"}</p>
+              <p><strong>Max visitors:</strong> {selectedExp.max_visitors ?? "—"}</p>
+              <p>
+                <strong>Price:</strong>{" "}
+                £{selectedExp.price ?? "—"}
+                {selectedExp.price_discounted != null && selectedExp.price_discounted !== "" && (
+                  <> &middot; £{selectedExp.price_discounted} watch-only</>
+                )}
+              </p>
+              <p><strong>Gender preference:</strong> {selectedExp.gender_preference || "any"}</p>
+              <p><strong>Piggyback:</strong> {selectedExp.allows_piggyback ? "Yes" : "No"}</p>
+            </div>
+            {(selectedExp.latitude !== null && selectedExp.latitude !== undefined && selectedExp.longitude !== null && selectedExp.longitude !== undefined) && (
+              <p>
+                <strong>Coordinates:</strong>{" "}
+                <a
+                  href={`https://www.google.com/maps?q=${selectedExp.latitude},${selectedExp.longitude}`}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  {Number(selectedExp.latitude).toFixed(5)}, {Number(selectedExp.longitude).toFixed(5)}
+                </a>
+              </p>
+            )}
+            <p>
+              <strong>Meeting link:</strong>{" "}
+              {selectedExp.meeting_link ? (
+                <a href={selectedExp.meeting_link} target="_blank" rel="noreferrer">
+                  {selectedExp.meeting_link}
+                </a>
+              ) : "—"}
+            </p>
+            {selectedExp.rejection_reason && (
+              <p style={{ background: "#fef2f2", padding: "6px 10px", borderRadius: 6 }}>
+                <strong>Last rejection reason:</strong> {selectedExp.rejection_reason}
+              </p>
+            )}
             {selectedExp.description && (
-              <p style={{ marginTop: "8px", fontSize: "13px" }}>{selectedExp.description}</p>
+              <>
+                <p style={{ marginTop: "12px", marginBottom: "4px" }}><strong>Description</strong></p>
+                <p style={{ fontSize: "13px", whiteSpace: "pre-wrap" }}>{selectedExp.description}</p>
+              </>
+            )}
+            {selectedExp.sample_video_url && (
+              <p style={{ marginTop: "12px" }}>
+                <strong>Sample video:</strong>{" "}
+                <a href={selectedExp.sample_video_url} target="_blank" rel="noreferrer">
+                  {selectedExp.sample_video_url}
+                </a>
+              </p>
+            )}
+            {selectedExp.video_description && (
+              <>
+                <p style={{ marginTop: "8px", marginBottom: "4px" }}><strong>Video description</strong></p>
+                <p style={{ fontSize: "13px", whiteSpace: "pre-wrap" }}>{selectedExp.video_description}</p>
+              </>
+            )}
+            {Array.isArray(selectedExp.video_highlights) && selectedExp.video_highlights.length > 0 && (
+              <>
+                <p style={{ marginTop: "8px", marginBottom: "4px" }}><strong>Video highlights</strong></p>
+                <ul style={{ fontSize: "13px", paddingLeft: "20px", margin: 0 }}>
+                  {selectedExp.video_highlights.map((h, i) => (
+                    <li key={i}>{h}</li>
+                  ))}
+                </ul>
+              </>
             )}
             {Array.isArray(selectedExp.additional_images) && selectedExp.additional_images.length > 0 && (
               <>
