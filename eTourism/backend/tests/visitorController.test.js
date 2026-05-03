@@ -158,6 +158,7 @@ require.cache[require.resolve('@paypal/checkout-server-sdk')] = {
 
 const {
   getMe,
+  updateMe,
   getExperiences,
   getExperienceById,
   createBooking,
@@ -170,6 +171,12 @@ const {
   capturePayPalOrder,
   captureStripePayment,
   refundBooking,
+  followHost,
+  unfollowHost,
+  getFollowStatus,
+  listFollows,
+  getReviews,
+  getRefundStatus,
 } = require('../controllers/visitorController');
 
 function makeRes() {
@@ -962,5 +969,252 @@ describe('createReview()', () => {
     await createReview(req, res);
     assert.equal(res.status.mock.calls[0].arguments[0], 201);
     assert.equal(mockReview.upsert.mock.callCount(), 1);
+  });
+
+  it('403 : not eligible (never attended)', async () => {
+    fakePool.query.mock.mockImplementationOnce(async () => ({ rows: [] }));
+    const req = makeReq({ experience_id: 1, rating: 5 }, {}, {}, 42);
+    const res = makeRes();
+    await createReview(req, res);
+    assert.equal(res.status.mock.calls[0].arguments[0], 403);
+  });
+
+  it('400 : invalid rating', async () => {
+    const req = makeReq({ experience_id: 1, rating: 9 }, {}, {}, 42);
+    const res = makeRes();
+    await createReview(req, res);
+    assert.equal(res.status.mock.calls[0].arguments[0], 400);
+  });
+});
+
+describe('updateMe()', () => {
+  beforeEach(resetMocks);
+
+  it('200 : updates editable fields', async () => {
+    mockUser.update.mock.mockImplementationOnce(async () => ({ id: 42, first_name: 'Alice', last_name: 'B', display_name: 'AliB' }));
+    const req = makeReq({ first_name: 'Alice', last_name: 'B', display_name: 'AliB' }, {}, {}, 42);
+    const res = makeRes();
+    await updateMe(req, res);
+    assert.equal(mockUser.update.mock.callCount(), 1);
+    assert.deepEqual(mockUser.update.mock.calls[0].arguments[0], 42);
+    assert.deepEqual(res.json.mock.calls[0].arguments[0], { id: 42, first_name: 'Alice', last_name: 'B', display_name: 'AliB' });
+  });
+
+  it('400 : no editable fields supplied', async () => {
+    const req = makeReq({ password: 'hack' }, {}, {}, 42);
+    const res = makeRes();
+    await updateMe(req, res);
+    assert.equal(res.status.mock.calls[0].arguments[0], 400);
+  });
+
+  it('400 : empty first_name rejected', async () => {
+    const req = makeReq({ first_name: '   ' }, {}, {}, 42);
+    const res = makeRes();
+    await updateMe(req, res);
+    assert.equal(res.status.mock.calls[0].arguments[0], 400);
+  });
+
+  it('400 : empty last_name rejected', async () => {
+    const req = makeReq({ last_name: '' }, {}, {}, 42);
+    const res = makeRes();
+    await updateMe(req, res);
+    assert.equal(res.status.mock.calls[0].arguments[0], 400);
+  });
+
+  it('clears display_name when blank', async () => {
+    mockUser.update.mock.mockImplementationOnce(async () => ({ id: 42, display_name: null }));
+    const req = makeReq({ display_name: '' }, {}, {}, 42);
+    const res = makeRes();
+    await updateMe(req, res);
+    assert.equal(mockUser.update.mock.calls[0].arguments[1].display_name, null);
+  });
+
+  it('404 : user not found', async () => {
+    mockUser.update.mock.mockImplementationOnce(async () => null);
+    const req = makeReq({ first_name: 'Alice' }, {}, {}, 42);
+    const res = makeRes();
+    await updateMe(req, res);
+    assert.equal(res.status.mock.calls[0].arguments[0], 404);
+  });
+});
+
+describe('followHost()', () => {
+  beforeEach(resetMocks);
+
+  it('201 : creates a follow row and returns count', async () => {
+    mockUser.findById.mock.mockImplementationOnce(async () => ({ id: 7, role: 'ehost' }));
+    mockFollow.create.mock.mockImplementationOnce(async () => ({ visitor_id: 42, ehost_id: 7 }));
+    mockFollow.countForHost.mock.mockImplementationOnce(async () => 12);
+    const req = makeReq({ ehost_id: 7 }, {}, {}, 42);
+    const res = makeRes();
+    await followHost(req, res);
+    assert.equal(res.status.mock.calls[0].arguments[0], 201);
+    assert.deepEqual(res.json.mock.calls[0].arguments[0], { following: true, followers_count: 12 });
+  });
+
+  it('400 : missing ehost_id', async () => {
+    const req = makeReq({}, {}, {}, 42);
+    const res = makeRes();
+    await followHost(req, res);
+    assert.equal(res.status.mock.calls[0].arguments[0], 400);
+  });
+
+  it('400 : cannot follow yourself', async () => {
+    const req = makeReq({ ehost_id: 42 }, {}, {}, 42);
+    const res = makeRes();
+    await followHost(req, res);
+    assert.equal(res.status.mock.calls[0].arguments[0], 400);
+    assert.match(res.json.mock.calls[0].arguments[0].error, /yourself/i);
+  });
+
+  it('404 : target user not found', async () => {
+    mockUser.findById.mock.mockImplementationOnce(async () => null);
+    const req = makeReq({ ehost_id: 99 }, {}, {}, 42);
+    const res = makeRes();
+    await followHost(req, res);
+    assert.equal(res.status.mock.calls[0].arguments[0], 404);
+  });
+
+  it('404 : target is not an ehost', async () => {
+    mockUser.findById.mock.mockImplementationOnce(async () => ({ id: 8, role: 'visitor' }));
+    const req = makeReq({ ehost_id: 8 }, {}, {}, 42);
+    const res = makeRes();
+    await followHost(req, res);
+    assert.equal(res.status.mock.calls[0].arguments[0], 404);
+  });
+});
+
+describe('unfollowHost()', () => {
+  beforeEach(resetMocks);
+
+  it('200 : removes follow and returns updated count', async () => {
+    mockFollow.countForHost.mock.mockImplementationOnce(async () => 4);
+    const req = makeReq({}, { ehostId: 7 }, {}, 42);
+    const res = makeRes();
+    await unfollowHost(req, res);
+    assert.equal(mockFollow.remove.mock.callCount(), 1);
+    assert.deepEqual(res.json.mock.calls[0].arguments[0], { following: false, followers_count: 4 });
+  });
+
+  it('400 : invalid ehost id', async () => {
+    const req = makeReq({}, { ehostId: 'abc' }, {}, 42);
+    const res = makeRes();
+    await unfollowHost(req, res);
+    assert.equal(res.status.mock.calls[0].arguments[0], 400);
+  });
+});
+
+describe('getFollowStatus()', () => {
+  beforeEach(resetMocks);
+
+  it('200 : returns count and follow flag for logged-in visitor', async () => {
+    mockFollow.countForHost.mock.mockImplementationOnce(async () => 9);
+    mockFollow.exists.mock.mockImplementationOnce(async () => true);
+    const req = makeReq({}, { ehostId: 7 }, {}, 42);
+    const res = makeRes();
+    await getFollowStatus(req, res);
+    assert.deepEqual(res.json.mock.calls[0].arguments[0], { following: true, followers_count: 9 });
+  });
+
+  it('200 : following=false for anonymous viewer', async () => {
+    mockFollow.countForHost.mock.mockImplementationOnce(async () => 9);
+    const req = makeReq({}, { ehostId: 7 }, {}, null);
+    const res = makeRes();
+    await getFollowStatus(req, res);
+    assert.deepEqual(res.json.mock.calls[0].arguments[0], { following: false, followers_count: 9 });
+  });
+
+  it('400 : invalid ehost id', async () => {
+    const req = makeReq({}, { ehostId: '0' }, {}, 42);
+    const res = makeRes();
+    await getFollowStatus(req, res);
+    assert.equal(res.status.mock.calls[0].arguments[0], 400);
+  });
+});
+
+describe('listFollows()', () => {
+  beforeEach(resetMocks);
+
+  it('returns rows from Follow.listForVisitor', async () => {
+    const rows = [
+      { ehost_id: 1, first_name: 'Alice', next_experience_id: 5 },
+      { ehost_id: 2, first_name: 'Bob',   next_experience_id: null },
+    ];
+    mockFollow.listForVisitor.mock.mockImplementationOnce(async () => rows);
+    const req = makeReq({}, {}, {}, 42);
+    const res = makeRes();
+    await listFollows(req, res);
+    assert.deepEqual(res.json.mock.calls[0].arguments[0], rows);
+  });
+
+  it('500 on model failure', async () => {
+    mockFollow.listForVisitor.mock.mockImplementationOnce(async () => { throw new Error('DB fail'); });
+    const req = makeReq({}, {}, {}, 42);
+    const res = makeRes();
+    await listFollows(req, res);
+    assert.equal(res.status.mock.calls[0].arguments[0], 500);
+  });
+});
+
+describe('getReviews()', () => {
+  beforeEach(resetMocks);
+
+  it('200 : returns reviews for an experience', async () => {
+    const reviews = [{ id: 1, rating: 5 }];
+    mockReview.findByExperience.mock.mockImplementationOnce(async () => reviews);
+    const req = makeReq({}, {}, { experience_id: 1 }, 42);
+    const res = makeRes();
+    await getReviews(req, res);
+    assert.equal(res.status.mock.calls[0].arguments[0], 200);
+    assert.deepEqual(res.json.mock.calls[0].arguments[0], reviews);
+  });
+
+  it('400 : missing experience_id query param', async () => {
+    const req = makeReq({}, {}, {}, 42);
+    const res = makeRes();
+    await getReviews(req, res);
+    assert.equal(res.status.mock.calls[0].arguments[0], 400);
+  });
+});
+
+describe('getRefundStatus()', () => {
+  beforeEach(resetMocks);
+
+  it('200 : returns refund details when refund exists', async () => {
+    mockBooking.findById.mock.mockImplementationOnce(async () => ({ id: 1, visitor_id: 42, status: 'refund_pending' }));
+    mockRefund.findByBookingId.mock.mockImplementationOnce(async () => ({ id: 9, status: 'pending', refund_amount: 50, refund_percentage: 100 }));
+    mockPayment.findByBooking.mock.mockImplementationOnce(async () => [{ id: 11, method: 'stripe' }]);
+    const req = makeReq({}, { id: '1' }, {}, 42);
+    const res = makeRes();
+    await getRefundStatus(req, res);
+    const body = res.json.mock.calls[0].arguments[0];
+    assert.equal(body.has_refund, true);
+    assert.equal(body.refund_amount, 50);
+  });
+
+  it('200 : has_refund false when no refund row', async () => {
+    mockBooking.findById.mock.mockImplementationOnce(async () => ({ id: 1, visitor_id: 42, status: 'confirmed' }));
+    mockRefund.findByBookingId.mock.mockImplementationOnce(async () => null);
+    mockPayment.findByBooking.mock.mockImplementationOnce(async () => []);
+    const req = makeReq({}, { id: '1' }, {}, 42);
+    const res = makeRes();
+    await getRefundStatus(req, res);
+    assert.equal(res.json.mock.calls[0].arguments[0].has_refund, false);
+  });
+
+  it('404 : booking not found', async () => {
+    mockBooking.findById.mock.mockImplementationOnce(async () => null);
+    const req = makeReq({}, { id: '999' }, {}, 42);
+    const res = makeRes();
+    await getRefundStatus(req, res);
+    assert.equal(res.status.mock.calls[0].arguments[0], 404);
+  });
+
+  it('403 : booking owned by another visitor', async () => {
+    mockBooking.findById.mock.mockImplementationOnce(async () => ({ id: 1, visitor_id: 99 }));
+    const req = makeReq({}, { id: '1' }, {}, 42);
+    const res = makeRes();
+    await getRefundStatus(req, res);
+    assert.equal(res.status.mock.calls[0].arguments[0], 403);
   });
 });

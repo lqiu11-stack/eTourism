@@ -26,6 +26,7 @@ const {
   updateExperience,
   deleteExperience,
   getBookings,
+  getBookingsByExperience,
   getCalendarSlots,
   createCalendarSlot,
   updateCalendarSlot,
@@ -33,6 +34,8 @@ const {
   setUnavailableDates,
   getBookingPreferences,
   updateBookingPreferences,
+  getMe,
+  updateMe,
   submitApplication,
 } = require('../controllers/ehostController');
 
@@ -697,6 +700,144 @@ describe('updateBookingPreferences()', () => {
     await updateBookingPreferences(req, res);
 
     assert.equal(res.status.mock.calls[0].arguments[0], 404);
+  });
+});
+
+describe('getBookingsByExperience()', () => {
+  beforeEach(resetMocks);
+
+  it('200 : returns bookings list when ehost owns the experience', async () => {
+    const owned = { id: 7, title: 'My Tour' };
+    const bookings = [
+      { id: 1, status: 'confirmed', qty_normal: 2, contact_email: 'a@b.com', first_name: 'Alice' },
+    ];
+    let calls = 0;
+    fakePool.query.mock.mockImplementation(() => {
+      calls++;
+      if (calls === 1) return Promise.resolve({ rows: [owned] });   // ownership lookup
+      return Promise.resolve({ rows: bookings });                    // bookings list
+    });
+
+    const req = makeReq({}, { id: '7' }, {}, { id: 5 });
+    const res = makeRes();
+    await getBookingsByExperience(req, res);
+
+    assert.equal(res.status.mock.calls[0].arguments[0], 200);
+    assert.deepEqual(res.json.mock.calls[0].arguments[0].data, { experience: owned, bookings });
+  });
+
+  it('400 : invalid experience id', async () => {
+    const req = makeReq({}, { id: 'abc' }, {}, { id: 5 });
+    const res = makeRes();
+    await getBookingsByExperience(req, res);
+    assert.equal(res.status.mock.calls[0].arguments[0], 400);
+  });
+
+  it('404 : experience not owned by this ehost', async () => {
+    fakePool.query.mock.mockImplementationOnce(() => Promise.resolve({ rows: [] }));
+    const req = makeReq({}, { id: '7' }, {}, { id: 5 });
+    const res = makeRes();
+    await getBookingsByExperience(req, res);
+    assert.equal(res.status.mock.calls[0].arguments[0], 404);
+  });
+
+  it('500 : database error', async () => {
+    fakePool.query.mock.mockImplementation(() => Promise.reject(new Error('DB fail')));
+    const req = makeReq({}, { id: '7' }, {}, { id: 5 });
+    const res = makeRes();
+    await getBookingsByExperience(req, res);
+    assert.equal(res.status.mock.calls[0].arguments[0], 500);
+  });
+});
+
+describe('getMe()', () => {
+  beforeEach(resetMocks);
+
+  it('200 : returns ehost profile', async () => {
+    const me = { id: 5, email: 'host@x.com', role: 'ehost', first_name: 'Host', display_name: 'TheHost' };
+    fakePool.query.mock.mockImplementation(() => Promise.resolve({ rows: [me] }));
+
+    const req = makeReq({}, {}, {}, { id: 5 });
+    const res = makeRes();
+    await getMe(req, res);
+
+    assert.equal(res.status.mock.calls[0].arguments[0], 200);
+    assert.deepEqual(res.json.mock.calls[0].arguments[0].data, me);
+  });
+
+  it('404 : user not found', async () => {
+    fakePool.query.mock.mockImplementation(() => Promise.resolve({ rows: [] }));
+    const req = makeReq({}, {}, {}, { id: 5 });
+    const res = makeRes();
+    await getMe(req, res);
+    assert.equal(res.status.mock.calls[0].arguments[0], 404);
+  });
+
+  it('500 : database error', async () => {
+    fakePool.query.mock.mockImplementation(() => Promise.reject(new Error('DB fail')));
+    const req = makeReq({}, {}, {}, { id: 5 });
+    const res = makeRes();
+    await getMe(req, res);
+    assert.equal(res.status.mock.calls[0].arguments[0], 500);
+  });
+});
+
+describe('updateMe()', () => {
+  beforeEach(resetMocks);
+
+  it('200 : updates editable profile fields', async () => {
+    const updated = { id: 5, first_name: 'New', last_name: 'Name', display_name: 'Newbie' };
+    fakePool.query.mock.mockImplementation(() => Promise.resolve({ rows: [updated] }));
+
+    const req = makeReq({ first_name: 'New', last_name: 'Name', display_name: 'Newbie' }, {}, {}, { id: 5 });
+    const res = makeRes();
+    await updateMe(req, res);
+
+    assert.equal(res.status.mock.calls[0].arguments[0], 200);
+    assert.deepEqual(res.json.mock.calls[0].arguments[0].data, updated);
+  });
+
+  it('400 : no editable fields supplied', async () => {
+    const req = makeReq({ password: 'hack' }, {}, {}, { id: 5 });
+    const res = makeRes();
+    await updateMe(req, res);
+    assert.equal(res.status.mock.calls[0].arguments[0], 400);
+  });
+
+  it('400 : invalid language', async () => {
+    const req = makeReq({ language: 'Klingon' }, {}, {}, { id: 5 });
+    const res = makeRes();
+    await updateMe(req, res);
+    assert.equal(res.status.mock.calls[0].arguments[0], 400);
+    assert.match(res.json.mock.calls[0].arguments[0].message, /language/i);
+  });
+
+  it('clears empty string fields to null', async () => {
+    const updated = { id: 5, display_name: null };
+    fakePool.query.mock.mockImplementation(() => Promise.resolve({ rows: [updated] }));
+
+    const req = makeReq({ display_name: '' }, {}, {}, { id: 5 });
+    const res = makeRes();
+    await updateMe(req, res);
+    assert.equal(res.status.mock.calls[0].arguments[0], 200);
+    // The SET clause params should include `null` for the cleared field
+    assert.ok(fakePool.query.mock.calls[0].arguments[1].includes(null));
+  });
+
+  it('404 : user not found', async () => {
+    fakePool.query.mock.mockImplementation(() => Promise.resolve({ rows: [] }));
+    const req = makeReq({ first_name: 'A' }, {}, {}, { id: 5 });
+    const res = makeRes();
+    await updateMe(req, res);
+    assert.equal(res.status.mock.calls[0].arguments[0], 404);
+  });
+
+  it('500 : database error', async () => {
+    fakePool.query.mock.mockImplementation(() => Promise.reject(new Error('DB fail')));
+    const req = makeReq({ first_name: 'A' }, {}, {}, { id: 5 });
+    const res = makeRes();
+    await updateMe(req, res);
+    assert.equal(res.status.mock.calls[0].arguments[0], 500);
   });
 });
 

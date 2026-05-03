@@ -135,10 +135,6 @@ const getBookings = async (req, res) => {
   }
 };
 
-const getReviews = async (req, res) => {
-  // TODO
-};
-
 // GET /api/admin/analytics
 const getAnalytics = async (req, res) => {
   try {
@@ -502,7 +498,6 @@ module.exports = {
   rejectExperience,
   deleteExperience,
   getBookings,
-  getReviews,
   getApplications,
   approveApplication,
   rejectApplication,
