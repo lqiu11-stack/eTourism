@@ -33,6 +33,8 @@ export const PaymentPage = () => {
   const [loading, setLoading] = useState(false);
   const [souvenirQty, setSouvenirQty] = useState(0);
   const [videoAddon, setVideoAddon] = useState(false);
+  const [donationPreset, setDonationPreset] = useState(0);
+  const [donationCustom, setDonationCustom] = useState("");
 
   const genderPreference = experience?.gender_preference || "any";
   const autoGroupGenderType = {
@@ -92,7 +94,10 @@ export const PaymentPage = () => {
   const souvenirTotal = experience?.allows_souvenir_addon ? souvenirQty * souvenirPrice : 0;
   const videoTotal = experience?.allows_video_addon && videoAddon ? videoAddonPrice : 0;
   const showAddons = !!(experience?.allows_souvenir_addon || experience?.allows_video_addon);
-  const total = qtyNormal * normalPrice + qtyDiscounted * discountedPrice + souvenirTotal + videoTotal;
+  const donationAmount = donationPreset === "other"
+    ? Math.max(0, Number(donationCustom) || 0)
+    : Number(donationPreset) || 0;
+  const total = qtyNormal * normalPrice + qtyDiscounted * discountedPrice + souvenirTotal + videoTotal + donationAmount;
 
   const bookingUnavailableReason = experience
     ? experience.status && experience.status !== 'approved'
@@ -145,6 +150,7 @@ export const PaymentPage = () => {
         agreed_to_terms: true,
         souvenir_qty: experience?.allows_souvenir_addon ? souvenirQty : 0,
         video_addon: experience?.allows_video_addon ? videoAddon : false,
+        donation_amount: donationAmount,
         ...(autoGroupGenderType ? { group_gender_type: autoGroupGenderType } : {}),
       },
       { headers: { Authorization: `Bearer ${token}` } }
@@ -328,6 +334,43 @@ export const PaymentPage = () => {
             </div>
           )}
 
+          {/* Donation */}
+          <div className="donation-section">
+            <h3 className="donation-title">Support {experience?.ehost_first_name || "your e-host"}</h3>
+            <p className="small-text">100% goes to the e-host as a thank-you tip.</p>
+            <div className="donation-chips">
+              {[0, 2, 5, 10].map((amt) => (
+                <button
+                  key={amt}
+                  type="button"
+                  className={`donation-chip${donationPreset === amt ? " is-active" : ""}`}
+                  onClick={() => { setDonationPreset(amt); setDonationCustom(""); }}
+                >
+                  {amt === 0 ? "None" : `£${amt}`}
+                </button>
+              ))}
+              <button
+                type="button"
+                className={`donation-chip${donationPreset === "other" ? " is-active" : ""}`}
+                onClick={() => setDonationPreset("other")}
+              >
+                Other
+              </button>
+            </div>
+            {donationPreset === "other" && (
+              <input
+                className="donation-input"
+                type="number"
+                min="0"
+                max="1000"
+                step="0.01"
+                placeholder="£0.00"
+                value={donationCustom}
+                onChange={(e) => setDonationCustom(e.target.value)}
+              />
+            )}
+          </div>
+
           {/* Terms */}
           <div className="terms">
             <input
@@ -354,7 +397,7 @@ export const PaymentPage = () => {
           {/* Price breakdown + Total */}
           <div className="total">
             <h3>Total</h3>
-            {(qtyNormal > 0 || qtyDiscounted > 0 || souvenirTotal > 0 || videoTotal > 0) && (
+            {(qtyNormal > 0 || qtyDiscounted > 0 || souvenirTotal > 0 || videoTotal > 0 || donationAmount > 0) && (
               <ul className="price-breakdown">
                 {qtyNormal > 0 && (
                   <li>
@@ -378,6 +421,12 @@ export const PaymentPage = () => {
                   <li>
                     <span>Video download</span>
                     <span>£{videoTotal.toFixed(2)}</span>
+                  </li>
+                )}
+                {donationAmount > 0 && (
+                  <li>
+                    <span>Tip / donation</span>
+                    <span>£{donationAmount.toFixed(2)}</span>
                   </li>
                 )}
               </ul>

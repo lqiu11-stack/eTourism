@@ -308,7 +308,8 @@ const createBooking = async (req, res) => {
       contact_email,
       agreed_to_terms,
       souvenir_qty = 0,
-      video_addon = false
+      video_addon = false,
+      donation_amount = 0
     } = req.body;
     
     const visitor_id = req.userId;
@@ -383,11 +384,18 @@ const createBooking = async (req, res) => {
       ? parseFloat(experience.video_addon_price || 0)
       : 0;
 
+    const parsedDonation = Number(donation_amount);
+    if (!Number.isFinite(parsedDonation) || parsedDonation < 0 || parsedDonation > 1000) {
+      return res.status(400).json({ message: 'Donation must be between £0 and £1000.' });
+    }
+    const donation = Math.round(parsedDonation * 100) / 100;
+
     let totalAmount = Number((
       (normalPrice * qtyNormal) +
       (discountedPrice * qtyDiscounted) +
       souvenirTotal +
-      videoTotal
+      videoTotal +
+      donation
     ).toFixed(2));
 
     const newBooking = await Booking.create({
@@ -400,7 +408,8 @@ const createBooking = async (req, res) => {
       contact_name,
       contact_email,
       souvenir_qty: souvenirQty,
-      video_addon: wantsVideoAddon
+      video_addon: wantsVideoAddon,
+      donation_amount: donation
     });
 
     return res.status(201).json({

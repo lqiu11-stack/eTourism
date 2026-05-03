@@ -15,18 +15,18 @@ const Booking = {
   async create({
     visitor_id, experience_id, amount_paid, booking_type,
     qty_normal = 1, qty_discounted = 0, contact_name, contact_email,
-    souvenir_qty = 0, video_addon = false,
+    souvenir_qty = 0, video_addon = false, donation_amount = 0,
   }) {
     const { rows } = await pool.query(
       `INSERT INTO bookings
          (visitor_id, experience_id, amount_paid, booking_type,
           qty_normal, qty_discounted, contact_name, contact_email,
-          souvenir_qty, video_addon)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+          souvenir_qty, video_addon, donation_amount)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
        RETURNING *`,
       [visitor_id, experience_id, amount_paid, booking_type,
        qty_normal, qty_discounted, contact_name, contact_email,
-       souvenir_qty, video_addon]
+       souvenir_qty, video_addon, donation_amount]
     );
     return rows[0];
   },
