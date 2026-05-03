@@ -1,8 +1,6 @@
 import { useMemo, useState, useEffect } from "react";
 import axios from "axios";
 import "./DetailPage.css";
-import videoImg from "../icon/livecover.png";
-import head from "../icon/head.png";
 import { useNavigate, useSearchParams, Link, useLocation } from "react-router-dom";
 import backIcon from "../icon/back.png";
 import { useExperiences } from "../../hooks/useExperiences";
@@ -230,7 +228,7 @@ const { experiences } = useExperiences();
           <h3>Are you still hesitating?</h3>
           <p>Check our past video</p>
 
-          {experience?.sample_video_url && toYouTubeEmbed(experience.sample_video_url) ? (
+          {experience?.sample_video_url && toYouTubeEmbed(experience.sample_video_url) && (
             <iframe
               src={toYouTubeEmbed(experience.sample_video_url)}
               className="detail-video-player"
@@ -239,8 +237,6 @@ const { experiences } = useExperiences();
               allowFullScreen
               frameBorder="0"
             />
-          ) : (
-            <img src={videoImg} alt="detail-live video"/>
           )}
         </div>
 
@@ -263,11 +259,13 @@ const { experiences } = useExperiences();
 
         <div className="detail-guide-card">
 
-          <img
-            src={experience?.ehost_profile_image || head}
-            className="detail-guide-avatar"
-            alt="detail-guide"
-          />
+          {experience?.ehost_profile_image && (
+            <img
+              src={experience.ehost_profile_image}
+              className="detail-guide-avatar"
+              alt="detail-guide"
+            />
+          )}
 
           <div className="detail-guide-info">
             <h4>{experience?.ehost_first_name}</h4>
