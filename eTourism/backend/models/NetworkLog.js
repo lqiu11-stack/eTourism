@@ -4,9 +4,11 @@ const {
   NETWORK_POOR_QUALITIES,
   NETWORK_POOR_RATIO_THRESHOLD,
   NETWORK_POOR_MIN_SAMPLES,
+  NETWORK_GOOD_SAMPLE_RATE,
 } = require('../constants/enums');
 
 const DEFAULT_WINDOW_HOURS = 168;
+const GOOD_SCALE = NETWORK_GOOD_SAMPLE_RATE > 0 ? 1 / NETWORK_GOOD_SAMPLE_RATE : 1;
 
 const NetworkLog = {
   async create({ user_id, experience_id, connection_quality, ip_address, error_details }) {
@@ -38,9 +40,11 @@ const NetworkLog = {
   async hasRecentLog(user_id, seconds = 10) {
     const { rows } = await pool.query(
       `SELECT 1 FROM network_logs
-       WHERE user_id = $1 AND logged_at > now() - ($2 || ' seconds')::interval
+       WHERE user_id = $1
+         AND connection_quality = ANY($2::text[])
+         AND logged_at > now() - ($3 || ' seconds')::interval
        LIMIT 1`,
-      [user_id, seconds]
+      [user_id, NETWORK_POOR_QUALITIES, seconds]
     );
     return rows.length > 0;
   },
@@ -48,7 +52,7 @@ const NetworkLog = {
   async getQualityForUser(user_id, sinceHours = DEFAULT_WINDOW_HOURS) {
     const { rows } = await pool.query(
       `SELECT
-         COUNT(*)::int AS total,
+         COUNT(*) FILTER (WHERE connection_quality = 'good')::int AS good_count,
          COUNT(*) FILTER (WHERE connection_quality = ANY($2::text[]))::int AS poor_count
        FROM network_logs
        WHERE user_id = $1 AND logged_at > now() - ($3 || ' hours')::interval`,
@@ -60,7 +64,7 @@ const NetworkLog = {
   async getQualityForExperience(experience_id, sinceHours = DEFAULT_WINDOW_HOURS) {
     const { rows } = await pool.query(
       `SELECT
-         COUNT(*)::int AS total,
+         COUNT(*) FILTER (WHERE connection_quality = 'good')::int AS good_count,
          COUNT(*) FILTER (WHERE connection_quality = ANY($2::text[]))::int AS poor_count
        FROM network_logs
        WHERE experience_id = $1 AND logged_at > now() - ($3 || ' hours')::interval`,
@@ -72,7 +76,7 @@ const NetworkLog = {
   async getQualityForEhost(ehost_id, sinceHours = DEFAULT_WINDOW_HOURS) {
     const { rows } = await pool.query(
       `SELECT
-         COUNT(*)::int AS total,
+         COUNT(*) FILTER (WHERE nl.connection_quality = 'good')::int AS good_count,
          COUNT(*) FILTER (WHERE nl.connection_quality = ANY($2::text[]))::int AS poor_count
        FROM network_logs nl
        JOIN experiences e ON e.id = nl.experience_id
@@ -89,7 +93,7 @@ const NetworkLog = {
       `SELECT
          nl.user_id,
          u.first_name, u.last_name, u.email, u.role,
-         COUNT(*)::int AS total,
+         COUNT(*) FILTER (WHERE nl.connection_quality = 'good')::int AS good_count,
          COUNT(*) FILTER (WHERE nl.connection_quality = ANY($1::text[]))::int AS poor_count
        FROM network_logs nl
        LEFT JOIN users u ON u.id = nl.user_id
@@ -105,7 +109,7 @@ const NetworkLog = {
       `SELECT
          nl.experience_id,
          e.title, e.ehost_id,
-         COUNT(*)::int AS total,
+         COUNT(*) FILTER (WHERE nl.connection_quality = 'good')::int AS good_count,
          COUNT(*) FILTER (WHERE nl.connection_quality = ANY($1::text[]))::int AS poor_count
        FROM network_logs nl
        LEFT JOIN experiences e ON e.id = nl.experience_id
@@ -129,7 +133,7 @@ const NetworkLog = {
     const seriesQuery = pool.query(
       `SELECT
          date_trunc($1, logged_at) AS bucket,
-         COUNT(*)::int AS total,
+         COUNT(*) FILTER (WHERE connection_quality = 'good')::int AS good_count,
          COUNT(*) FILTER (WHERE connection_quality = ANY($2::text[]))::int AS poor_count
        FROM network_logs
        WHERE logged_at > now() - ($3 || ' hours')::interval
@@ -148,7 +152,9 @@ const NetworkLog = {
     }, {});
     for (const row of breakdown.rows) {
       if (quality_breakdown[row.connection_quality] !== undefined) {
-        quality_breakdown[row.connection_quality] = row.count;
+        quality_breakdown[row.connection_quality] = row.connection_quality === 'good'
+          ? Math.round(row.count * GOOD_SCALE)
+          : row.count;
       }
     }
 
@@ -165,7 +171,7 @@ const NetworkLog = {
       quality_breakdown,
       time_series: series.rows.map((r) => ({
         bucket: r.bucket,
-        total: r.total,
+        total: r.poor_count + Math.round((r.good_count || 0) * GOOD_SCALE),
         poor_count: r.poor_count,
       })),
       totals: {
@@ -179,9 +185,15 @@ const NetworkLog = {
   },
 };
 
-function summarise(row) {
-  const total = row?.total ?? 0;
+function estimateTotal(row) {
+  const good_count = row?.good_count ?? 0;
   const poor_count = row?.poor_count ?? 0;
+  return poor_count + Math.round(good_count * GOOD_SCALE);
+}
+
+function summarise(row) {
+  const poor_count = row?.poor_count ?? 0;
+  const total = estimateTotal(row);
   const poor_ratio = total > 0 ? poor_count / total : 0;
   return {
     total,
@@ -192,11 +204,12 @@ function summarise(row) {
 }
 
 function decorate(row) {
-  const total = row.total ?? 0;
   const poor_count = row.poor_count ?? 0;
+  const total = estimateTotal(row);
   const poor_ratio = total > 0 ? poor_count / total : 0;
   return {
     ...row,
+    total,
     poor_ratio,
     is_poor: total >= NETWORK_POOR_MIN_SAMPLES && poor_ratio >= NETWORK_POOR_RATIO_THRESHOLD,
   };

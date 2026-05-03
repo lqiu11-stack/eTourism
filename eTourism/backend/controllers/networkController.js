@@ -1,8 +1,8 @@
 const NetworkLog = require('../models/NetworkLog');
 const Experience = require('../models/Experience');
-const { NETWORK_QUALITIES } = require('../constants/enums');
+const { NETWORK_QUALITIES, NETWORK_POOR_QUALITIES } = require('../constants/enums');
 
-const POOR_QUALITIES = new Set(['slow', 'failed', 'offline']);
+const POOR_QUALITIES = new Set(NETWORK_POOR_QUALITIES);
 
 async function logIssue(req, res) {
   try {
@@ -11,11 +11,8 @@ async function logIssue(req, res) {
     if (!NETWORK_QUALITIES.includes(connection_quality)) {
       return res.status(400).json({ error: 'Invalid connection_quality' });
     }
-    if (!POOR_QUALITIES.has(connection_quality)) {
-      return res.status(204).end();
-    }
 
-    if (await NetworkLog.hasRecentLog(req.userId, 10)) {
+    if (POOR_QUALITIES.has(connection_quality) && await NetworkLog.hasRecentLog(req.userId, 10)) {
       return res.status(202).json({ throttled: true });
     }
 

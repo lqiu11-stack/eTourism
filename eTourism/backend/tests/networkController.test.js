@@ -83,16 +83,22 @@ describe('logIssue()', () => {
     assert.match(res.json.mock.calls[0].arguments[0].error, /connection_quality/i);
   });
 
-  it('204 : good quality is acknowledged but not stored', async () => {
+  it('201 : sampled good quality is stored without throttle check', async () => {
+    mockNetworkLog.hasRecentLog.mock.mockImplementation(async () => true);
+    const created = { id: 9, connection_quality: 'good' };
+    mockNetworkLog.create.mock.mockImplementation(async () => created);
+
     const req = makeReq({ body: { connection_quality: 'good' }, userId: 1 });
     const res = makeRes();
     await logIssue(req, res);
 
-    assert.equal(res.status.mock.calls[0].arguments[0], 204);
-    assert.equal(mockNetworkLog.create.mock.callCount(), 0);
+    assert.equal(res.status.mock.calls[0].arguments[0], 201);
+    assert.equal(mockNetworkLog.hasRecentLog.mock.callCount(), 0);
+    assert.equal(mockNetworkLog.create.mock.callCount(), 1);
+    assert.equal(mockNetworkLog.create.mock.calls[0].arguments[0].connection_quality, 'good');
   });
 
-  it('202 : throttled when a recent log exists', async () => {
+  it('202 : throttled when a recent poor log exists', async () => {
     mockNetworkLog.hasRecentLog.mock.mockImplementation(async () => true);
 
     const req = makeReq({ body: { connection_quality: 'slow' }, userId: 1 });

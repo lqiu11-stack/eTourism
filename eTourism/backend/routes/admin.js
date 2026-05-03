@@ -8,7 +8,6 @@ const {
   rejectExperience,
   deleteExperience,
   getBookings,
-  getReviews,
   getApplications,
   approveApplication,
   rejectApplication,
@@ -52,9 +51,6 @@ router.delete('/experiences/:id', requireRole('admin'), deleteExperience);
 
 // GET /api/admin/bookings
 router.get('/bookings', requireRole('admin'), getBookings);
-
-// GET /api/admin/reviews
-router.get('/reviews', requireRole('admin'), getReviews);
 
 // POST /api/admin/users
 router.post('/users', requireRole('admin'), createUser);

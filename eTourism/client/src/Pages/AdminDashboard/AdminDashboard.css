@@ -1098,13 +1098,42 @@
   cursor: pointer;
 }
 
+.ad-network-controls {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ad-network-refresh {
+  padding: 6px 12px;
+  font-size: 13px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  background: #f9fafb;
+  color: #1f2937;
+  cursor: pointer;
+}
+
+.ad-network-refresh:hover:not(:disabled) {
+  background: #f3f4f6;
+}
+
+.ad-network-refresh:disabled,
+.ad-network-window:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 @media (max-width: 480px) {
   .ad-network-header {
     flex-direction: column;
     align-items: stretch;
   }
-  .ad-network-window {
+  .ad-network-controls {
     width: 100%;
+  }
+  .ad-network-window {
+    flex: 1;
   }
 }
 
@@ -1262,4 +1291,25 @@
   color: #6b7280;
   background: #f9fafb;
   border-radius: 6px;
+}
+
+.account-avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #f7a13c;
+  color: #2a1d18;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  flex-shrink: 0;
+}
+
+.account-avatar--lg {
+  width: 44px;
+  height: 44px;
+  font-size: 17px;
 }
