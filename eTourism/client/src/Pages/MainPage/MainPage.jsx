@@ -1,5 +1,6 @@
 import { useMemo, useRef, useState, useEffect } from "react";
 import "./Mainstyle.css";
+import { AccountMenu } from "../../components/AccountMenu";
 import searchIcon from "../icon/search.png";
 import continentIcon from "../icon/continents.png";
 import dateIcon from "../icon/calendar.png";
@@ -77,7 +78,7 @@ export const MainPage = () => {
     .catch(() => {});
 }, []);
 
-  const { isLoggedIn, isEhost, logout, user } = useAuth();
+  const { user } = useAuth();
   const visibleGenderOptions = filterGenderOptionsForViewer(user?.gender);
   const { experiences } = useExperiences();
   const dateInputRef = useRef(null);
@@ -162,31 +163,7 @@ export const MainPage = () => {
 
             <div className="nav-links">
               <Link to="/register/ehost/step1" className="nav-link">Become E-host</Link>
-              {isLoggedIn && (
-                <Link
-              
-                to="/MyBooking"
-                className="nav-link"
-                onClick={(e) => {
-                  if (isEhost) {
-                    e.preventDefault();
-                    alert("My booking is only available to visitors. You are signed in as an e-host.");
-                    return;
-                  }
-                  window.scrollTo(0, 0);
-                }}
-              >
-                My booking
-              </Link>
-              )}
-              
-              {isLoggedIn ? (
-                <button className="nav-link nav-btn-link" onClick={() => logout(navigate)}>
-                  Logout
-                </button>
-              ) : (
-                <Link to="/login" className="nav-link">Login</Link>
-              )}
+              <AccountMenu />
             </div>
           </nav>
 

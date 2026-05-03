@@ -15,6 +15,7 @@ import { useExperiences } from "../../hooks/useExperiences";
 import { useAuth } from "../../utils/auth";
 import { formatDate } from "../../utils/formatDate";
 import { ExperienceCard } from "../../components/ExperienceCard";
+import { AccountMenu } from "../../components/AccountMenu";
 
 
 const VALID_CONTINENTS = CONTINENTS.filter(c => c !== "Antarctica");
@@ -30,7 +31,7 @@ export const ContinentPage = () => {
   const navigate = useNavigate();
   const { continent } = useParams();
   const [searchParams] = useSearchParams();
-  const { isLoggedIn, isEhost, logout, user } = useAuth();
+  const { user } = useAuth();
 
   const isAll = continent === ALL_VALUE;
   const lockedContinent = isAll
@@ -121,8 +122,6 @@ export const ContinentPage = () => {
     setAppliedDate(searchDate);
   };
 
-  const handleLogout = () => logout(navigate);
-
   const resetAll = () => {
     setActiveContinents([]);
     setActiveCategories([]);
@@ -168,25 +167,7 @@ const handleCardClick = (exp) => {
 
             <div className="nav-links">
               <Link to="/register/ehost/step1" className="nav-link">Become E-host</Link>
-              <Link
-                to="/MyBooking"
-                className="nav-link"
-                onClick={(e) => {
-                  if (isEhost) {
-                    e.preventDefault();
-                    alert("My booking is only available to visitors. You are signed in as an e-host.");
-                    return;
-                  }
-                  window.scrollTo(0, 0);
-                }}
-              >
-                My booking
-              </Link>
-              {isLoggedIn ? (
-                <button className="nav-link nav-btn-link" onClick={handleLogout}>Logout</button>
-              ) : (
-                <Link to="/login" className="nav-link">Login</Link>
-              )}
+              <AccountMenu />
             </div>
           </nav>
 

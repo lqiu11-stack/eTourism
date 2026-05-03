@@ -11,6 +11,7 @@ import { toYouTubeEmbed } from "../../utils/youtube";
 import { setExperienceContext } from "../../utils/networkMonitor";
 import { ExperienceCard } from "../../components/ExperienceCard";
 import { PhotoLightbox } from "../../components/PhotoLightbox";
+import { AccountMenu } from "../../components/AccountMenu";
 
 const MAX_NEW_EVENTS = 8;
 
@@ -52,20 +53,9 @@ const { experiences } = useExperiences();
   const user = JSON.parse(localStorage.getItem("user") || "{}");
   const isEhost = user.role === "ehost";
 
-  const blockVisitorFeature = (feature) => (e) => {
-    e.preventDefault();
-    alert(`${feature} is only available to visitors. You are signed in as an e-host.`);
-  };
-
   const [experience, setExperience] = useState(null);
   const [reviews, setReviews] = useState([]);
   const [networkWarning, setNetworkWarning] = useState(null);
-
-  const handleLogout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
-    navigate("/login");
-  };
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -117,21 +107,9 @@ const { experiences } = useExperiences();
                   </button>
 
           <div className="nav-links">
-              <Link
-                to="/Mybooking"
-                className="nav-link"
-                onClick={isEhost ? blockVisitorFeature("My booking") : undefined}
-              >
-                My booking
-              </Link>
-               {isLoggedIn ? (
-                  <button className="nav-link nav-btn-link" onClick={handleLogout}>
-                    Logout
-                  </button>
-                ) : (
-                  <Link to="/login" className="nav-link">Login</Link>
-                )}
-            </div>
+            <Link to="/register/ehost/step1" className="nav-link">Become E-host</Link>
+            <AccountMenu />
+          </div>
         </nav>
 
         <div className="detail-hero-content">

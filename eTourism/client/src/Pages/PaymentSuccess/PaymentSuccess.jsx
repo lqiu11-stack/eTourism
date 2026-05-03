@@ -8,6 +8,7 @@ import approveIcon from "../icon/approve.png";
 import enjoyIcon from "../icon/enjoy.png";
 import success from "../icon/success.png";
 import { saveBookingToCalendar } from "../../utils/calendar";
+import { AccountMenu } from "../../components/AccountMenu";
 const API_BASE = import.meta.env.VITE_API_URL;
 
 const formatDate = (dt) => {
@@ -19,13 +20,6 @@ const formatDate = (dt) => {
 export const PaymentSuccessPage = () => {
   const navigate = useNavigate();
   const token = localStorage.getItem("token");
-  const isLoggedIn = !!token;
-
-  const handleLogout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
-    navigate("/login");
-  };
 
   const [searchParams] = useSearchParams();
   const sessionId = searchParams.get("session_id");
@@ -114,12 +108,7 @@ export const PaymentSuccessPage = () => {
           <img src={backIcon} alt="Back" className="detail-back-icon" />
         </button>
         <div className="nav-links">
-          <Link to="/Mybooking" className="nav-link">My booking</Link>
-          {isLoggedIn ? (
-            <button className="nav-link nav-btn-link" onClick={handleLogout}>Logout</button>
-          ) : (
-            <Link to="/login" className="nav-link">Login</Link>
-          )}
+          <AccountMenu />
         </div>
       </nav>
 

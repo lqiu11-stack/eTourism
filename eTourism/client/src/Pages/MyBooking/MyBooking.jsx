@@ -6,6 +6,7 @@ import axios from "axios";
 import { useLocation } from "react-router-dom";
 import { useLayoutEffect } from "react";
 import { saveBookingToCalendar } from "../../utils/calendar";
+import { AccountMenu } from "../../components/AccountMenu";
 
 
 export const BookingDetail = () => {
@@ -52,17 +53,10 @@ export const MyBooking = () => {
     .catch(() => {});
 }, []);
   const token = localStorage.getItem("token");
-  const isLoggedIn = !!token;
   const navigate = useNavigate();
 
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
-
-  const handleLogout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
-    navigate("/login");
-  };
 
   useEffect(() => {
     if (!token) { navigate("/login"); return; }
@@ -161,15 +155,8 @@ export const MyBooking = () => {
           <img src={backIcon} alt="Back" className="detail-back-icon" />
         </button>
         <div className="nav-links">
-          <Link to="/Mybooking" className="nav-link">My booking</Link>
-          {isLoggedIn && (
-            <Link to="/VisitorProfile" className="nav-link">My profile</Link>
-          )}
-          {isLoggedIn ? (
-            <button className="nav-link nav-btn-link" onClick={handleLogout}>Logout</button>
-          ) : (
-            <Link to="/login" className="nav-link">Login</Link>
-          )}
+          <Link to="/register/ehost/step1" className="nav-link">Become E-host</Link>
+          <AccountMenu />
         </div>
       </nav>
 

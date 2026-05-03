@@ -8,6 +8,7 @@ import { useState, useEffect } from "react";
 import axios from "axios";
 import bg from "../icon/worldtravel.jpg";
 import { InfoTooltip } from "../../components/InfoTooltip";
+import { AccountMenu } from "../../components/AccountMenu";
 
 const API_BASE = import.meta.env.VITE_API_URL;
 
@@ -15,7 +16,6 @@ export const PaymentPage = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const token = localStorage.getItem("token");
-  const isLoggedIn = !!token;
   const experienceId = searchParams.get("id");
 
   const [experience, setExperience] = useState(null);
@@ -41,12 +41,6 @@ export const PaymentPage = () => {
     no_all_male_groups: "mixed",
     no_all_female_groups: "mixed",
   }[genderPreference];
-
-  const handleLogout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
-    navigate("/login");
-  };
 
   useEffect(() => {
     if (!experienceId) return;
@@ -215,12 +209,8 @@ export const PaymentPage = () => {
             <img src={backIcon} alt="Back" className="detail-back-icon" />
           </button>
           <div className="nav-links">
-            <Link to="/Mybooking" className="nav-link">My booking</Link>
-            {isLoggedIn ? (
-              <button className="nav-link nav-btn-link" onClick={handleLogout}>Logout</button>
-            ) : (
-              <Link to="/login" className="nav-link">Login</Link>
-            )}
+            <Link to="/register/ehost/step1" className="nav-link">Become E-host</Link>
+            <AccountMenu />
           </div>
         </nav>
 
