@@ -266,6 +266,7 @@ const NETWORK_QUALITIES = ['good', 'slow', 'failed', 'offline'];
 const NETWORK_POOR_QUALITIES = ['slow', 'failed', 'offline'];
 const NETWORK_POOR_RATIO_THRESHOLD = 0.3;
 const NETWORK_POOR_MIN_SAMPLES = 5;
+const NETWORK_GOOD_SAMPLE_RATE = 0.1;
 
 module.exports = {
   CATEGORIES,
@@ -287,4 +288,5 @@ module.exports = {
   NETWORK_POOR_QUALITIES,
   NETWORK_POOR_RATIO_THRESHOLD,
   NETWORK_POOR_MIN_SAMPLES,
+  NETWORK_GOOD_SAMPLE_RATE,
 };

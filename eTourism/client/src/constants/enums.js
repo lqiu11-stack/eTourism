@@ -58,3 +58,4 @@ export const NETWORK_QUALITIES = ['good', 'slow', 'failed', 'offline'];
 export const NETWORK_POOR_QUALITIES = ['slow', 'failed', 'offline'];
 export const NETWORK_POOR_RATIO_THRESHOLD = 0.3;
 export const NETWORK_POOR_MIN_SAMPLES = 5;
+export const NETWORK_GOOD_SAMPLE_RATE = 0.1;

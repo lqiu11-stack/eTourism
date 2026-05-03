@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
+import { NETWORK_GOOD_SAMPLE_RATE } from "../constants/enums";
 
 const API_BASE = import.meta.env.VITE_API_URL;
 const SLOW_THRESHOLD_MS = 3000;
@@ -73,6 +74,8 @@ function recordOutcome(quality, errorDetails) {
   emit();
   if (quality !== "good") {
     sendIssue(quality, errorDetails);
+  } else if (Math.random() < NETWORK_GOOD_SAMPLE_RATE) {
+    sendIssue("good", null);
   }
 }
 

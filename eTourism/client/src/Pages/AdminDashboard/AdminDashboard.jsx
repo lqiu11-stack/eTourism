@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
 import "./AdminDashboard.css";
-import profileImg from "../icon/head.png";
 import { Link, useNavigate } from "react-router-dom";
 import search from "../icon/search.png";
 import axios from "axios"; 
@@ -28,11 +27,20 @@ ChartJS.register(
 
 const API_BASE = import.meta.env.VITE_API_URL;
 
+const AVATAR_PALETTE = ["#f7a13c", "#d97aa8", "#7ac0d9", "#a3d977", "#c294e0", "#f08080"];
+const colorFor = (user) => {
+  const seed = (user?.email || user?.first_name || "x").length;
+  return AVATAR_PALETTE[seed % AVATAR_PALETTE.length];
+};
+
 export const Dashboard = () => {
   const navigate = useNavigate();
   const token = localStorage.getItem("token");
   const user = JSON.parse(localStorage.getItem("user") || "{}");
   const isLoggedIn = !!token;
+  const displayName = user.first_name || "Admin";
+  const initials = displayName[0].toUpperCase();
+  const avatarColor = colorFor(user);
 
   const [activeTab, setActiveTab] = useState("booking");
 
@@ -270,17 +278,26 @@ export const Dashboard = () => {
   // ── Network issues ───────────────────────────────────────────────────
   const [networkSummary, setNetworkSummary] = useState(null);
   const [networkLoading, setNetworkLoading] = useState(false);
+  const [networkError, setNetworkError] = useState(null);
   const [networkWindow, setNetworkWindow] = useState(168);
 
   const fetchNetworkSummary = useCallback(async () => {
     setNetworkLoading(true);
+    setNetworkError(null);
     try {
       const { data } = await axios.get(
         `${API_BASE}/network-logs/admin/summary?hours=${networkWindow}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       setNetworkSummary(data);
-    } catch {
+    } catch (e) {
+      const status = e.response?.status ?? null;
+      const detail =
+        e.response?.data?.error ||
+        e.response?.data?.message ||
+        e.message ||
+        "Unknown error";
+      setNetworkError({ status, detail });
       setNetworkSummary(null);
     } finally {
       setNetworkLoading(false);
@@ -386,8 +403,8 @@ export const Dashboard = () => {
 
       {/* ===== Profile Section ===== */}
       <div className="profile-section">
-        <img src={profileImg} alt="profile" className="profile-img" />
-        <h2>{user.first_name || "Admin"}</h2>
+        <span className="account-avatar" style={{ background: avatarColor }}>{initials}</span>
+        <h2>{displayName}</h2>
         {/* <button className="profile-btn">Profile and setting</button> */}
       </div>
 
@@ -495,6 +512,8 @@ export const Dashboard = () => {
           <NetworkIssues
             summary={networkSummary}
             loading={networkLoading}
+            error={networkError}
+            onRefresh={fetchNetworkSummary}
             windowHours={networkWindow}
             onWindowChange={setNetworkWindow}
           />
@@ -1283,37 +1302,52 @@ const formatBucket = (iso, bucket) => {
 const userLabel = (u) =>
   [u.first_name, u.last_name].filter(Boolean).join(" ") || `User ${u.user_id}`;
 
-const NetworkIssues = ({ summary, loading, windowHours, onWindowChange }) => {
+const NetworkIssues = ({ summary, loading, error, onRefresh, windowHours, onWindowChange }) => {
   const [showDetails, setShowDetails] = useState(false);
 
-  const windowSelector = (
-    <select
-      className="ad-network-window"
-      value={windowHours}
-      onChange={(e) => onWindowChange(Number(e.target.value))}
-    >
-      {WINDOW_OPTIONS.map((o) => (
-        <option key={o.value} value={o.value}>{o.label}</option>
-      ))}
-    </select>
+  const controls = (
+    <div className="ad-network-controls">
+      <select
+        className="ad-network-window"
+        value={windowHours}
+        onChange={(e) => onWindowChange(Number(e.target.value))}
+        disabled={loading}
+      >
+        {WINDOW_OPTIONS.map((o) => (
+          <option key={o.value} value={o.value}>{o.label}</option>
+        ))}
+      </select>
+      <button
+        type="button"
+        className="ad-network-refresh"
+        onClick={onRefresh}
+        disabled={loading}
+      >
+        {loading ? "Refreshing…" : "Refresh"}
+      </button>
+    </div>
   );
 
-  if (loading) {
+  if (loading && !summary) {
     return (
       <div className="ad-network">
         <div className="ad-network-header">
           <p className="ad-network-intro">Loading network issues…</p>
-          {windowSelector}
+          {controls}
         </div>
       </div>
     );
   }
   if (!summary) {
+    const statusLabel = error?.status ? `${error.status} — ` : "";
+    const detail = error?.detail || "Unknown error";
     return (
       <div className="ad-network">
         <div className="ad-network-header">
-          <p className="ad-network-intro">Failed to load network issues.</p>
-          {windowSelector}
+          <p className="ad-network-intro">
+            Failed to load network issues. ({statusLabel}{detail})
+          </p>
+          {controls}
         </div>
       </div>
     );
@@ -1446,7 +1480,7 @@ const NetworkIssues = ({ summary, loading, windowHours, onWindowChange }) => {
             unreliable-connection threshold (&ge;30% poor events with &ge;5 samples).
           </InfoTooltip>
         </h3>
-        {windowSelector}
+        {controls}
       </div>
 
       <div className="ad-network-kpis">
