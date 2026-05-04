@@ -21,6 +21,7 @@ const {
   unfollowHost,
   getFollowStatus,
   listFollows,
+  getEhostPublicProfile,
 } = require('../controllers/visitorController');
 const {
   createStripeTipSession,
@@ -68,6 +69,9 @@ router.delete('/follows/:ehostId', requireRole('visitor'), unfollowHost);
 // Public — anyone (logged in or not) can read a host's follower count;
 // when logged in as a visitor we also tell them whether they follow.
 router.get('/ehosts/:ehostId/follow-status', getFollowStatus);
+
+// Public ehost profile (display name, bio, country, follower count, approved experiences).
+router.get('/ehosts/:ehostId', getEhostPublicProfile);
 
 // Tips
 router.post('/tips/stripe-session', requireRole('visitor'), createStripeTipSession);

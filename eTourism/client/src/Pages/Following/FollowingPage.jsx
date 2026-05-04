@@ -104,7 +104,9 @@ export const FollowingPage = () => {
                           {(h.ehost_display_name?.[0] || "?").toUpperCase()}
                         </span>}
                     <div className="following-card-headtext">
-                      <h3 className="following-card-name">{fullName}</h3>
+                      <h3 className="following-card-name">
+                        <Link to={`/ehost/${h.ehost_id}`} className="following-card-name-link">{fullName}</Link>
+                      </h3>
                       {h.bio && <p className="following-card-bio">{h.bio}</p>}
                     </div>
                   </header>
