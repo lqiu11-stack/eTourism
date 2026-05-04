@@ -526,7 +526,7 @@ export const MainPage = () => {
       </section>
 
       {/* Newsletter */}
-      <section className="newsletter">
+      {/* <section className="newsletter">
         <div className="newsletter-overlay"></div>
         <div className="newsletter-content">
           <h2>Get Your Travel Inspiration</h2>
@@ -536,7 +536,7 @@ export const MainPage = () => {
             <button>Subscribe</button>
           </div>
         </div>
-      </section>
+      </section> */}
 
       <footer className="footer">
         <div className="footer-container">

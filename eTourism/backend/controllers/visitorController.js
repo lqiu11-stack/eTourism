@@ -246,7 +246,7 @@ const getEhostPublicProfile = async (req, res) => {
     return res.json({
       profile: {
         id: user.id,
-        display_name: user.display_name || user.first_name || 'Host',
+        display_name: user.display_name || 'Host',
         profile_image: user.profile_image || null,
         bio: user.bio || null,
         country: user.country || null,

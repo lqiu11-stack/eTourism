@@ -41,7 +41,7 @@ const Follow = {
     const { rows } = await pool.query(
       `SELECT
          u.id AS ehost_id,
-         COALESCE(u.display_name, u.first_name) AS ehost_display_name,
+         COALESCE(u.display_name, 'Host') AS ehost_display_name,
          u.profile_image,
          u.bio,
          f.created_at AS followed_at,

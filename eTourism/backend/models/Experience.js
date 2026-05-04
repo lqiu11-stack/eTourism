@@ -52,7 +52,7 @@ const Experience = {
 
   async findAll({ status, category, country, continent, ehost_id, language, price_min, price_max, search, gender_preference, exclude_gender_preference } = {}) {
     let query = `SELECT e.*,
-                        COALESCE(u.display_name, u.first_name) AS ehost_display_name,
+                        COALESCE(u.display_name, 'Host') AS ehost_display_name,
                         u.profile_image AS ehost_profile_image
                  FROM experiences e
                  LEFT JOIN users u ON u.id = e.ehost_id
@@ -84,7 +84,7 @@ const Experience = {
   async findByIdWithHost(id) {
     const { rows } = await pool.query(
       `SELECT e.*,
-              COALESCE(u.display_name, u.first_name) AS ehost_first_name,
+              COALESCE(u.display_name, 'Host') AS ehost_first_name,
               u.bio           AS ehost_bio,
               u.profile_image AS ehost_profile_image
        FROM experiences e
