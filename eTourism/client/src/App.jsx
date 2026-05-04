@@ -22,6 +22,7 @@ import { FollowingPage } from "./Pages/Following/FollowingPage.jsx";
 import { ContinentPage } from "./Pages/ContinentPage/ContinentPage.jsx";
 import { VisitorRegister } from "./Pages/VisitorRegister/VisitorRegister.jsx";
 import { CompleteOAuthProfile } from "./Pages/VisitorRegister/CompleteOAuthProfile.jsx";
+import { TipSuccess } from "./Pages/TipSuccess/TipSuccess.jsx";
 import { NetworkBanner } from "./components/NetworkBanner.jsx";
 
 
@@ -57,6 +58,7 @@ function App() {
         <Route path="/continent/:continent" element={<ContinentPage />} />
         <Route path="/register/visitor" element={<VisitorRegister />} />
         <Route path="/register/visitor/complete" element={<CompleteOAuthProfile />} />
+        <Route path="/tip-success" element={<TipSuccess />} />
       </Routes>
     </>
   );

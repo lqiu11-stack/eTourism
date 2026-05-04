@@ -62,14 +62,17 @@ describe('submitApplication()', () => {
     let calls = 0;
     fakePool.query.mock.mockImplementation(() => {
       calls++;
-      if (calls === 1) return Promise.resolve({ rows: [] });       // ehost_applications dup check
+      if (calls === 1) return Promise.resolve({ rows: [] });       // ehost_applications dup email check
       if (calls === 2) return Promise.resolve({ rows: [] });       // User.findByEmail check
+      if (calls === 3) return Promise.resolve({ rows: [] });       // users.display_name dup check
+      if (calls === 4) return Promise.resolve({ rows: [] });       // ehost_applications.display_name dup check
       return Promise.resolve({ rows: [{ id: 1 }] });               // insert
     });
 
     const req = makeReq({
       name: 'John Smith', birthday: '1990-01-01', country: 'UK', gender: 'male',
-      email: 'john@example.com', password: 'Secret123!', hasExperience: true, preferredCountry: 'UK',
+      email: 'john@example.com', password: 'Secret123!', displayName: 'john_smith',
+      hasExperience: true, preferredCountry: 'UK',
       description: 'Great tour guide', videoLink: 'https://youtube.com/x',
       isContractAgreed: true,
     });
@@ -80,10 +83,42 @@ describe('submitApplication()', () => {
     assert.equal(res.json.mock.calls[0].arguments[0].applicationId, 1);
   });
 
+  it('400 : missing username', async () => {
+    const req = makeReq({
+      name: 'John Smith', birthday: '1990-01-01', country: 'UK', gender: 'male',
+      email: 'john@example.com', password: 'Secret123!',
+    });
+    const res = makeRes();
+    await submitApplication(req, res);
+
+    assert.equal(res.status.mock.calls[0].arguments[0], 400);
+    assert.match(res.json.mock.calls[0].arguments[0].message, /username/i);
+  });
+
+  it('409 : username already taken', async () => {
+    let calls = 0;
+    fakePool.query.mock.mockImplementation(() => {
+      calls++;
+      if (calls === 1) return Promise.resolve({ rows: [] });           // app email dup
+      if (calls === 2) return Promise.resolve({ rows: [] });           // findByEmail
+      return Promise.resolve({ rows: [{ '?column?': 1 }] });           // username taken in users
+    });
+
+    const req = makeReq({
+      name: 'John Smith', birthday: '1990-01-01', country: 'UK', gender: 'male',
+      email: 'john@example.com', password: 'Secret123!', displayName: 'taken_name',
+    });
+    const res = makeRes();
+    await submitApplication(req, res);
+
+    assert.equal(res.status.mock.calls[0].arguments[0], 409);
+    assert.match(res.json.mock.calls[0].arguments[0].message, /already taken/i);
+  });
+
   it('409 : email already submitted an application', async () => {
     fakePool.query.mock.mockImplementation(() => Promise.resolve({ rows: [{ id: 99 }] }));
 
-    const req = makeReq({ email: 'existing@example.com', gender: 'male' });
+    const req = makeReq({ email: 'existing@example.com', gender: 'male', displayName: 'jsmith' });
     const res = makeRes();
     await submitApplication(req, res);
 
@@ -94,7 +129,7 @@ describe('submitApplication()', () => {
   it('500 : database error on duplicate check', async () => {
     fakePool.query.mock.mockImplementation(() => Promise.reject(new Error('DB fail')));
 
-    const req = makeReq({ email: 'john@example.com', gender: 'male' });
+    const req = makeReq({ email: 'john@example.com', gender: 'male', displayName: 'jsmith' });
     const res = makeRes();
     await submitApplication(req, res);
 
@@ -105,14 +140,17 @@ describe('submitApplication()', () => {
     let calls = 0;
     fakePool.query.mock.mockImplementation(() => {
       calls++;
-      if (calls === 1) return Promise.resolve({ rows: [] });   // ehost_applications dup check
-      if (calls === 2) return Promise.resolve({ rows: [] });   // User.findByEmail check
+      if (calls === 1) return Promise.resolve({ rows: [] });   // app email dup
+      if (calls === 2) return Promise.resolve({ rows: [] });   // findByEmail
+      if (calls === 3) return Promise.resolve({ rows: [] });   // users username dup
+      if (calls === 4) return Promise.resolve({ rows: [] });   // apps username dup
       return Promise.reject(new Error('Insert fail'));
     });
 
     const req = makeReq({
       name: 'John Smith', birthday: '1990-01-01', country: 'UK', gender: 'male',
-      email: 'john@example.com', password: 'Secret123!', hasExperience: true, preferredCountry: 'UK',
+      email: 'john@example.com', password: 'Secret123!', displayName: 'jsmith',
+      hasExperience: true, preferredCountry: 'UK',
       description: 'Great tour guide', videoLink: 'https://youtube.com/x',
       isContractAgreed: true,
     });

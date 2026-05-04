@@ -10,6 +10,7 @@ import { useLayoutEffect } from "react";
 import { saveBookingToCalendar } from "../../utils/calendar";
 import { AccountMenu } from "../../components/AccountMenu";
 import { useAlertCard } from "../../components/useAlertCard";
+import { TipModal } from "../../components/TipModal";
 
 
 
@@ -47,6 +48,7 @@ export const MyBookingDetail = () => {
   const [reviewComment, setReviewComment] = useState("");
   const [reviewStatus, setReviewStatus] = useState({ state: "idle", message: "" });
   const [reviewPopup, setReviewPopup] = useState(null);
+  const [tipModalOpen, setTipModalOpen] = useState(false);
   const location = useLocation();
   useLayoutEffect(() => {
     requestAnimationFrame(() => {
@@ -437,6 +439,28 @@ export const MyBookingDetail = () => {
         </div>
       </div>
       )}
+
+      {isPast &&
+       experience?.ehost_id &&
+       !["cancelled", "refunded", "refund_pending"].includes(booking?.status) && (
+        <div className="review-section">
+          <h4 className="review-title">Enjoyed the experience?</h4>
+          <div className="review-card">
+            <p className="review-question" style={{ marginBottom: 12 }}>
+              Send your eHost a tip to say thanks. It goes straight to them.
+            </p>
+            <div className="review-submit-wrapper">
+              <button
+                type="button"
+                className="review-submit-btn"
+                onClick={() => setTipModalOpen(true)}
+              >
+                Tip your eHost
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       </div>
       </div>
 
@@ -575,6 +599,14 @@ export const MyBookingDetail = () => {
           </div>
         </div>
       )}
+
+      <TipModal
+        open={tipModalOpen}
+        onClose={() => setTipModalOpen(false)}
+        ehostId={experience?.ehost_id}
+        ehostName={experience?.ehost_first_name}
+        bookingId={booking?.id}
+      />
 
       {alertCard}
     </div>

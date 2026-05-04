@@ -138,14 +138,15 @@ const getBookings = async (req, res) => {
 // GET /api/admin/analytics
 const getAnalytics = async (req, res) => {
   try {
-    const [topExperiences, topHosts, revenueByCategory, categoryBreakdown] = await Promise.all([
+    const [topExperiences, topHosts, revenueByCategory, categoryBreakdown, tipsByHost] = await Promise.all([
       Analytics.getTopExperiences(),
       Analytics.getTopHosts(),
       Analytics.getRevenueByCategory(),
       Analytics.getCategoryBreakdown(),
+      Analytics.getTipsByHost(),
     ]);
 
-    res.json({ topExperiences, topHosts, revenueByCategory, categoryBreakdown });
+    res.json({ topExperiences, topHosts, revenueByCategory, categoryBreakdown, tipsByHost });
   } catch (err) {
     res.status(500).json({ message: 'Server error', error: String(err) });
   }
@@ -251,6 +252,7 @@ const approveApplication = async (req, res) => {
       role: 'ehost',
       first_name,
       last_name,
+      display_name: application.display_name || null,
       date_of_birth: application.birthday,
       country: application.country,
       language: null,

@@ -106,6 +106,7 @@ const mockAnalytics = {
   getTopHosts: mock.fn(),
   getVisitorCountries: mock.fn(),
   getCategoryBreakdown: mock.fn(),
+  getTipsByHost: mock.fn(),
 };
 require.cache[path.resolve(__dirname, '../models/Analytics.js')] = {
   id: path.resolve(__dirname, '../models/Analytics.js'),

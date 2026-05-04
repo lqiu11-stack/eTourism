@@ -17,12 +17,12 @@ const User = {
     return rows[0] || null;
   },
 
-  async create({ email, password_hash, role, first_name, last_name, date_of_birth, country, language, bio, profile_image, gender, auth_provider }) {
+  async create({ email, password_hash, role, first_name, last_name, display_name, date_of_birth, country, language, bio, profile_image, gender, auth_provider }) {
     const { rows } = await pool.query(
-      `INSERT INTO users (email, password_hash, role, first_name, last_name, date_of_birth, country, language, bio, profile_image, gender, auth_provider)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
-       RETURNING id, email, role, first_name, last_name, date_of_birth, country, language, bio, profile_image, gender, auth_provider, created_at`,
-      [email, password_hash, role, first_name, last_name, date_of_birth, country, language, bio ?? null, profile_image ?? null, gender ?? null, auth_provider ?? null]
+      `INSERT INTO users (email, password_hash, role, first_name, last_name, display_name, date_of_birth, country, language, bio, profile_image, gender, auth_provider)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+       RETURNING id, email, role, first_name, last_name, display_name, date_of_birth, country, language, bio, profile_image, gender, auth_provider, created_at`,
+      [email, password_hash, role, first_name, last_name, display_name ?? null, date_of_birth, country, language, bio ?? null, profile_image ?? null, gender ?? null, auth_provider ?? null]
     );
     return rows[0];
   },

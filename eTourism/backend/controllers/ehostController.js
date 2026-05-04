@@ -1243,12 +1243,24 @@ const submitApplication = async (req, res) => {
     
     const {
       name, birthday, country, gender, email, password,
+      displayName,
       hasExperience, yearsOfExperience,
       description, videoLink
     } = req.body;
 
     if (!gender || !USER_GENDERS.includes(gender)) {
       return res.status(400).json({ message: `Gender is required. Allowed values: ${USER_GENDERS.join(', ')}` });
+    }
+
+    const trimmedUsername = typeof displayName === 'string' ? displayName.trim() : '';
+    if (!trimmedUsername) {
+      return res.status(400).json({ message: 'Username is required.' });
+    }
+    if (trimmedUsername.length < 3 || trimmedUsername.length > 30) {
+      return res.status(400).json({ message: 'Username must be 3 to 30 characters.' });
+    }
+    if (!/^[A-Za-z0-9_.]+$/.test(trimmedUsername)) {
+      return res.status(400).json({ message: 'Username can only contain letters, numbers, underscores, and dots.' });
     }
 
     const { rows: existingRows } = await pool.query(
@@ -1265,13 +1277,28 @@ const submitApplication = async (req, res) => {
       return res.status(409).json({ message: "This email is already registered. Please use a different email." });
     }
 
+    const { rows: usernameInUsers } = await pool.query(
+      'SELECT 1 FROM users WHERE LOWER(display_name) = LOWER($1) LIMIT 1',
+      [trimmedUsername]
+    );
+    if (usernameInUsers.length > 0) {
+      return res.status(409).json({ message: 'Username is already taken.' });
+    }
+    const { rows: usernameInApps } = await pool.query(
+      `SELECT 1 FROM ehost_applications WHERE LOWER(display_name) = LOWER($1) AND status = 'pending' LIMIT 1`,
+      [trimmedUsername]
+    );
+    if (usernameInApps.length > 0) {
+      return res.status(409).json({ message: 'Username is already taken.' });
+    }
+
     const password_hash = await bcrypt.hash(password, 10);
 
     // !!!Save the data into the database.
     const { rows: newAppRows } = await pool.query(
       `INSERT INTO ehost_applications
-      (name, birthday, country, gender, email, password_hash, has_experience, years_of_experience, description, video_link, status)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 'pending')
+      (name, birthday, country, gender, email, password_hash, display_name, has_experience, years_of_experience, description, video_link, status)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, 'pending')
       RETURNING id`,
       [
         name,
@@ -1280,6 +1307,7 @@ const submitApplication = async (req, res) => {
         gender,
         email,
         password_hash,
+        trimmedUsername,
         hasExperience,
         yearsOfExperience || 0,
         description,

@@ -19,6 +19,7 @@ const {
   updateMe,
   submitApplication,
 } = require('../controllers/ehostController');
+const { listMyTips } = require('../controllers/tipController');
 
 // POST /api/ehost/experiences
 router.post('/experiences', requireRole('ehost'), createExperience);
@@ -65,4 +66,8 @@ router.patch('/me', requireRole('ehost'), updateMe);
 
 
 router.post('/apply', validateApplication, submitApplication);
+
+// Tips received by this eHost
+router.get('/tips', requireRole('ehost'), listMyTips);
+
 module.exports = router;

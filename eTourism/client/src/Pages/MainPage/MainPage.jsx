@@ -384,10 +384,10 @@ export const MainPage = () => {
                       {h.profile_image
                         ? <img src={h.profile_image} alt="" className="follow-card-avatar" />
                         : <span className="follow-card-avatar follow-card-avatar--placeholder">
-                            {(h.first_name?.[0] || "?").toUpperCase()}
+                            {(h.ehost_display_name?.[0] || "?").toUpperCase()}
                           </span>}
                       <span className="follow-card-name">
-                        {h.display_name || `${h.first_name || ""} ${h.last_name || ""}`.trim() || "Host"}
+                        {h.ehost_display_name || "Host"}
                       </span>
                     </div>
                     {next ? (
