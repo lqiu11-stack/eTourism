@@ -2,7 +2,7 @@ const pool = require('../config/db');
 const bcrypt = require('bcrypt');
 const User = require('../models/User');
 const { continentForCountry } = require('../constants/countryContinents');
-const { CATEGORIES, LANGUAGES, CONTINENTS, GENDER_PREFERENCES } = require('../constants/enums');
+const { CATEGORIES, LANGUAGES, CONTINENTS, GENDER_PREFERENCES, USER_GENDERS } = require('../constants/enums');
 
 const YOUTUBE_URL_RE = /^(https?:\/\/)?(www\.)?(youtube\.com\/(watch\?v=|shorts\/|embed\/)|youtu\.be\/)([\w-]{11})([&?].*)?$/i;
 
@@ -1242,11 +1242,14 @@ const submitApplication = async (req, res) => {
   try {
     
     const {
-      name, birthday, country, email, password,
+      name, birthday, country, gender, email, password,
       hasExperience, yearsOfExperience,
       description, videoLink
     } = req.body;
 
+    if (!gender || !USER_GENDERS.includes(gender)) {
+      return res.status(400).json({ message: `Gender is required. Allowed values: ${USER_GENDERS.join(', ')}` });
+    }
 
     const { rows: existingRows } = await pool.query(
       'SELECT id FROM ehost_applications WHERE email = $1',
@@ -1267,13 +1270,14 @@ const submitApplication = async (req, res) => {
     // !!!Save the data into the database.
     const { rows: newAppRows } = await pool.query(
       `INSERT INTO ehost_applications
-      (name, birthday, country, email, password_hash, has_experience, years_of_experience, description, video_link, status)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'pending')
+      (name, birthday, country, gender, email, password_hash, has_experience, years_of_experience, description, video_link, status)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 'pending')
       RETURNING id`,
       [
         name,
         birthday,
         country,
+        gender,
         email,
         password_hash,
         hasExperience,

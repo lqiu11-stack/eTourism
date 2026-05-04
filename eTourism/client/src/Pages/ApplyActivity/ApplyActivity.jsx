@@ -18,6 +18,7 @@ import { COUNTRIES } from "../../utils/countries";
 import { convertToWebp } from "../../utils/imageConvert";
 import { InfoTooltip } from "../../components/InfoTooltip";
 import { PhotoLightbox } from "../../components/PhotoLightbox";
+import { useAlertCard } from "../../components/useAlertCard";
 import "./ApplyActivity.css";
 
 const API_BASE = import.meta.env.VITE_API_URL;
@@ -60,6 +61,7 @@ const reverseGeocodeCountry = async (lat, lng) => {
 
 export const ApplyActivity = () => {
   const navigate = useNavigate();
+  const { alert: showAlert, card: alertCard } = useAlertCard();
   const { id: editId } = useParams();
   const isEdit = Boolean(editId);
   const token = localStorage.getItem("token");
@@ -173,7 +175,7 @@ export const ApplyActivity = () => {
         const exp = data?.data;
         if (!exp || cancelled) return;
         if (exp.status !== "pending" && exp.status !== "approved") {
-          alert("This experience can no longer be edited.");
+          await showAlert("info", "This experience can no longer be edited.");
           navigate("/EhostDashboard");
           return;
         }
@@ -210,12 +212,12 @@ export const ApplyActivity = () => {
         setCoverImage(exp.cover_image || "");
         setAdditionalImages(Array.isArray(exp.additional_images) ? exp.additional_images : []);
       } catch (err) {
-        alert(err.response?.data?.message || "Failed to load experience.");
+        await showAlert("error", err.response?.data?.message || "Failed to load experience.");
         navigate("/EhostDashboard");
       }
     })();
     return () => { cancelled = true; };
-  }, [isEdit, editId, token, navigate]);
+  }, [isEdit, editId, token, navigate, showAlert]);
 
   const { isLoaded: mapIsLoaded } = useJsApiLoader({
     googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY,
@@ -1044,6 +1046,7 @@ export const ApplyActivity = () => {
       )}
 
       <PhotoLightbox url={previewUrl} onClose={() => setPreviewUrl(null)} />
+      {alertCard}
     </div>
   );
 };

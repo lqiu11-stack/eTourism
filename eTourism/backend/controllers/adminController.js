@@ -254,6 +254,7 @@ const approveApplication = async (req, res) => {
       date_of_birth: application.birthday,
       country: application.country,
       language: null,
+      gender: application.gender || null,
     });
 
     await pool.query(

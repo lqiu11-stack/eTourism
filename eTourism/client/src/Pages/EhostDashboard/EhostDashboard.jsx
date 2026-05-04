@@ -4,6 +4,7 @@ import axios from "axios";
 import applyIcon from "../icon/approve.png";
 import profileIcon from "../icon/profile.png";
 import { RejectionModal } from "./RejectionModal.jsx";
+import { useAlertCard } from "../../components/useAlertCard";
 import "./EhostDashboard.css";
 
 const API_BASE = import.meta.env.VITE_API_URL;
@@ -31,6 +32,7 @@ export const EhostDashboard = () => {
   const [deleteModal, setDeleteModal] = useState({ open: false, id: null, title: "" });
   const [bookingsModal, setBookingsModal] = useState({ open: false, title: "", bookings: null, loading: false, error: "" });
   const [networkQuality, setNetworkQuality] = useState(null);
+  const { alert: showAlert, card: alertCard } = useAlertCard();
 
   const openBookings = async (exp) => {
     setBookingsModal({ open: true, title: exp.title || exp.location_name || `Experience #${exp.id}`, bookings: null, loading: true, error: "" });
@@ -84,12 +86,12 @@ export const EhostDashboard = () => {
     navigate("/login");
   };
 
-  const handleJoinStream = (exp) => {
+  const handleJoinStream = async (exp) => {
     const link = exp?.meeting_link;
     if (link) {
       window.open(link, "_blank", "noopener,noreferrer");
     } else {
-      alert("No meeting link configured yet. Please edit this experience to add one.");
+      await showAlert("info", "No meeting link configured yet. Please edit this experience to add one.");
     }
   };
 
@@ -107,7 +109,7 @@ export const EhostDashboard = () => {
       });
       fetchExperiences();
     } catch (e) {
-      alert(e.response?.data?.message || "Failed to delete.");
+      await showAlert("error", e.response?.data?.message || "Failed to delete.");
     }
   };
 
@@ -378,6 +380,7 @@ export const EhostDashboard = () => {
           </div>
         </div>
       )}
+      {alertCard}
     </div>
   );
 };

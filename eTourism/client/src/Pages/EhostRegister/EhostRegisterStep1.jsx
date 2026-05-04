@@ -17,6 +17,7 @@ export const EhostRegisterStep1 = () => {
       name: saved.name || "",
       birthday: saved.birthday || "",
       country: saved.country || "",
+      gender: saved.gender || "",
       email: saved.email || "",
       password: saved.password || "",
     };
@@ -61,12 +62,16 @@ export const EhostRegisterStep1 = () => {
 
   const handleNext = (e) => {
     e.preventDefault();
-    if (!form.name || !form.birthday || !form.country || !form.email || !form.password) {
+    if (!form.name || !form.birthday || !form.country || !form.gender || !form.email || !form.password) {
       setError("Please fill in all required fields.");
       return;
     }
     if (!COUNTRIES.includes(form.country)) {
       setError("Please select a country from the list.");
+      return;
+    }
+    if (!["female", "male", "non_binary", "prefer_not_to_say"].includes(form.gender)) {
+      setError("Please select your gender.");
       return;
     }
     if (form.password.length < 8) {
@@ -118,6 +123,20 @@ export const EhostRegisterStep1 = () => {
           <datalist id="country-options">
             {COUNTRIES.map((c) => <option key={c} value={c} />)}
           </datalist>
+
+          <label className="text-wrapper-4">Please tell us your gender*</label>
+          <select
+            className="rectangle-3"
+            name="gender"
+            value={form.gender}
+            onChange={handleChange}
+          >
+            <option value="">Select your gender...</option>
+            <option value="female">Female</option>
+            <option value="male">Male</option>
+            <option value="non_binary">Non-binary</option>
+            <option value="prefer_not_to_say">Prefer not to say</option>
+          </select>
 
           <label className="text-wrapper-5">Please tell us your E-mail*</label>
           <input className="rectangle-3" type="email" name="email" placeholder="Enter email" value={form.email} onChange={handleChange} onBlur={handleEmailBlur} />

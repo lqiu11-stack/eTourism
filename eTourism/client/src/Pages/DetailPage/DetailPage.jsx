@@ -9,6 +9,7 @@ import { setExperienceContext } from "../../utils/networkMonitor";
 import { ExperienceCard } from "../../components/ExperienceCard";
 import { PhotoLightbox } from "../../components/PhotoLightbox";
 import { AccountMenu } from "../../components/AccountMenu";
+import { useAlertCard } from "../../components/useAlertCard";
 
 const MAX_NEW_EVENTS = 8;
 
@@ -29,6 +30,7 @@ export const DetailPage = () => {
 };
 const { experiences } = useExperiences();
     const navigate = useNavigate();
+    const { alert: showAlert, card: alertCard } = useAlertCard();
     const [showTerms, setShowTerms] = useState(false);
     const [termsText, setTermsText] = useState("");
     const [previewUrl, setPreviewUrl] = useState(null);
@@ -195,9 +197,9 @@ const { experiences } = useExperiences();
                   <button
                     className={`detail-book-btn${unavailable ? ' detail-book-btn--disabled' : ''}`}
                     disabled={unavailable}
-                    onClick={() => {
+                    onClick={async () => {
                       if (isEhost) {
-                        alert('E-hosts cannot book experiences. Please sign in as a visitor.');
+                        await showAlert('info', 'E-hosts cannot book experiences. Please sign in as a visitor.');
                         return;
                       }
                       if (unavailable) return;
@@ -462,6 +464,7 @@ const { experiences } = useExperiences();
             )}
 
       <PhotoLightbox url={previewUrl} onClose={() => setPreviewUrl(null)} />
+      {alertCard}
     </div>
   );
 };
