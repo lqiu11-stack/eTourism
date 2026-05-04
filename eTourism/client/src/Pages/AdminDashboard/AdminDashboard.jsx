@@ -19,6 +19,7 @@ import {
 import { Bar, Doughnut, Line } from "react-chartjs-2";
 import { InfoTooltip } from "../../components/InfoTooltip";
 import { PhotoLightbox } from "../../components/PhotoLightbox";
+import { useAlertCard } from "../../components/useAlertCard";
 
 ChartJS.register(
   CategoryScale, LinearScale, BarElement, LineElement, PointElement, Filler,
@@ -35,6 +36,7 @@ const colorFor = (user) => {
 
 export const Dashboard = () => {
   const navigate = useNavigate();
+  const { alert: showAlert, confirm: showConfirm, card: alertCard } = useAlertCard();
   const token = localStorage.getItem("token");
   const user = JSON.parse(localStorage.getItem("user") || "{}");
   const isLoggedIn = !!token;
@@ -82,10 +84,10 @@ export const Dashboard = () => {
   };
 
   const handleRefundAction = async () => {
-    if (!action) { alert("Please select Approve or Reject."); return; }
-    if (action === "reject" && !rejectReason.trim()) { alert("Please enter a reason for rejection."); return; }
+    if (!action) { await showAlert("info", "Please select Approve or Reject."); return; }
+    if (action === "reject" && !rejectReason.trim()) { await showAlert("info", "Please enter a reason for rejection."); return; }
     const refundId = selectedBooking.refund_id;
-    if (!refundId) { alert("No refund record found for this booking."); return; }
+    if (!refundId) { await showAlert("info", "No refund record found for this booking."); return; }
     try {
       if (action === "approve") {
         await axios.patch(
@@ -93,19 +95,19 @@ export const Dashboard = () => {
           {},
           { headers: { Authorization: `Bearer ${token}` } }
         );
-        alert("Refund approved and payment processed.");
+        await showAlert("success", "Refund approved and payment processed.");
       } else {
         await axios.patch(
           `${API_BASE}/admin/refunds/${refundId}/reject`,
           { reason: rejectReason },
           { headers: { Authorization: `Bearer ${token}` } }
         );
-        alert("Refund rejected. Booking restored to confirmed.");
+        await showAlert("success", "Refund rejected. Booking restored to confirmed.");
       }
       setShowRefundPanel(false);
       fetchBookings();
     } catch (e) {
-      alert(e.response?.data?.message || "Failed to process refund.");
+      await showAlert("error", e.response?.data?.message || "Failed to process refund.");
     }
   };
 
@@ -138,7 +140,7 @@ export const Dashboard = () => {
       );
       fetchUsers();
     } catch (e) {
-      alert(e.response?.data?.message || "Failed to update status.");
+      await showAlert("error", e.response?.data?.message || "Failed to update status.");
     }
   };
 
@@ -152,7 +154,7 @@ export const Dashboard = () => {
       fetchUsers();
       setShowUserModal(false);
     } catch (e) {
-      alert(e.response?.data?.message || "Failed to update role.");
+      await showAlert("error", e.response?.data?.message || "Failed to update role.");
     }
   };
 
@@ -174,7 +176,7 @@ export const Dashboard = () => {
           fetchUsers();
           setShowUserModal(false);
         } catch (e) {
-          alert(e.response?.data?.message || "Failed to delete user.");
+          await showAlert("error", e.response?.data?.message || "Failed to delete user.");
         }
       },
     });
@@ -215,7 +217,7 @@ export const Dashboard = () => {
           });
           fetchExperiences(expStatusFilter);
         } catch (e) {
-          alert(e.response?.data?.message || "Failed to delete.");
+          await showAlert("error", e.response?.data?.message || "Failed to delete.");
         }
       },
     });
@@ -252,16 +254,17 @@ export const Dashboard = () => {
         {},
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      alert("Application approved. The ehost can now log in with the password they set during registration.");
+      await showAlert("success", "Application approved. The ehost can now log in with the password they set during registration.");
       fetchApplications(appStatusFilter);
       setShowAppModal(false);
     } catch (e) {
-      alert(e.response?.data?.message || "Failed to approve.");
+      await showAlert("error", e.response?.data?.message || "Failed to approve.");
     }
   };
 
   const handleRejectApplication = async (id) => {
-    if (!window.confirm("Reject this application?")) return;
+    const ok = await showConfirm("Reject this application?", { tone: "error", confirmLabel: "Reject" });
+    if (!ok) return;
     try {
       await axios.patch(
         `${API_BASE}/admin/applications/${id}/reject`,
@@ -271,7 +274,7 @@ export const Dashboard = () => {
       fetchApplications(appStatusFilter);
       setShowAppModal(false);
     } catch (e) {
-      alert(e.response?.data?.message || "Failed to reject.");
+      await showAlert("error", e.response?.data?.message || "Failed to reject.");
     }
   };
 
@@ -365,7 +368,7 @@ export const Dashboard = () => {
 
   const handleScoreExperience = async () => {
     if (suitResult === "fail" && !suitComment.trim()) {
-      alert("Please enter a reason when marking as unsuitable.");
+      await showAlert("info", "Please enter a reason when marking as unsuitable.");
       return;
     }
     setSuitSubmitting(true);
@@ -378,7 +381,7 @@ export const Dashboard = () => {
       setShowSuitPanel(false);
       fetchExperiences(expStatusFilter, expSearch);
     } catch (e) {
-      alert(e.response?.data?.message || "Failed to submit review.");
+      await showAlert("error", e.response?.data?.message || "Failed to submit review.");
     } finally {
       setSuitSubmitting(false);
     }
@@ -532,6 +535,7 @@ export const Dashboard = () => {
           </div>
         </div>
       )}
+      {alertCard}
     </div>
   );
 };
@@ -1258,6 +1262,7 @@ const EhostApplications = ({
             <p><strong>Name:</strong> {selectedApp.name}</p>
             <p><strong>Email:</strong> {selectedApp.email}</p>
             <p><strong>Country:</strong> {selectedApp.country}</p>
+            <p><strong>Gender:</strong> {formatGender(selectedApp.gender)}</p>
             <p><strong>Has experience:</strong> {selectedApp.has_experience ? "Yes" : "No"}</p>
             {selectedApp.years_of_experience > 0 && <p><strong>Years:</strong> {selectedApp.years_of_experience}</p>}
             <p><strong>Description:</strong> {selectedApp.description}</p>
@@ -1277,6 +1282,15 @@ const EhostApplications = ({
     )}
   </div>
 );
+
+const GENDER_LABELS = {
+  male: "Male",
+  female: "Female",
+  non_binary: "Non-binary",
+  prefer_not_to_say: "Prefer not to say",
+};
+
+const formatGender = (value) => GENDER_LABELS[value] || "—";
 
 const NETWORK_QUALITY_COLORS = {
   good: "#8bb897",

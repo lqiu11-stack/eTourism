@@ -9,6 +9,7 @@ import enjoyIcon from "../icon/enjoy.png";
 import success from "../icon/success.png";
 import { saveBookingToCalendar } from "../../utils/calendar";
 import { AccountMenu } from "../../components/AccountMenu";
+import { useAlertCard } from "../../components/useAlertCard";
 const API_BASE = import.meta.env.VITE_API_URL;
 
 const formatDate = (dt) => {
@@ -20,6 +21,7 @@ const formatDate = (dt) => {
 export const PaymentSuccessPage = () => {
   const navigate = useNavigate();
   const token = localStorage.getItem("token");
+  const { alert: showAlert, card: alertCard } = useAlertCard();
 
   const [searchParams] = useSearchParams();
   const sessionId = searchParams.get("session_id");
@@ -140,7 +142,10 @@ export const PaymentSuccessPage = () => {
                 <p>Stream start at {formatDate(experience.date_time)}</p>
                 <button
                   className="calendar-btn"
-                  onClick={() => saveBookingToCalendar(booking, experience)}
+                  onClick={async () => {
+                    const r = saveBookingToCalendar(booking, experience);
+                    if (!r.ok) await showAlert("error", r.reason);
+                  }}
                 >
                   Save to calendar
                 </button>
@@ -251,7 +256,7 @@ export const PaymentSuccessPage = () => {
           </div>
         </div>
       </footer>
-
+      {alertCard}
     </div>
   );
 };

@@ -64,13 +64,11 @@ export const saveBookingToCalendar = (booking, experience) => {
   const startISO =
     experience?.date_time || booking?.date_time || booking?.experience_date_time;
   if (!startISO) {
-    alert("This booking has no scheduled date yet.");
-    return;
+    return { ok: false, reason: "This booking has no scheduled date yet." };
   }
   const start = new Date(startISO);
   if (Number.isNaN(start.getTime())) {
-    alert("This booking has an invalid date.");
-    return;
+    return { ok: false, reason: "This booking has an invalid date." };
   }
   const durationMinutes =
     Number(experience?.duration_minutes ?? booking?.duration_minutes) || 60;
@@ -92,4 +90,5 @@ export const saveBookingToCalendar = (booking, experience) => {
     },
     filename
   );
+  return { ok: true };
 };

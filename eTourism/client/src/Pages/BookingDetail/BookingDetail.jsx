@@ -9,6 +9,7 @@ import enjoyIcon from "../icon/enjoy.png";
 import { useLayoutEffect } from "react";
 import { saveBookingToCalendar } from "../../utils/calendar";
 import { AccountMenu } from "../../components/AccountMenu";
+import { useAlertCard } from "../../components/useAlertCard";
 
 
 
@@ -22,6 +23,7 @@ const formatDate = (dt) => {
 
 export const MyBookingDetail = () => {
   const navigate = useNavigate();
+  const { alert: showAlert, card: alertCard } = useAlertCard();
   const [showTerms, setShowTerms] = useState(false);
   const [termsText, setTermsText] = useState("");
   const [joinModal, setJoinModal] = useState({ open: false, link: "" });
@@ -259,7 +261,10 @@ export const MyBookingDetail = () => {
                 booking.status !== "refunded" && (
                   <button
                     className="calendar-btn"
-                    onClick={() => saveBookingToCalendar(booking, experience)}
+                    onClick={async () => {
+                      const r = saveBookingToCalendar(booking, experience);
+                      if (!r.ok) await showAlert("error", r.reason);
+                    }}
                   >
                     Save to calendar
                   </button>
@@ -571,6 +576,7 @@ export const MyBookingDetail = () => {
         </div>
       )}
 
+      {alertCard}
     </div>
   );
 };

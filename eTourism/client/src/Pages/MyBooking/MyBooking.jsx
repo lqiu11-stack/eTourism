@@ -7,6 +7,7 @@ import { useLocation } from "react-router-dom";
 import { useLayoutEffect } from "react";
 import { saveBookingToCalendar } from "../../utils/calendar";
 import { AccountMenu } from "../../components/AccountMenu";
+import { useAlertCard } from "../../components/useAlertCard";
 
 
 export const BookingDetail = () => {
@@ -54,6 +55,7 @@ export const MyBooking = () => {
 }, []);
   const token = localStorage.getItem("token");
   const navigate = useNavigate();
+  const { alert: showAlert, card: alertCard } = useAlertCard();
 
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -138,7 +140,11 @@ export const MyBooking = () => {
           </button> */}
           <button
             className="Mybooking-calendar-btn"
-            onClick={(e) => { stop(e); saveBookingToCalendar(b, b); }}
+            onClick={async (e) => {
+              stop(e);
+              const r = saveBookingToCalendar(b, b);
+              if (!r.ok) await showAlert("error", r.reason);
+            }}
           >
             Save to calendar
           </button>
@@ -297,6 +303,7 @@ export const MyBooking = () => {
           </div>
         </div>
       )}
+      {alertCard}
     </div>
   );
 };
