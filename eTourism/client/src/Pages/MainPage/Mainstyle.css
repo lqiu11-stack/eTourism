@@ -545,54 +545,70 @@
 .follow-card {
   flex: 0 0 260px;
   scroll-snap-align: start;
-  background: #fff;
-  border: 1px solid #ece1d8;
-  border-radius: 14px;
+  background: linear-gradient(160deg, #c63139 0%, #b0282e 55%, #8c1d22 100%);
+  border: none;
+  border-radius: 18px;
   overflow: hidden;
   text-align: left;
   cursor: pointer;
   font: inherit;
-  color: inherit;
+  color: #fff;
   padding: 0;
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  box-shadow: 0 6px 18px rgba(176, 40, 46, 0.25);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .follow-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(160, 103, 103, 0.15);
+  transform: translateY(-4px);
+  box-shadow: 0 14px 30px rgba(176, 40, 46, 0.4);
 }
 
 .follow-card-cover {
-  height: 110px;
-  background: linear-gradient(135deg, #c5a7a7 0%, #a06767 100%);
+  height: 140px;
+  background-image: linear-gradient(135deg, #d97a7a 0%, #8c1d22 100%);
   background-size: cover;
   background-position: center;
+  position: relative;
+  transition: transform 0.4s ease;
+}
+
+.follow-card-cover::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to bottom, rgba(0, 0, 0, 0) 55%, rgba(0, 0, 0, 0.35) 100%);
+  pointer-events: none;
+}
+
+.follow-card:hover .follow-card-cover {
+  transform: scale(1.04);
 }
 
 .follow-card-body {
-  padding: 12px 14px 14px;
+  padding: 14px 16px 14px;
 }
 
 .follow-card-host {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-bottom: 8px;
+  margin-bottom: 10px;
 }
 
 .follow-card-avatar {
-  width: 28px;
-  height: 28px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
   object-fit: cover;
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.85);
 }
 
 .follow-card-avatar--placeholder {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  background: #f7a13c;
-  color: #2a1d18;
+  background: #ffd5a3;
+  color: #5a1f12;
   font-size: 12px;
   font-weight: 700;
 }
@@ -600,7 +616,8 @@
 .follow-card-name {
   font-size: 13px;
   font-weight: 600;
-  color: #2a1d18;
+  color: #fff;
+  letter-spacing: 0.2px;
 }
 
 .follow-card-name--link {
@@ -609,8 +626,8 @@
 }
 
 .follow-card-name--link:hover {
-  text-decoration: underline;
-  color: #a06767;
+  text-decoration: none;
+  color: #ffe2a8;
 }
 
 .new-event-grid {
@@ -623,20 +640,80 @@
 }
 
 .follow-card-title {
-  font-size: 14px;
-  font-weight: 600;
-  color: #2a1d18;
+  font-size: 16px;
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: 0.1px;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
-  margin-bottom: 4px;
+  margin-bottom: 6px;
 }
 
 .follow-card-meta {
   font-size: 12px;
-  color: #7a6f6a;
+  color: rgba(255, 255, 255, 0.82);
+  letter-spacing: 0.3px;
+}
+
+.follow-card--with-footer {
+  display: flex;
+  flex-direction: column;
+}
+
+.follow-card--with-footer .follow-card-body {
+  padding: 14px 16px 10px;
+}
+
+.follow-card-footer {
+  padding: 10px 16px 16px;
+  margin-top: auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.follow-card-footer p {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+}
+
+.follow-card--with-footer .book-btn {
+  margin: 0;
+  padding: 7px 14px;
+  background: #fff;
+  color: #b0282e;
+  border-radius: 999px;
+  text-decoration: none;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+  transition: background 0.15s ease, color 0.15s ease, transform 0.15s ease;
+}
+
+.follow-card--with-footer .book-btn:hover {
+  background: #ffe2a8;
+  transform: translateY(-1px);
+}
+
+.follow-card--past.follow-card--with-footer {
+  background: linear-gradient(160deg, #8a8a8a 0%, #6b6b6b 55%, #4d4d4d 100%);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.18);
+}
+
+.follow-card--past.follow-card--with-footer:hover {
+  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.25);
+}
+
+.follow-card--past .book-btn {
+  color: #4d4d4d;
 }
 
 .where-wrapper{

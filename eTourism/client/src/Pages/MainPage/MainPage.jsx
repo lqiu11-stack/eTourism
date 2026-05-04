@@ -18,6 +18,7 @@ import { CONTINENTS, CATEGORIES, LANGUAGES } from "../../constants/enums";
 import { useExperiences } from "../../hooks/useExperiences";
 import { useAuth } from "../../utils/auth";
 import { formatDate } from "../../utils/formatDate";
+import { ExperienceCard } from "../../components/ExperienceCard";
 
 
 
@@ -470,55 +471,13 @@ export const MainPage = () => {
           </div>
           <div className="new-event-grid">
             {newEvents.length > 0
-              ? newEvents.map(exp => {
-                  const expDate = exp.date_time
-                    ? new Date(exp.date_time).toLocaleDateString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })
-                    : null;
-                  return (
-                    <div
-                      key={exp.id}
-                      role="button"
-                      tabIndex={0}
-                      className="follow-card"
-                      onClick={() => navigate(`/DetailPage?id=${exp.id}`, { state: { from: "main" } })}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter" || e.key === " ") {
-                          e.preventDefault();
-                          navigate(`/DetailPage?id=${exp.id}`, { state: { from: "main" } });
-                        }
-                      }}
-                    >
-                      <div
-                        className="follow-card-cover"
-                        style={exp.cover_image ? { backgroundImage: `url(${exp.cover_image})` } : undefined}
-                      />
-                      <div className="follow-card-body">
-                        <div className="follow-card-host">
-                          {exp.ehost_profile_image
-                            ? <img src={exp.ehost_profile_image} alt="" className="follow-card-avatar" />
-                            : <span className="follow-card-avatar follow-card-avatar--placeholder">
-                                {(exp.ehost_display_name?.[0] || "?").toUpperCase()}
-                              </span>}
-                          {exp.ehost_id ? (
-                            <Link
-                              to={`/ehost/${exp.ehost_id}`}
-                              className="follow-card-name follow-card-name--link"
-                              onClick={(e) => e.stopPropagation()}
-                            >
-                              {exp.ehost_display_name || "Host"}
-                            </Link>
-                          ) : (
-                            <span className="follow-card-name">{exp.ehost_display_name || "Host"}</span>
-                          )}
-                        </div>
-                        <div className="follow-card-title">{exp.title}</div>
-                        <div className="follow-card-meta">
-                          {expDate}{exp.country ? ` · ${exp.country}` : ""}
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })
+              ? newEvents.map(exp => (
+                  <ExperienceCard
+                    key={exp.id}
+                    experience={exp}
+                    linkState={{ from: "main" }}
+                  />
+                ))
               : <p style={{ color: "#666" }}>No experiences found.</p>
             }
           </div>
