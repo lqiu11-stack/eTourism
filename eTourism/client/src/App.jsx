@@ -17,11 +17,13 @@ import { MapPage } from "./Pages/MapPage/MapPage.jsx";
 import { EhostDashboard } from "./Pages/EhostDashboard/EhostDashboard.jsx";
 import { ApplyActivity } from "./Pages/ApplyActivity/ApplyActivity.jsx";
 import { EhostProfile } from "./Pages/EhostProfile/EhostProfile.jsx";
+import { EhostPublicProfile } from "./Pages/EhostPublicProfile/EhostPublicProfile.jsx";
 import { VisitorProfile } from "./Pages/VisitorProfile/VisitorProfile.jsx";
 import { FollowingPage } from "./Pages/Following/FollowingPage.jsx";
 import { ContinentPage } from "./Pages/ContinentPage/ContinentPage.jsx";
 import { VisitorRegister } from "./Pages/VisitorRegister/VisitorRegister.jsx";
 import { CompleteOAuthProfile } from "./Pages/VisitorRegister/CompleteOAuthProfile.jsx";
+import { TipSuccess } from "./Pages/TipSuccess/TipSuccess.jsx";
 import { NetworkBanner } from "./components/NetworkBanner.jsx";
 
 
@@ -52,11 +54,13 @@ function App() {
         <Route path="/ApplyActivity" element={<ApplyActivity />} />
         <Route path="/EditActivity/:id" element={<ApplyActivity />} />
         <Route path="/EhostProfile" element={<EhostProfile />} />
+        <Route path="/ehost/:id" element={<EhostPublicProfile />} />
         <Route path="/VisitorProfile" element={<VisitorProfile />} />
         <Route path="/Following" element={<FollowingPage />} />
         <Route path="/continent/:continent" element={<ContinentPage />} />
         <Route path="/register/visitor" element={<VisitorRegister />} />
         <Route path="/register/visitor/complete" element={<CompleteOAuthProfile />} />
+        <Route path="/tip-success" element={<TipSuccess />} />
       </Routes>
     </>
   );

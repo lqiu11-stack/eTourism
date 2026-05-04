@@ -269,7 +269,15 @@ const { experiences } = useExperiences();
           )}
 
           <div className="detail-guide-info">
-            <h4>{experience?.ehost_first_name}</h4>
+            <h4>
+              {experience?.ehost_id ? (
+                <Link to={`/ehost/${experience.ehost_id}`} className="detail-guide-name-link">
+                  {experience?.ehost_first_name}
+                </Link>
+              ) : (
+                experience?.ehost_first_name
+              )}
+            </h4>
             <div className="detail-guide-meta">
               <span className="detail-guide-followers">
                 {followState.followers_count} follower{followState.followers_count === 1 ? "" : "s"}

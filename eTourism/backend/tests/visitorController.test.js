@@ -32,7 +32,7 @@ require.cache[path.resolve(__dirname, '../models/Booking.js')] = {
   paths: [],
 };
 
-const mockExperience = { findById: mock.fn(), findByIdWithHost: mock.fn(), findAll: mock.fn() };
+const mockExperience = { findById: mock.fn(), findByIdWithHost: mock.fn(), findAll: mock.fn(), findByHost: mock.fn(async () => []) };
 require.cache[path.resolve(__dirname, '../models/Experience.js')] = {
   id: path.resolve(__dirname, '../models/Experience.js'),
   filename: path.resolve(__dirname, '../models/Experience.js'),
@@ -175,6 +175,7 @@ const {
   unfollowHost,
   getFollowStatus,
   listFollows,
+  getEhostPublicProfile,
   getReviews,
   getRefundStatus,
 } = require('../controllers/visitorController');
@@ -204,6 +205,8 @@ function resetMocks() {
   mockExperience.findById.mock.resetCalls();
   mockExperience.findByIdWithHost.mock.resetCalls();
   mockExperience.findAll.mock.resetCalls();
+  mockExperience.findByHost.mock.resetCalls();
+  mockExperience.findByHost.mock.mockImplementation(async () => []);
   mockPayment.create.mock.resetCalls();
   mockPayment.findByBooking.mock.resetCalls();
   mockRefund.create.mock.resetCalls();
@@ -1153,6 +1156,45 @@ describe('listFollows()', () => {
     const res = makeRes();
     await listFollows(req, res);
     assert.equal(res.status.mock.calls[0].arguments[0], 500);
+  });
+});
+
+describe('getEhostPublicProfile()', () => {
+  beforeEach(resetMocks);
+
+  // The brief requires eHost listings to be anonymous: real first_name must
+  // never leak when display_name is missing. The fallback should be 'Host'.
+  it('falls back to "Host" instead of first_name when display_name is missing', async () => {
+    mockUser.findById.mock.mockImplementationOnce(async () => ({
+      id: 7, role: 'ehost', status: 'active',
+      first_name: 'Alice', last_name: 'Real', display_name: null,
+      profile_image: null, bio: null, country: 'UK',
+    }));
+    mockFollow.countForHost.mock.mockImplementationOnce(async () => 0);
+
+    const req = makeReq({}, { ehostId: 7 }, {}, 99);
+    const res = makeRes();
+    await getEhostPublicProfile(req, res);
+
+    const body = res.json.mock.calls[0].arguments[0];
+    assert.equal(body.profile.display_name, 'Host');
+    assert.ok(!('first_name' in body.profile));
+  });
+
+  it('uses display_name when present', async () => {
+    mockUser.findById.mock.mockImplementationOnce(async () => ({
+      id: 7, role: 'ehost', status: 'active',
+      first_name: 'Alice', last_name: 'Real', display_name: 'Wanderer',
+      profile_image: null, bio: null, country: 'UK',
+    }));
+    mockFollow.countForHost.mock.mockImplementationOnce(async () => 3);
+
+    const req = makeReq({}, { ehostId: 7 }, {}, 99);
+    const res = makeRes();
+    await getEhostPublicProfile(req, res);
+
+    const body = res.json.mock.calls[0].arguments[0];
+    assert.equal(body.profile.display_name, 'Wanderer');
   });
 });
 

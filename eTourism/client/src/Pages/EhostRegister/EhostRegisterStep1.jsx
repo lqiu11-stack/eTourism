@@ -15,6 +15,7 @@ export const EhostRegisterStep1 = () => {
     const saved = JSON.parse(sessionStorage.getItem("ehost_step1") || "{}");
     return {
       name: saved.name || "",
+      displayName: saved.displayName || "",
       birthday: saved.birthday || "",
       country: saved.country || "",
       gender: saved.gender || "",
@@ -26,12 +27,19 @@ export const EhostRegisterStep1 = () => {
   const [emailError, setEmailError] = useState("");
   const [emailStatus, setEmailStatus] = useState("");
   const emailCheckSeq = useRef(0);
+  const [usernameError, setUsernameError] = useState("");
+  const [usernameStatus, setUsernameStatus] = useState("");
+  const usernameCheckSeq = useRef(0);
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
     if (e.target.name === "email") {
       setEmailError("");
       setEmailStatus("");
+    }
+    if (e.target.name === "displayName") {
+      setUsernameError("");
+      setUsernameStatus("");
     }
   };
 
@@ -60,10 +68,48 @@ export const EhostRegisterStep1 = () => {
     }
   };
 
+  const handleUsernameBlur = async () => {
+    const username = form.displayName.trim();
+    if (!username) return;
+    if (username.length < 3 || username.length > 30) {
+      setUsernameError("Username must be 3 to 30 characters.");
+      return;
+    }
+    if (!/^[A-Za-z0-9_.]+$/.test(username)) {
+      setUsernameError("Username can only contain letters, numbers, underscores, and dots.");
+      return;
+    }
+    const seq = ++usernameCheckSeq.current;
+    setUsernameStatus("Checking…");
+    try {
+      const { data } = await axios.get(`${API_BASE}/auth/check-username`, {
+        params: { username },
+      });
+      if (seq !== usernameCheckSeq.current) return;
+      setUsernameStatus("");
+      setUsernameError(data.available ? "" : "Username is already taken.");
+    } catch (err) {
+      if (seq !== usernameCheckSeq.current) return;
+      setUsernameStatus("");
+      const msg = err.response?.data?.error || err.response?.data?.message || err.message || "Could not verify username. Please try again.";
+      setUsernameError(msg);
+      console.error("[ehost step1 check-username]", err);
+    }
+  };
+
   const handleNext = (e) => {
     e.preventDefault();
-    if (!form.name || !form.birthday || !form.country || !form.gender || !form.email || !form.password) {
+    if (!form.name || !form.displayName || !form.birthday || !form.country || !form.gender || !form.email || !form.password) {
       setError("Please fill in all required fields.");
+      return;
+    }
+    const username = form.displayName.trim();
+    if (username.length < 3 || username.length > 30) {
+      setError("Username must be 3 to 30 characters.");
+      return;
+    }
+    if (!/^[A-Za-z0-9_.]+$/.test(username)) {
+      setError("Username can only contain letters, numbers, underscores, and dots.");
       return;
     }
     if (!COUNTRIES.includes(form.country)) {
@@ -78,11 +124,15 @@ export const EhostRegisterStep1 = () => {
       setError("Password must be at least 8 characters.");
       return;
     }
+    if (usernameError) {
+      setError(usernameError);
+      return;
+    }
     if (emailError) {
       setError(emailError);
       return;
     }
-    sessionStorage.setItem("ehost_step1", JSON.stringify(form));
+    sessionStorage.setItem("ehost_step1", JSON.stringify({ ...form, displayName: username }));
     navigate("/register/ehost/step2");
   };
 
@@ -105,6 +155,20 @@ export const EhostRegisterStep1 = () => {
 
           <label className="p">Please tell us your name*</label>
           <input className="div" type="text" name="name" placeholder="Enter your name" value={form.name} onChange={handleChange} />
+
+          <label className="text-wrapper-3">Choose a username*</label>
+          <input
+            className="rectangle-3"
+            type="text"
+            name="displayName"
+            placeholder="3–30 chars: letters, numbers, _ or ."
+            autoComplete="off"
+            value={form.displayName}
+            onChange={handleChange}
+            onBlur={handleUsernameBlur}
+          />
+          {usernameStatus && <div className="info-text">{usernameStatus}</div>}
+          {usernameError && <div className="error-text">{usernameError}</div>}
 
           <label className="text-wrapper-3">Please tell us your birthday*</label>
           <input className="rectangle-2" type="date" name="birthday" value={form.birthday} onChange={handleChange} required />

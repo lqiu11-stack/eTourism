@@ -603,6 +603,25 @@
   color: #2a1d18;
 }
 
+.follow-card-name--link {
+  text-decoration: none;
+  color: inherit;
+}
+
+.follow-card-name--link:hover {
+  text-decoration: underline;
+  color: #a06767;
+}
+
+.new-event-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 4px 0 12px;
+}
+
 .follow-card-title {
   font-size: 14px;
   font-weight: 600;

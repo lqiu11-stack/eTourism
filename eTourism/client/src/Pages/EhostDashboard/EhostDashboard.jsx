@@ -32,6 +32,7 @@ export const EhostDashboard = () => {
   const [deleteModal, setDeleteModal] = useState({ open: false, id: null, title: "" });
   const [bookingsModal, setBookingsModal] = useState({ open: false, title: "", bookings: null, loading: false, error: "" });
   const [networkQuality, setNetworkQuality] = useState(null);
+  const [tipsSummary, setTipsSummary] = useState({ total: 0, tips: [] });
   const { alert: showAlert, card: alertCard } = useAlertCard();
 
   const openBookings = async (exp) => {
@@ -77,6 +78,15 @@ export const EhostDashboard = () => {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then(({ data }) => setNetworkQuality(data))
+      .catch(() => {});
+  }, [token]);
+
+  useEffect(() => {
+    if (!token) return;
+    axios.get(`${API_BASE}/ehost/tips`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then(({ data }) => setTipsSummary({ total: Number(data.total) || 0, tips: data.tips || [] }))
       .catch(() => {});
   }, [token]);
 
@@ -250,6 +260,25 @@ export const EhostDashboard = () => {
             <img src={profileIcon} alt="" className="eh-action-icon" />
             <span>Update profile</span>
           </button>
+        </div>
+        <div className="eh-tips-tile">
+          <div className="eh-tips-tile-title">Tips received</div>
+          <div className="eh-tips-tile-total">£{tipsSummary.total.toFixed(2)}</div>
+          {tipsSummary.tips.length === 0 ? (
+            <div className="eh-tips-tile-empty">No tips yet — visitors can tip you after the experience.</div>
+          ) : (
+            <ul className="eh-tips-list">
+              {tipsSummary.tips.slice(0, 5).map((t) => (
+                <li key={t.id} className="eh-tips-list-item">
+                  <span className="eh-tips-list-amount">£{Number(t.amount).toFixed(2)}</span>
+                  <span className="eh-tips-list-meta">
+                    {t.experience_title || "Standalone tip"} · {formatDateTime(t.created_at)}
+                  </span>
+                  {t.message && <div className="eh-tips-list-message">"{t.message}"</div>}
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
         {networkQuality && networkQuality.total > 0 && (
           <div

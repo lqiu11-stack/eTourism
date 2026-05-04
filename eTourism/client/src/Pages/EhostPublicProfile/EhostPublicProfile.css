@@ -1,0 +1,149 @@
+.ehost-public-page {
+  min-height: 100vh;
+  background: #faf6f1;
+}
+
+.ehost-public-main {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 110px 50px 80px;
+}
+
+.ehost-public-loading,
+.ehost-public-no-tours {
+  color: #7a6f6a;
+  font-size: 14px;
+}
+
+.ehost-public-empty {
+  text-align: center;
+  padding: 60px 20px;
+  color: #2a1d18;
+}
+
+.ehost-public-empty h2 {
+  margin: 0 0 8px;
+  font-size: 22px;
+}
+
+.ehost-public-empty p {
+  margin: 0 0 20px;
+  color: #7a6f6a;
+}
+
+.ehost-public-cta {
+  background: #a06767;
+  color: #fff;
+  border: none;
+  border-radius: 999px;
+  padding: 10px 24px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.ehost-public-cta:hover {
+  background: #8a5757;
+}
+
+.ehost-public-header {
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
+  background: #fff;
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+  margin-bottom: 28px;
+  flex-wrap: wrap;
+}
+
+.ehost-public-avatar {
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.ehost-public-avatar--placeholder {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #f7a13c;
+  color: #2a1d18;
+  font-size: 36px;
+  font-weight: 700;
+}
+
+.ehost-public-headtext {
+  flex: 1;
+  min-width: 260px;
+}
+
+.ehost-public-name {
+  margin: 0 0 6px;
+  font-size: 26px;
+  font-weight: 700;
+  color: #2a1d18;
+}
+
+.ehost-public-meta {
+  font-size: 13px;
+  color: #7a6f6a;
+  margin-bottom: 10px;
+}
+
+.ehost-public-bio {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.5;
+  color: #4a3d38;
+  white-space: pre-wrap;
+}
+
+.ehost-public-follow-btn {
+  background: #a06767;
+  color: #fff;
+  border: none;
+  border-radius: 999px;
+  padding: 10px 20px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  align-self: flex-start;
+}
+
+.ehost-public-follow-btn:hover:not(:disabled) {
+  background: #8a5757;
+}
+
+.ehost-public-follow-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.ehost-public-follow-btn--following {
+  background: #fff;
+  color: #2a1d18;
+  border: 1px solid #d8c5c5;
+}
+
+.ehost-public-follow-btn--following.is-hover {
+  background: #fdecec;
+  color: #a3373b;
+  border-color: #f0b3b3;
+}
+
+.ehost-public-tours .section-title {
+  margin: 0 0 16px;
+  font-size: 22px;
+  font-weight: 700;
+  color: #2a1d18;
+}
+
+.ehost-public-tours .card-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px;
+}

@@ -51,27 +51,32 @@ const Experience = {
   },
 
   async findAll({ status, category, country, continent, ehost_id, language, price_min, price_max, search, gender_preference, exclude_gender_preference } = {}) {
-    let query = 'SELECT * FROM experiences WHERE 1=1';
+    let query = `SELECT e.*,
+                        COALESCE(u.display_name, 'Host') AS ehost_display_name,
+                        u.profile_image AS ehost_profile_image
+                 FROM experiences e
+                 LEFT JOIN users u ON u.id = e.ehost_id
+                 WHERE 1=1`;
     const values = [];
-    if (status)    { values.push(status);    query += ` AND status = $${values.length}`; }
-    else           { query += ` AND status <> 'deleted'`; }
-    if (category)  { values.push(category);  query += ` AND category = $${values.length}`; }
-    if (country)   { values.push(country);   query += ` AND country = $${values.length}`; }
-    if (continent) { values.push(continent); query += ` AND continent = $${values.length}`; }
-    if (ehost_id)  { values.push(ehost_id);  query += ` AND ehost_id = $${values.length}`; }
-    if (language)  { values.push(language);  query += ` AND language = $${values.length}`; }
-    if (price_min) { values.push(Number(price_min)); query += ` AND price >= $${values.length}`; }
-    if (price_max) { values.push(Number(price_max)); query += ` AND price <= $${values.length}`; }
+    if (status)    { values.push(status);    query += ` AND e.status = $${values.length}`; }
+    else           { query += ` AND e.status <> 'deleted'`; }
+    if (category)  { values.push(category);  query += ` AND e.category = $${values.length}`; }
+    if (country)   { values.push(country);   query += ` AND e.country = $${values.length}`; }
+    if (continent) { values.push(continent); query += ` AND e.continent = $${values.length}`; }
+    if (ehost_id)  { values.push(ehost_id);  query += ` AND e.ehost_id = $${values.length}`; }
+    if (language)  { values.push(language);  query += ` AND e.language = $${values.length}`; }
+    if (price_min) { values.push(Number(price_min)); query += ` AND e.price >= $${values.length}`; }
+    if (price_max) { values.push(Number(price_max)); query += ` AND e.price <= $${values.length}`; }
     if (gender_preference) {
       values.push(gender_preference);
-      query += ` AND gender_preference = $${values.length}`;
+      query += ` AND e.gender_preference = $${values.length}`;
     }
     if (exclude_gender_preference) {
       values.push(exclude_gender_preference);
-      query += ` AND (gender_preference IS NULL OR gender_preference <> $${values.length})`;
+      query += ` AND (e.gender_preference IS NULL OR e.gender_preference <> $${values.length})`;
     }
-    if (search)    { values.push(`%${search.toLowerCase()}%`); query += ` AND (LOWER(title) LIKE $${values.length} OR LOWER(location_name) LIKE $${values.length} OR LOWER(description) LIKE $${values.length})`; }
-    query += ' ORDER BY date_time ASC';
+    if (search)    { values.push(`%${search.toLowerCase()}%`); query += ` AND (LOWER(e.title) LIKE $${values.length} OR LOWER(e.location_name) LIKE $${values.length} OR LOWER(e.description) LIKE $${values.length})`; }
+    query += ' ORDER BY e.date_time ASC';
     const { rows } = await pool.query(query, values);
     return rows;
   },
@@ -79,7 +84,7 @@ const Experience = {
   async findByIdWithHost(id) {
     const { rows } = await pool.query(
       `SELECT e.*,
-              COALESCE(u.display_name, u.first_name) AS ehost_first_name,
+              COALESCE(u.display_name, 'Host') AS ehost_first_name,
               u.bio           AS ehost_bio,
               u.profile_image AS ehost_profile_image
        FROM experiences e
@@ -90,11 +95,15 @@ const Experience = {
     return rows[0] || null;
   },
 
-  async findByHost(ehost_id) {
-    const { rows } = await pool.query(
-      'SELECT * FROM experiences WHERE ehost_id = $1 ORDER BY created_at DESC',
-      [ehost_id]
-    );
+  async findByHost(ehost_id, { status } = {}) {
+    const values = [ehost_id];
+    let query = 'SELECT * FROM experiences WHERE ehost_id = $1';
+    if (status) {
+      values.push(status);
+      query += ` AND status = $${values.length}`;
+    }
+    query += ' ORDER BY created_at DESC';
+    const { rows } = await pool.query(query, values);
     return rows;
   },
   async delete(id) {

@@ -93,7 +93,7 @@ export const FollowingPage = () => {
         ) : (
           <div className="following-grid">
             {hosts.map((h) => {
-              const fullName = h.display_name || `${h.first_name || ""} ${h.last_name || ""}`.trim() || "Host";
+              const fullName = h.ehost_display_name || "Host";
               const date = formatNext(h.next_experience_date_time);
               return (
                 <article key={h.ehost_id} className="following-card">
@@ -101,10 +101,12 @@ export const FollowingPage = () => {
                     {h.profile_image
                       ? <img src={h.profile_image} alt="" className="following-card-avatar" />
                       : <span className="following-card-avatar following-card-avatar--placeholder">
-                          {(h.first_name?.[0] || "?").toUpperCase()}
+                          {(h.ehost_display_name?.[0] || "?").toUpperCase()}
                         </span>}
                     <div className="following-card-headtext">
-                      <h3 className="following-card-name">{fullName}</h3>
+                      <h3 className="following-card-name">
+                        <Link to={`/ehost/${h.ehost_id}`} className="following-card-name-link">{fullName}</Link>
+                      </h3>
                       {h.bio && <p className="following-card-bio">{h.bio}</p>}
                     </div>
                   </header>

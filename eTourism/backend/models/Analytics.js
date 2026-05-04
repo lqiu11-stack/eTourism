@@ -19,13 +19,35 @@ const Analytics = {
   async getTopHosts() {
     const { rows } = await pool.query(`
       SELECT u.id, u.first_name || ' ' || u.last_name AS name,
-             u.country, COUNT(b.id) AS booking_count
+             u.country, COUNT(b.id) AS booking_count,
+             COALESCE(t.tip_total, 0) AS tip_total
       FROM users u
       LEFT JOIN experiences e ON e.ehost_id = u.id
       LEFT JOIN bookings b ON b.experience_id = e.id
+      LEFT JOIN (
+        SELECT ehost_id, SUM(amount) AS tip_total
+        FROM tips
+        WHERE status = 'paid'
+        GROUP BY ehost_id
+      ) t ON t.ehost_id = u.id
       WHERE u.role = 'ehost'
-      GROUP BY u.id, u.first_name, u.last_name, u.country
+      GROUP BY u.id, u.first_name, u.last_name, u.country, t.tip_total
       ORDER BY booking_count DESC LIMIT 10
+    `);
+    return rows;
+  },
+
+  async getTipsByHost() {
+    const { rows } = await pool.query(`
+      SELECT u.id, u.first_name || ' ' || u.last_name AS name,
+             COUNT(t.id) AS tip_count,
+             COALESCE(SUM(t.amount), 0) AS tip_total
+      FROM users u
+      LEFT JOIN tips t ON t.ehost_id = u.id AND t.status = 'paid'
+      WHERE u.role = 'ehost'
+      GROUP BY u.id, u.first_name, u.last_name
+      HAVING COUNT(t.id) > 0
+      ORDER BY tip_total DESC LIMIT 10
     `);
     return rows;
   },

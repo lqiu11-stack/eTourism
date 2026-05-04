@@ -361,6 +361,36 @@ const checkEmail = async (req, res) => {
   }
 };
 
+const checkUsername = async (req, res) => {
+  try {
+    if (!process.env.DATABASE_URL) {
+      return res.status(503).json({ error: 'DATABASE_URL is not configured' });
+    }
+    const username = (req.query.username || '').trim();
+    if (!username) {
+      return res.status(400).json({ error: 'username is required' });
+    }
+    if (username.length < 3 || username.length > 30 || !/^[A-Za-z0-9_.]+$/.test(username)) {
+      return res.status(400).json({ error: 'username is invalid' });
+    }
+    const { rows: usersHit } = await pool.query(
+      'SELECT 1 FROM users WHERE LOWER(display_name) = LOWER($1) LIMIT 1',
+      [username]
+    );
+    if (usersHit.length > 0) {
+      return res.json({ available: false });
+    }
+    const { rows: appsHit } = await pool.query(
+      `SELECT 1 FROM ehost_applications WHERE LOWER(display_name) = LOWER($1) AND status = 'pending' LIMIT 1`,
+      [username]
+    );
+    res.json({ available: appsHit.length === 0 });
+  } catch (err) {
+    console.error('[checkUsername]', err);
+    res.status(500).json({ error: err.message || 'Username check failed' });
+  }
+};
+
 const resetPassword = async (req, res) => {
   try {
     if (!process.env.DATABASE_URL) {
@@ -387,5 +417,5 @@ const resetPassword = async (req, res) => {
   }
 };
 
-module.exports = { register, login, resetPassword, googleLogin, facebookLogin, completeOAuthProfile, checkEmail };
+module.exports = { register, login, resetPassword, googleLogin, facebookLogin, completeOAuthProfile, checkEmail, checkUsername };
 

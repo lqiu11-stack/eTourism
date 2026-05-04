@@ -229,6 +229,37 @@ const listFollows = async (req, res) => {
   }
 };
 
+const getEhostPublicProfile = async (req, res) => {
+  try {
+    const ehostId = Number(req.params.ehostId);
+    if (!Number.isInteger(ehostId) || ehostId <= 0) {
+      return res.status(400).json({ error: 'Invalid ehost id.' });
+    }
+    const user = await User.findById(ehostId);
+    if (!user || user.role !== 'ehost' || user.status !== 'active') {
+      return res.status(404).json({ error: 'Host not found.' });
+    }
+    const [followers_count, experiences] = await Promise.all([
+      Follow.countForHost(ehostId),
+      Experience.findByHost(ehostId, { status: 'approved' }),
+    ]);
+    return res.json({
+      profile: {
+        id: user.id,
+        display_name: user.display_name || 'Host',
+        profile_image: user.profile_image || null,
+        bio: user.bio || null,
+        country: user.country || null,
+      },
+      followers_count,
+      experiences,
+    });
+  } catch (err) {
+    console.error('[visitor.getEhostPublicProfile]', err);
+    return res.status(500).json({ error: 'Failed to load host profile.' });
+  }
+};
+
 const decodeOptionalUserId = (req) => {
   const auth = req.headers.authorization;
   if (!auth || !auth.startsWith('Bearer ') || !process.env.JWT_SECRET) return null;
@@ -924,4 +955,5 @@ module.exports = {
   unfollowHost,
   getFollowStatus,
   listFollows,
+  getEhostPublicProfile,
 };
