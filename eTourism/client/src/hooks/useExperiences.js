@@ -15,7 +15,7 @@ export const useExperiences = () => {
       const { data } = await axios.get(`${API_BASE}/visitor/experiences`, {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
-      setExperiences(data);
+      setExperiences(Array.isArray(data) ? data : []);
       setError(null);
     } catch (err) {
       setError(err);
