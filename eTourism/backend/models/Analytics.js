@@ -62,18 +62,6 @@ const Analytics = {
     return rows;
   },
 
-  async getRevenueByCategory() {
-    const { rows } = await pool.query(`
-      SELECT e.category, COALESCE(SUM(b.amount_paid), 0) AS revenue
-      FROM experiences e
-      LEFT JOIN bookings b ON b.experience_id = e.id AND b.status = 'confirmed'
-      WHERE e.status = 'approved'
-      GROUP BY e.category
-      ORDER BY revenue DESC
-    `);
-    return rows;
-  },
-
   async getCategoryBreakdown() {
     const { rows } = await pool.query(`
       SELECT e.category, COUNT(b.id) AS booking_count

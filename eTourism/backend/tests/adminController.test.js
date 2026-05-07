@@ -962,11 +962,11 @@ describe('getAnalytics()', () => {
   it('200 : returns all analytics data', async () => {
     const topExp = [{ id: 1, title: 'Trip A' }];
     const topHosts = [{ id: 2, name: 'Host B' }];
-    const revenue = [{ category: 'Adventure', revenue: 1234 }];
+    const countries = [{ country: 'United Kingdom', visitor_count: 42 }];
     const categories = [{ name: 'Adventure', count: 5 }];
     mockAnalytics.getTopExperiences.mock.mockImplementation(async () => topExp);
     mockAnalytics.getTopHosts.mock.mockImplementation(async () => topHosts);
-    mockAnalytics.getRevenueByCategory = mock.fn(async () => revenue);
+    mockAnalytics.getVisitorCountries.mock.mockImplementation(async () => countries);
     mockAnalytics.getCategoryBreakdown.mock.mockImplementation(async () => categories);
 
     const req = makeReq();
@@ -976,7 +976,7 @@ describe('getAnalytics()', () => {
     const body = res.json.mock.calls[0].arguments[0];
     assert.deepEqual(body.topExperiences, topExp);
     assert.deepEqual(body.topHosts, topHosts);
-    assert.deepEqual(body.revenueByCategory, revenue);
+    assert.deepEqual(body.visitorCountries, countries);
     assert.deepEqual(body.categoryBreakdown, categories);
   });
 
