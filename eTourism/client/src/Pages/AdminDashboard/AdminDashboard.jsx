@@ -1105,10 +1105,10 @@ const Reports = ({ analytics, loading }) => {
     }],
   };
 
-  const revenueChartData = {
-    labels: analytics.revenueByCategory.map((c) => c.category || "Uncategorised"),
+  const countryChartData = {
+    labels: analytics.visitorCountries.map((c) => c.country || "Unknown"),
     datasets: [{
-      data: analytics.revenueByCategory.map((c) => Number(c.revenue)),
+      data: analytics.visitorCountries.map((c) => Number(c.visitor_count)),
       backgroundColor: "#8bb897",
       borderColor: "#6a9a78",
       borderWidth: 1,
@@ -1116,11 +1116,11 @@ const Reports = ({ analytics, loading }) => {
     }],
   };
 
-  const revenueBarOptions = {
+  const countryBarOptions = {
     ...barOptions(),
     plugins: {
       ...barOptions().plugins,
-      tooltip: { callbacks: { label: (ctx) => ` £${Number(ctx.parsed.x).toFixed(2)}` } },
+      tooltip: { callbacks: { label: (ctx) => ` ${ctx.parsed.x} visitor${ctx.parsed.x !== 1 ? "s" : ""}` } },
     },
   };
 
@@ -1146,7 +1146,7 @@ const Reports = ({ analytics, loading }) => {
   const CHART_HEIGHT = 300;
   const expBarHeight = Math.max(CHART_HEIGHT, analytics.topExperiences.length * 36);
   const hostBarHeight = Math.max(CHART_HEIGHT, analytics.topHosts.length * 36);
-  const revenueBarHeight = Math.max(CHART_HEIGHT, analytics.revenueByCategory.length * 36);
+  const countryBarHeight = Math.max(CHART_HEIGHT, analytics.visitorCountries.length * 36);
 
   return (
     <div className="reports-wrapper">
@@ -1175,12 +1175,12 @@ const Reports = ({ analytics, loading }) => {
 
       <div className="report-charts-row">
         <div className="report-section report-section-wide">
-          <h3 className="report-heading">Revenue by Category</h3>
-          {analytics.revenueByCategory.length === 0 ? (
-            <p className="report-empty">No revenue recorded yet.</p>
+          <h3 className="report-heading">Visitors by Country</h3>
+          {analytics.visitorCountries.length === 0 ? (
+            <p className="report-empty">No visitor data yet.</p>
           ) : (
-            <div style={{ height: revenueBarHeight }}>
-              <Bar data={revenueChartData} options={revenueBarOptions} />
+            <div style={{ height: countryBarHeight }}>
+              <Bar data={countryChartData} options={countryBarOptions} />
             </div>
           )}
         </div>
