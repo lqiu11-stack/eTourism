@@ -1,14 +1,15 @@
 .map-page-root {
   height: 100%;
   margin: 0;
-  /* overflow: hidden;  */
+  overflow-y: hidden;
+  overflow-x: auto;
 }
 
 .map-layout {
-  margin: 75px 0px 0px 0px;
+  margin: 92px 0 0 0;
   display: flex;
-  height: 100vh;
-  overflow: hidden; 
+  height: calc(100vh - 92px);
+  overflow: hidden;
 }
 
 
