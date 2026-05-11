@@ -41,7 +41,7 @@ export const PassWordReset = () => {
       <button
         type="button"
         className="back-btn"
-        onClick={() => navigate("/")}
+        onClick={() => navigate("/login")}
       >
         <img src={backIcon} alt="Back" className="back-icon" />
       </button>
