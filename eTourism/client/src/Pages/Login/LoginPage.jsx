@@ -99,7 +99,14 @@ export const LoginPage = () => {
     <div className="login-page">
       <div className="rectangle" />
       <div className="top-links">
-          <button className="top-btn" type="submit" onClick={() => navigate("/register/ehost/step1")}>
+          <button className="top-btn" type="button" 
+          onClick={() =>
+            navigate("/register/ehost/step1", {
+              state: {
+                from: location.pathname + location.search,
+              },
+            })
+          }>
             Join us to become an E-host
           </button>
         </div>

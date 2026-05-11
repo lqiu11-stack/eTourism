@@ -2,10 +2,11 @@ import { useState } from "react";
 import arrowRight from "../icon/arrow-right.png";
 import backIcon from "../icon/back.png";
 import "./style.css";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { StepProgress } from "./Step.jsx";
 
 export const EhostRegisterStep2 = () => {
+  const location = useLocation(); 
   const navigate = useNavigate();
   const [form, setForm] = useState(() => {
     const saved = JSON.parse(sessionStorage.getItem("ehost_step2") || "{}");
@@ -39,7 +40,9 @@ export const EhostRegisterStep2 = () => {
       hasExperience: form.hasExperience === "yes",
       yearsOfExperience: Number(form.yearsOfExperience) || 0,
     }));
-    navigate("/register/ehost/step3");
+      navigate("/register/ehost/step3", {
+    state: { from: location.state?.from },  
+  });
   };
 
   return (
@@ -47,7 +50,9 @@ export const EhostRegisterStep2 = () => {
       <button
         type="button"
         className="back-btn"
-        onClick={() => navigate("/register/ehost/step1")}
+        onClick={() => navigate("/register/ehost/step1", {
+            state: { from: location.state?.from }, 
+          })}
         aria-label="Back"
       >
         <img src={backIcon} alt="Back" className="back-icon" />

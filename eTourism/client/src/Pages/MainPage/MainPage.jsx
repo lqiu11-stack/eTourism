@@ -178,7 +178,16 @@ export const MainPage = () => {
             </div>
 
             <div className="nav-links">
-              <Link to="/register/ehost/step1" className="nav-link">Become E-host</Link>
+              <button className="top-btn" type="button" 
+              onClick={() =>
+                navigate("/register/ehost/step1", {
+                  state: {
+                    from: location.pathname + location.search,
+                  },
+                })
+              }>
+            Join us to become an E-host
+          </button>
               <AccountMenu />
             </div>
           </nav>

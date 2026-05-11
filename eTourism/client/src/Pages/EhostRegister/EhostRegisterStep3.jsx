@@ -6,9 +6,12 @@ import "./style.css";
 import { useNavigate } from "react-router-dom";
 import { StepProgress } from "./Step.jsx";
 import { isYouTubeUrl } from "../../utils/youtube";
+import { useLocation } from "react-router-dom";
+
 
 export const EhostRegisterStep3 = () => {
   const navigate = useNavigate();
+  const location = useLocation(); 
 
   const saved = JSON.parse(sessionStorage.getItem("ehost_step3") || "{}");
   const [selectedTags, setSelectedTags] = useState(saved.selectedTags || []);
@@ -48,7 +51,11 @@ export const EhostRegisterStep3 = () => {
       <button
         type="button"
         className="back-btn"
-        onClick={() => navigate("/register/ehost/step2")}
+        onClick={() =>
+        navigate("/register/ehost/step2", {
+          state: { from: location.state?.from }, 
+        })
+      }
         aria-label="Back"
       >
         <img src={backIcon} alt="Back" className="back-icon" />

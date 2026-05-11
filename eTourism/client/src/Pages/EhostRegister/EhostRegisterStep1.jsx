@@ -3,14 +3,28 @@ import axios from "axios";
 import arrowRight from "../icon/arrow-right.png";
 import backIcon from "../icon/back.png";
 import "./style.css";
-import { useNavigate } from "react-router-dom";
 import { StepProgress } from "./Step.jsx";
 import { COUNTRIES } from "../../utils/countries";
+import { useNavigate, useLocation } from "react-router-dom";
 
 const API_BASE = import.meta.env.VITE_API_URL;
 
 export const EhostRegisterStep1 = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // alert("Step1 state:", location.state);
+  // alert("Step1 location:", location);
+
+  const handleBack = () => {
+    const from = location.state?.from;
+
+    if (from) {
+      navigate(from);
+    } else {
+    navigate(-1);
+  }
+  };
   const [form, setForm] = useState(() => {
     const saved = JSON.parse(sessionStorage.getItem("ehost_step1") || "{}");
     return {
@@ -23,6 +37,7 @@ export const EhostRegisterStep1 = () => {
       password: saved.password || "",
     };
   });
+  
   const [error, setError] = useState("");
   const [emailError, setEmailError] = useState("");
   const [emailStatus, setEmailStatus] = useState("");
@@ -98,50 +113,61 @@ export const EhostRegisterStep1 = () => {
   };
 
   const handleNext = (e) => {
-    e.preventDefault();
-    if (!form.name || !form.displayName || !form.birthday || !form.country || !form.gender || !form.email || !form.password) {
-      setError("Please fill in all required fields.");
-      return;
-    }
-    const username = form.displayName.trim();
-    if (username.length < 3 || username.length > 30) {
-      setError("Username must be 3 to 30 characters.");
-      return;
-    }
-    if (!/^[A-Za-z0-9_.]+$/.test(username)) {
-      setError("Username can only contain letters, numbers, underscores, and dots.");
-      return;
-    }
-    if (!COUNTRIES.includes(form.country)) {
-      setError("Please select a country from the list.");
-      return;
-    }
-    if (!["female", "male", "non_binary", "prefer_not_to_say"].includes(form.gender)) {
-      setError("Please select your gender.");
-      return;
-    }
-    if (form.password.length < 8) {
-      setError("Password must be at least 8 characters.");
-      return;
-    }
-    if (usernameError) {
-      setError(usernameError);
-      return;
-    }
-    if (emailError) {
-      setError(emailError);
-      return;
-    }
-    sessionStorage.setItem("ehost_step1", JSON.stringify({ ...form, displayName: username }));
-    navigate("/register/ehost/step2");
-  };
+  e.preventDefault();
 
+  if (!form.name || !form.displayName || !form.birthday || !form.country || !form.gender || !form.email || !form.password) {
+    console.log("BLOCKED: empty field");
+    setError("Please fill in all required fields.");
+    return;
+  }
+  const username = form.displayName.trim();
+  if (username.length < 3 || username.length > 30) {
+    console.log("BLOCKED: username length");
+    setError("Username must be 3 to 30 characters.");
+    return;
+  }
+  if (!/^[A-Za-z0-9_.]+$/.test(username)) {
+    console.log("BLOCKED: username regex");
+    setError("Username can only contain letters, numbers, underscores, and dots.");
+    return;
+  }
+  if (!COUNTRIES.includes(form.country)) {
+    console.log("BLOCKED: country not in list", form.country);
+    setError("Please select a country from the list.");
+    return;
+  }
+  if (!["female", "male", "non_binary", "prefer_not_to_say"].includes(form.gender)) {
+    console.log("BLOCKED: gender");
+    setError("Please select your gender.");
+    return;
+  }
+  if (form.password.length < 8) {
+    console.log("BLOCKED: password length");
+    setError("Password must be at least 8 characters.");
+    return;
+  }
+  if (usernameError) {
+    console.log("BLOCKED: usernameError =", usernameError);
+    setError(usernameError);
+    return;
+  }
+  if (emailError) {
+    console.log("BLOCKED: emailError =", emailError);
+    setError(emailError);
+    return;
+  }
+
+   navigate("/register/ehost/step2", {
+    state: { from: location.state?.from },  
+  });
+
+};
   return (
     <div className="join-e-host-page">
       <button
         type="button"
         className="back-btn"
-        onClick={() => navigate(-1)}
+        onClick={handleBack}
         aria-label="Back"
       >
         <img src={backIcon} alt="Back" className="back-icon" />
@@ -152,7 +178,8 @@ export const EhostRegisterStep1 = () => {
           <h1 className="text-wrapper">Ready to become &nbsp;e-host?</h1>
 
           <StepProgress step={1} />
-
+          <div className="join-form-grid">
+              <div className="join-form-left">
           <label className="p">Please tell us your name*</label>
           <input className="div" type="text" name="name" placeholder="Enter your name" value={form.name} onChange={handleChange} />
 
@@ -187,7 +214,8 @@ export const EhostRegisterStep1 = () => {
           <datalist id="country-options">
             {COUNTRIES.map((c) => <option key={c} value={c} />)}
           </datalist>
-
+          </div>
+          <div className="join-form-right">
           <label className="text-wrapper-4">Please tell us your gender*</label>
           <select
             className="rectangle-3"
@@ -214,6 +242,8 @@ export const EhostRegisterStep1 = () => {
             <button type="submit" className="next-btn">
               <img src={arrowRight} alt="Next" className="next-icon" />
             </button>
+          </div>
+          </div>
           </div>
         </form>
       </div>
