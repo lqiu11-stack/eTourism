@@ -7,7 +7,7 @@ import axios from "axios";
 import { useNavigate, useSearchParams } from "react-router-dom";
 
 import { auth, googleProvider, facebookProvider } from "../../firebase";
-import { signInWithPopup } from "firebase/auth";
+import { FacebookAuthProvider, getAdditionalUserInfo, signInWithPopup } from "firebase/auth";
 
 const API_BASE = import.meta.env.VITE_API_URL;
 
@@ -63,8 +63,26 @@ export const LoginPage = () => {
     try {
       setError("");
       const result = await signInWithPopup(auth, facebookProvider);
+      const credential = FacebookAuthProvider.credentialFromResult(result);
+      const additionalInfo = getAdditionalUserInfo(result);
+      let graphProfile = null;
+
+      if (credential?.accessToken) {
+        const graphResponse = await fetch("https://graph.facebook.com/me?fields=id,name,email", {
+          headers: {
+            Authorization: `Bearer ${credential.accessToken}`,
+          },
+        });
+        graphProfile = await graphResponse.json();
+      }
+
+      const facebookEmail =
+        result.user.email ||
+        additionalInfo?.profile?.email ||
+        graphProfile?.email;
+
       const { data } = await axios.post(`${API_BASE}/auth/facebook`, {
-        email: result.user.email,
+        email: facebookEmail,
         name: result.user.displayName,
       });
       handleOAuthResponse(data);

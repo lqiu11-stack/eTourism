@@ -16,3 +16,7 @@ export const auth = getAuth(app);
 export const googleProvider = new GoogleAuthProvider();
 export const storage = getStorage(app);
 export const facebookProvider = new FacebookAuthProvider();
+facebookProvider.addScope("email");
+facebookProvider.setCustomParameters({
+  auth_type: "rerequest",
+});
