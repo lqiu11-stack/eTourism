@@ -157,8 +157,10 @@ export const EhostRegisterStep1 = () => {
     return;
   }
 
+  sessionStorage.setItem("ehost_step1", JSON.stringify(form));
+
    navigate("/register/ehost/step2", {
-    state: { from: location.state?.from },  
+    state: { from: location.state?.from },
   });
 
 };
